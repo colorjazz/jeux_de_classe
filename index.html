@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jeux merdiques de Mr. Plante</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            background-color: #050508;
+            color: #ffffff;
+            font-family: 'Press Start 2P', cursive;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+            overflow-x: hidden;
+        }
+
+        /* Effet d'écran cathodique global très léger */
+        body::before {
+            content: " ";
+            display: block;
+            position: fixed;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.2) 50%);
+            background-size: 100% 4px;
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        /* --- NOUVEAUX STYLES DE TITRES (Inspirés de l'image) --- */
+        .title-arcade {
+            font-size: 3.5rem;
+            text-align: center;
+            line-height: 1.4;
+            text-transform: uppercase;
+            /* Effet de scanlines horizontales DANS le texte */
+            color: #ff00ff; /* Fallback */
+            background: repeating-linear-gradient(
+                to bottom,
+                #ff00ff 0px,    /* Magenta vif */
+                #ff00ff 4px,
+                transparent 4px,
+                transparent 7px
+            );
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            /* Utilisation de drop-shadow car text-shadow réagit mal avec background-clip */
+            filter: drop-shadow(0 0 10px rgba(255, 0, 255, 0.8)) drop-shadow(0 0 20px rgba(255, 0, 255, 0.4));
+        }
+
+        .subtitle-cyan {
+            color: #00ffff;
+            font-size: 1.2rem;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.8);
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .subtitle-yellow {
+            color: #ffff00;
+            font-size: 1rem;
+            text-shadow: 0 0 10px rgba(255, 255, 0, 0.8);
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .neon-card {
+            background-color: transparent;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            padding: 30px 20px;
+            min-height: 240px;
+            transition: transform 0.2s ease, filter 0.2s ease;
+            text-align: center;
+            position: relative;
+        }
+
+        .neon-card:hover {
+            transform: scale(1.03);
+            filter: brightness(1.2);
+        }
+
+        .card-title {
+            font-size: 1rem;
+            line-height: 1.5;
+            margin-bottom: 20px;
+        }
+
+        .btn-jouer {
+            width: 90%;
+            padding: 15px 10px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.8rem;
+            border-radius: 4px;
+            text-align: center;
+            text-decoration: none;
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            color: #000;
+            transition: transform 0.1s;
+        }
+
+        .btn-jouer:active {
+            transform: scale(0.95);
+        }
+
+        /* Les fameuses lignes noires horizontales sur le bouton */
+        .btn-jouer::after {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: repeating-linear-gradient(
+                to bottom,
+                rgba(0, 0, 0, 0.4) 0px,
+                rgba(0, 0, 0, 0.4) 3px,
+                transparent 3px,
+                transparent 6px
+            );
+            pointer-events: none;
+        }
+
+        /* 1. CYAN (Finance de la mort) */
+        .card-cyan {
+            border: 4px solid #00ffff;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.4), inset 0 0 15px rgba(0, 255, 255, 0.2);
+        }
+        .card-cyan .card-title { color: #ffffff; text-shadow: 0 0 8px #00ffff; }
+        .card-cyan .btn-jouer { background-color: #00ffff; box-shadow: 0 0 15px #00ffff; }
+
+        /* 2. MAGENTA (La Bombe) */
+        .card-magenta {
+            border: 4px solid #ff00ff;
+            box-shadow: 0 0 15px rgba(255, 0, 255, 0.4), inset 0 0 15px rgba(255, 0, 255, 0.2);
+        }
+        .card-magenta .card-title { color: #ffffff; text-shadow: 0 0 8px #ff00ff; }
+        .card-magenta .btn-jouer { background-color: #ff00ff; box-shadow: 0 0 15px #ff00ff; }
+
+        /* 3. YELLOW (GeoClash) */
+        .card-yellow {
+            border: 4px solid #ffff00;
+            box-shadow: 0 0 15px rgba(255, 255, 0, 0.4), inset 0 0 15px rgba(255, 255, 0, 0.2);
+        }
+        .card-yellow .card-title { color: #ffffff; text-shadow: 0 0 8px #ffff00; }
+        .card-yellow .btn-jouer { background-color: #ffff00; box-shadow: 0 0 15px #ffff00; }
+
+        /* 4. GREEN (Le Tricheur) */
+        .card-green {
+            border: 4px solid #39ff14;
+            box-shadow: 0 0 15px rgba(57, 255, 20, 0.4), inset 0 0 15px rgba(57, 255, 20, 0.2);
+        }
+        .card-green .card-title { color: #ffffff; text-shadow: 0 0 8px #39ff14; }
+        .card-green .btn-jouer { background-color: #39ff14; box-shadow: 0 0 15px #39ff14; }
+
+        /* 5. ORANGE (Panique au Manoir) */
+        .card-orange {
+            border: 4px solid #ff9900;
+            box-shadow: 0 0 15px rgba(255, 153, 0, 0.4), inset 0 0 15px rgba(255, 153, 0, 0.2);
+        }
+        .card-orange .card-title { color: #ffffff; text-shadow: 0 0 8px #ff9900; }
+        .card-orange .btn-jouer { background-color: #ff9900; box-shadow: 0 0 15px #ff9900; }
+
+        /* 6. RED (Énigme MTL) */
+        .card-red {
+            border: 4px solid #ff003c;
+            box-shadow: 0 0 15px rgba(255, 0, 60, 0.4), inset 0 0 15px rgba(255, 0, 60, 0.2);
+        }
+        .card-red .card-title { color: #ffffff; text-shadow: 0 0 8px #ff003c; }
+        .card-red .btn-jouer { background-color: #ff003c; box-shadow: 0 0 15px #ff003c; }
+
+        /* Ajustements mobiles */
+        @media (max-width: 768px) {
+            .title-arcade { font-size: 1.5rem; }
+            .subtitle-cyan { font-size: 0.9rem; margin-top: 1.5rem; }
+            .subtitle-yellow { font-size: 0.8rem; margin-top: 1.5rem; }
+            .card-title { font-size: 0.8rem; }
+            .neon-card { min-height: 200px; padding: 20px 10px; }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="flex flex-col items-center justify-center mt-10 md:mt-16 mb-16 w-full px-4">
+        <!-- Titre Magenta strié -->
+        <h1 class="title-arcade">JEUX MERDIQUES<br>DE MR. PLANTE</h1>
+
+        <!-- Sous-titre Cyan -->
+        <h2 class="subtitle-cyan mt-10">SÉLECTIONNEZ UN JEU</h2>
+
+        <!-- Sous-titre Jaune clignotant -->
+        <h3 class="subtitle-yellow mt-10 animate-pulse">INSÉREZ UNE PIÈCE</h3>
+    </header>
+
+    <main class="w-full max-w-7xl px-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-12 relative z-10 pb-20">
+
+        <!-- JEU 1: Finance de la Mort (Cyan) -->
+        <div class="neon-card card-cyan">
+            <h3 class="card-title">FINANCE DE LA<br><br>MORT</h3>
+            <a href="https://sites.google.com/view/financedelamort/accueil" target="_blank" class="btn-jouer">JOUER</a>
+        </div>
+
+        <!-- JEU 2: La Bombe (Magenta) -->
+        <div class="neon-card card-magenta">
+            <h3 class="card-title mt-4">LA BOMBE</h3>
+            <a href="https://sites.google.com/view/bombe-vbcb/accueil" target="_blank" class="btn-jouer">JOUER</a>
+        </div>
+
+        <!-- JEU 3: GeoClash (Jaune) -->
+        <div class="neon-card card-yellow">
+            <h3 class="card-title mt-4">GEOCLASH</h3>
+            <a href="https://sites.google.com/view/geoclash/2" target="_blank" class="btn-jouer">JOUER</a>
+        </div>
+
+        <!-- JEU 4: Le Tricheur (Vert) -->
+        <div class="neon-card card-green">
+            <h3 class="card-title mt-4">LE TRICHEUR</h3>
+            <a href="https://sites.google.com/view/tricheur/accueil" target="_blank" class="btn-jouer">JOUER</a>
+        </div>
+
+        <!-- JEU 5: Panique au Manoir (Orange) -->
+        <!-- Note: J'utilise le même lien que La Bombe en attendant d'avoir un lien distinct, s'il y en a un -->
+        <div class="neon-card card-orange">
+            <h3 class="card-title">PANIQUE AU<br><br>MANOIR</h3>
+            <a href="https://sites.google.com/view/bombe-vbcb/accueil" target="_blank" class="btn-jouer">JOUER</a>
+        </div>
+
+        <!-- JEU 6: Énigme MTL (Rouge) -->
+        <div class="neon-card card-red">
+            <h3 class="card-title mt-4">ÉNIGME MTL</h3>
+            <a href="https://enigmemtl.netlify.app/" target="_blank" class="btn-jouer">JOUER</a>
+        </div>
+
+    </main>
+
+</body>
+</html>
