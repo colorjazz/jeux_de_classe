@@ -97,7 +97,7 @@ body {
 
 <section class="screen" id="menuScreen">
   <h1 class="big">ENRTOW!</h1>
-  <p class="sub">La cloche sonne à <b>8 h 15</b>. Traverse la place publique et rends-toi dans ta classe avant qu'il soit trop tard.</p>
+  <p class="sub">La cloche sonne à <b>9 h 35</b>. Traverse la place publique et rends-toi dans ta classe avant qu'il soit trop tard.</p>
   <div class="colors" id="colors" role="group" aria-label="Choisis ta couleur"></div>
   <div class="legend" id="legend"></div>
   <p class="keys">Bouger : <kbd>←↑↓→</kbd> ou <kbd>WASD</kbd> · Courir : <kbd>Maj</kbd> ou <kbd>Espace</kbd> · Pause : <kbd>P</kbd> · Son : <kbd>M</kbd></p>
@@ -144,7 +144,7 @@ const DOORS = [
 ].map((d) => Object.assign(d, { w: 140, y: 150 }));
 let DOOR = DOORS[2];
 const SPEED = { walk: 135, run: 240, slowFactor: 0.42, boostFactor: 1.6 };
-const BELL_TIME = "8:15";
+const BELL_TIME = "9:35";
 
 // Plus le niveau monte, moins il y a de temps. cone = portée et demi-angle de la vision des directeurs,
 // freeze = durée d'un arrêt, chat = durée d'une jasette.
@@ -687,7 +687,7 @@ function drawHUD(t) {
 
   // Horloge
   const secs = Math.ceil(G.time);
-  const clock = "8:14:" + String(clamp(60 - secs, 0, 59)).padStart(2, "0");
+  const clock = "9:34:" + String(clamp(60 - secs, 0, 59)).padStart(2, "0");
   const urgent = G.time <= 10;
   const cx = w / 2, cy = pad + (w < 520 ? 70 : 6);
   ctx.fillStyle = urgent ? (Math.floor(t * 4) % 2 ? "#ff3b3b" : "#8a1010") : "#1b2a52";

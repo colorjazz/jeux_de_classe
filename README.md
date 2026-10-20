@@ -4,7 +4,7 @@ Jeux pour la classe, à ouvrir directement dans un navigateur.
 
 ## ENRTOW! (`enrtow/index.html`)
 
-Rends-toi dans ta classe avant la cloche de 8 h 15 ! Traverse la place publique dans un style « Among Us » :
+Rends-toi dans ta classe avant la cloche de 9 h 35 ! Traverse la place publique dans un style « Among Us » :
 
 - **Élèves lents** : ils marchent lentement et bloquent le passage.
 - **Directeurs** : si tu cours dans leur cône de vision (jaune), ils t'arrêtent.
