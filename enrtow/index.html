@@ -97,7 +97,7 @@ body {
 
 <section class="screen" id="menuScreen">
   <h1 class="big">ENRTOW!</h1>
-  <p class="sub">La cloche sonne à <b>8 h 15</b>. Traverse la place publique et entre dans l'école avant qu'il soit trop tard.</p>
+  <p class="sub">La cloche sonne à <b>8 h 15</b>. Traverse la place publique et rends-toi dans ta classe avant qu'il soit trop tard.</p>
   <div class="colors" id="colors" role="group" aria-label="Choisis ta couleur"></div>
   <div class="legend" id="legend"></div>
   <p class="keys">Bouger : <kbd>←↑↓→</kbd> ou <kbd>WASD</kbd> · Courir : <kbd>Maj</kbd> ou <kbd>Espace</kbd> · Pause : <kbd>P</kbd> · Son : <kbd>M</kbd></p>
@@ -138,20 +138,30 @@ const COLORS = {
 };
 const WORLD = { w: 1500, h: 1600 };
 const START = { x: 750, y: 1530 };
-const DOOR = { x: 680, w: 140, y: 150 };   // porte de l'école
+// Portes des classes le long du mur de l'école ; chaque niveau choisit la tienne.
+const DOORS = [
+  { x: 90, local: 101 }, { x: 380, local: 102 }, { x: 680, local: 103 }, { x: 980, local: 104 }, { x: 1270, local: 105 }
+].map((d) => Object.assign(d, { w: 140, y: 150 }));
+let DOOR = DOORS[2];
 const SPEED = { walk: 135, run: 240, slowFactor: 0.42, boostFactor: 1.6 };
 const BELL_TIME = "8:15";
 
+// Plus le niveau monte, moins il y a de temps. cone = portée et demi-angle de la vision des directeurs,
+// freeze = durée d'un arrêt, chat = durée d'une jasette.
+const POST = { x: 750, y: 520, base: Math.PI / 2 };
 const LEVELS = [
-  { name: "Lundi matin", time: 45, slow: 7, friends: 2, tes: 2,
-    directors: [{ x: 750, y: 520, base: Math.PI / 2, sweep: 0.9 }] },
-  { name: "Mercredi, jour de pluie", time: 42, slow: 12, friends: 4, tes: 2,
-    directors: [{ x: 750, y: 520, base: Math.PI / 2, sweep: 1.1 },
-                { path: [[180, 950], [560, 1130]] }] },
-  { name: "Vendredi, jour d'examen", time: 40, slow: 16, friends: 6, tes: 3,
-    directors: [{ x: 750, y: 520, base: Math.PI / 2, sweep: 1.2 },
-                { path: [[180, 950], [560, 1130]] },
-                { path: [[1320, 300], [1320, 1100]] }] }
+  { name: "Lundi", time: 50, slow: 6, friends: 2, tes: 3, door: 2, cone: [230, 0.55], freeze: 2.5, chat: 3,
+    directors: [Object.assign({ sweep: 0.9 }, POST)] },
+  { name: "Mardi", time: 44, slow: 9, friends: 3, tes: 2, door: 1, cone: [240, 0.6], freeze: 2.6, chat: 3.2,
+    directors: [Object.assign({ sweep: 1.0 }, POST), { path: [[180, 950], [560, 1130]] }] },
+  { name: "Mercredi, jour de pluie", time: 38, slow: 12, friends: 4, tes: 2, door: 3, cone: [250, 0.6], freeze: 2.8, chat: 3.4,
+    directors: [Object.assign({ sweep: 1.1 }, POST), { path: [[180, 950], [560, 1130]] }, { path: [[1320, 760], [1320, 1120]] }] },
+  { name: "Jeudi", time: 32, slow: 16, friends: 6, tes: 2, door: 0, cone: [265, 0.65], freeze: 3, chat: 3.6,
+    directors: [Object.assign({ sweep: 1.2 }, POST), { path: [[180, 950], [560, 1130]] }, { path: [[1320, 760], [1320, 1120]] },
+                { x: 300, y: 250, base: Math.PI * 0.4, sweep: 0.9 }] },
+  { name: "Vendredi, jour d'examen", time: 27, slow: 22, friends: 8, tes: 1, door: 4, cone: [290, 0.7], freeze: 3.5, chat: 4,
+    directors: [Object.assign({ sweep: 1.3 }, POST), { path: [[180, 950], [560, 1130]] }, { path: [[1360, 760], [1360, 1150]] },
+                { x: 1220, y: 250, base: Math.PI * 0.7, sweep: 0.8 }, { path: [[620, 1300], [880, 1300]] }] }
 ];
 
 const FRIEND_LINES = ["Hé ! T'as vu le match hier ?", "Attends, j'te montre un truc !", "T'as fait les devoirs ?",
@@ -177,8 +187,8 @@ const OBST = [
   { t: "rect", x: 1000, y: 300, w: 170, h: 50, d: "planter" },
   { t: "rect", x: 400, y: 1380, w: 200, h: 46, d: "planter" },
   { t: "rect", x: 900, y: 1380, w: 200, h: 46, d: "planter" },
-  { t: "circle", x: 110, y: 230, r: 50, d: "tree" },
-  { t: "circle", x: 1390, y: 230, r: 50, d: "tree" },
+  { t: "circle", x: 60, y: 340, r: 40, d: "tree" },
+  { t: "circle", x: 1440, y: 340, r: 40, d: "tree" },
   { t: "circle", x: 100, y: 860, r: 55, d: "tree" },
   { t: "circle", x: 1400, y: 860, r: 55, d: "tree" },
   { t: "circle", x: 230, y: 1100, r: 48, d: "tree" },
@@ -339,6 +349,7 @@ window.addEventListener("resize", resize); resize();
 
 function newLevel(i) {
   const L = LEVELS[i];
+  DOOR = DOORS[L.door];
   const p = { x: START.x, y: START.y, face: 1, moving: false, running: false, stamina: 100, frozen: 0, immune: 0,
               slowed: 0, boosted: 0, chatWith: null, t: 0, bubble: null };
   const npcs = [];
@@ -448,12 +459,12 @@ function update(dt) {
         }
       }
       // Vision : on se fait attraper seulement si on COURT dans le cône
-      if (p.running && p.frozen <= 0 && p.immune <= 0 && d < 250 && d > 1) {
+      if (p.running && p.frozen <= 0 && p.immune <= 0 && d < G.L.cone[0] && d > 1) {
         const a = Math.atan2(p.y - 30 - (n.y - 30), p.x - n.x);
-        if (Math.abs(angDiff(a, n.ang)) < 0.6) {
-          p.frozen = 2.6; p.immune = 4; p.slowed = 0; p.running = false; G.stats.stops++;
+        if (Math.abs(angDiff(a, n.ang)) < G.L.cone[1]) {
+          p.frozen = G.L.freeze; p.immune = 4; p.slowed = 0; p.running = false; G.stats.stops++;
           if (p.chatWith) { p.chatWith.cool = 6; p.chatWith = null; }
-          say(n, pick(DIR_LINES), 2.6); G.flash = { text: "ARRÊTÉ !", color: "#ff3b3b", t: 1.4 }; G.shake = 0.35; sfx.whistle();
+          say(n, pick(DIR_LINES), G.L.freeze); G.flash = { text: "ARRÊTÉ !", color: "#ff3b3b", t: 1.4 }; G.shake = 0.35; sfx.whistle();
         }
       }
     } else if (n.kind === "friend") {
@@ -465,8 +476,8 @@ function update(dt) {
       } else {
         npcWander(n, dt);
         if (n.cool <= 0 && !p.chatWith && p.frozen <= 0 && d < 75) {
-          p.chatWith = n; p.slowed = 3.2; G.stats.chats++;
-          say(n, pick(FRIEND_LINES), 3.2); say(p, "Euh… je suis pressé·e !", 1.6); sfx.chat();
+          p.chatWith = n; p.slowed = G.L.chat; G.stats.chats++;
+          say(n, pick(FRIEND_LINES), G.L.chat); say(p, "Euh… je suis pressé·e !", 1.6); sfx.chat();
         }
       }
     } else if (n.kind === "tes") {
@@ -527,23 +538,29 @@ function drawObstacle(o, t) {
     ctx.fillStyle = "#a8473b"; ctx.fillRect(0, 0, WORLD.w, 150);
     ctx.fillStyle = "rgba(0,0,0,.12)";
     for (let y = 8; y < 150; y += 18) for (let x = (y / 18 % 2) * 22; x < WORLD.w; x += 44) ctx.fillRect(x, y, 40, 3);
-    ctx.fillStyle = "#5a6b80";
-    for (let x = 60; x < WORLD.w; x += 160) { if (x > 560 && x < 900) continue; rr(ctx, x, 30, 80, 60, 6); ctx.fill(); ctx.stroke(); }
-    ctx.fillStyle = "#8fd3ff"; ctx.globalAlpha = .5;
-    for (let x = 60; x < WORLD.w; x += 160) { if (x > 560 && x < 900) continue; ctx.fillRect(x + 6, 36, 30, 22); }
-    ctx.globalAlpha = 1;
-    // porte
+    // fenêtres entre les portes
+    for (let i = 0; i < DOORS.length - 1; i++) {
+      const x = (DOORS[i].x + DOORS[i].w + DOORS[i + 1].x) / 2 - 40;
+      ctx.fillStyle = "#5a6b80"; rr(ctx, x, 40, 80, 56, 6); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = "rgba(143,211,255,.5)"; ctx.fillRect(x + 6, 46, 30, 20);
+    }
+    // portes des classes : la tienne est éclairée
     const open = G && G.time > 0;
-    ctx.fillStyle = "#3a2516"; rr(ctx, DOOR.x, 60, DOOR.w, 92, [10, 10, 0, 0]); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = open ? "#ffe9a8" : "#222"; ctx.fillRect(DOOR.x + 10, 70, DOOR.w - 20, 82);
-    ctx.strokeRect(DOOR.x + 10, 70, DOOR.w - 20, 82);
-    // enseigne + horloge
-    ctx.fillStyle = "#1b2a52"; rr(ctx, DOOR.x - 30, 10, DOOR.w + 60, 40, 8); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = "#fff"; ctx.font = "28px 'Lilita One', sans-serif"; ctx.textAlign = "center"; ctx.fillText("ÉCOLE", DOOR.x + DOOR.w / 2, 40);
-    // flèche lumineuse au sol
-    const pulse = 0.5 + Math.sin(t * 5) * 0.3;
+    DOORS.forEach((d) => {
+      const mine = d === DOOR, cx = d.x + d.w / 2;
+      ctx.strokeStyle = "#0a0a0a"; ctx.lineWidth = 3;
+      ctx.fillStyle = "#3a2516"; rr(ctx, d.x + 15, 60, d.w - 30, 92, [10, 10, 0, 0]); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = mine && open ? "#ffe9a8" : "#5b3a22"; ctx.fillRect(d.x + 25, 70, d.w - 50, 82);
+      ctx.strokeRect(d.x + 25, 70, d.w - 50, 82);
+      ctx.fillStyle = mine ? "#ffd23f" : "#1b2a52"; rr(ctx, d.x + 5, 12, d.w - 10, 40, 8); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = mine ? "#0a0a0a" : "#fff"; ctx.textAlign = "center";
+      ctx.font = (mine ? 17 : 20) + "px 'Lilita One', sans-serif";
+      ctx.fillText(mine ? "TA CLASSE " + d.local : "LOCAL " + d.local, cx, 39);
+    });
+    // flèche lumineuse au sol devant ta classe
+    const pulse = 0.5 + Math.sin(t * 5) * 0.3, dx = DOOR.x + DOOR.w / 2;
     ctx.fillStyle = "rgba(255,210,63," + pulse + ")";
-    ctx.beginPath(); ctx.moveTo(750, 160); ctx.lineTo(720, 195); ctx.lineTo(780, 195); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(dx, 160); ctx.lineTo(dx - 30, 195); ctx.lineTo(dx + 30, 195); ctx.closePath(); ctx.fill();
   } else if (o.d === "hedge") {
     ctx.fillStyle = "#2f7a35"; rr(ctx, o.x, o.y, o.w, o.h, 14); ctx.fill(); ctx.stroke();
     ctx.fillStyle = "#3f9a45"; for (let x = o.x + 14; x < o.x + o.w - 6; x += 26) { ctx.beginPath(); ctx.arc(x, o.y + 10, 9, 0, Math.PI * 2); ctx.fill(); }
@@ -575,7 +592,7 @@ function drawTreeTop(o) {
 }
 
 function drawCone(n) {
-  const len = 250, half = 0.6;
+  const [len, half] = G.L.cone;
   const g = ctx.createRadialGradient(n.x, n.y - 30, 10, n.x, n.y - 30, len);
   g.addColorStop(0, "rgba(255,225,80,.45)"); g.addColorStop(1, "rgba(255,225,80,0)");
   ctx.fillStyle = g;
@@ -637,7 +654,7 @@ function render(t) {
     label("TOI", p.x, p.y - 72, "#fff", 17);
     if (p.frozen > 0) {
       ctx.strokeStyle = "#ff3b3b"; ctx.lineWidth = 5;
-      ctx.beginPath(); ctx.arc(p.x, p.y - 30, 34, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (p.frozen / 2.6)); ctx.stroke();
+      ctx.beginPath(); ctx.arc(p.x, p.y - 30, 34, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (p.frozen / G.L.freeze)); ctx.stroke();
     }
   } });
   OBST.forEach((o) => { if (o.d === "tree") ents.push({ y: o.y + 10, draw: () => drawTreeTop(o) }); });
@@ -656,14 +673,15 @@ function drawHUD(t) {
   ctx.setTransform(s, 0, 0, s, 0, 0);
   const pad = 14;
 
-  // Barre « Vers l'école » (comme la barre de tâches)
-  const prog = clamp((START.y - p.y) / (START.y - DOOR.y - 32), 0, 1);
+  // Barre « Vers la classe » (comme la barre de tâches)
+  const goal = { x: DOOR.x + DOOR.w / 2, y: DOOR.y + 20 };
+  const prog = clamp(1 - dist(p, goal) / dist(START, goal), 0, 1);
   const bw = Math.min(280, w * 0.42);
   ctx.fillStyle = "#3a3f4b"; ctx.strokeStyle = "#0a0a0a"; ctx.lineWidth = 3;
   rr(ctx, pad, pad, bw, 26, 4); ctx.fill(); ctx.stroke();
   ctx.fillStyle = "#43d36b"; ctx.fillRect(pad + 3, pad + 3, (bw - 6) * prog, 20);
   ctx.font = "15px 'Lilita One', sans-serif"; ctx.textAlign = "left"; ctx.fillStyle = "#fff";
-  ctx.lineWidth = 3; ctx.strokeText("VERS L'ÉCOLE", pad + 8, pad + 19); ctx.fillText("VERS L'ÉCOLE", pad + 8, pad + 19);
+  ctx.lineWidth = 3; ctx.strokeText("VERS LA CLASSE " + DOOR.local, pad + 8, pad + 19); ctx.fillText("VERS LA CLASSE " + DOOR.local, pad + 8, pad + 19);
   ctx.fillStyle = "#cfd6e0"; ctx.font = "14px 'Lilita One', sans-serif";
   ctx.strokeText("Niveau " + (levelIdx + 1) + " · " + G.L.name, pad, pad + 46); ctx.fillText("Niveau " + (levelIdx + 1) + " · " + G.L.name, pad, pad + 46);
 
@@ -701,7 +719,7 @@ function drawHUD(t) {
   // Flèche vers la porte si elle n'est pas visible
   const doorScreenY = (DOOR.y - G.cam.y) * zoom;
   if (doorScreenY < 0) {
-    const dx = (750 - G.cam.x) * zoom, dy = (DOOR.y - G.cam.y) * zoom;
+    const dx = (DOOR.x + DOOR.w / 2 - G.cam.x) * zoom, dy = (DOOR.y - G.cam.y) * zoom;
     const px = (p.x - G.cam.x) * zoom, py = (p.y - G.cam.y) * zoom;
     const a = Math.atan2(dy - py, dx - px);
     const ax = clamp(px + Math.cos(a) * 90, 30, w - 30), ay = clamp(py + Math.sin(a) * 90 - 30, 110, h - 30);
@@ -760,7 +778,7 @@ function startLevel(i) {
   G.cam.y = camClamp(WORLD.h, WORLD.h, VH);
   state = "role";
   crewPortrait("roleCanvas", COLORS[playerColor], "crown");
-  $("roleText").textContent = "Niveau " + (i + 1) + " · " + LEVELS[i].name + ". Entre dans l'école avant " + BELL_TIME + " (" + LEVELS[i].time + " secondes). Ne cours pas devant les directeurs !";
+  $("roleText").textContent = "Niveau " + (i + 1) + " · " + LEVELS[i].name + ". Rends-toi dans ta classe (local " + DOORS[LEVELS[i].door].local + ") avant " + BELL_TIME + ". Tu as " + LEVELS[i].time + " secondes. Ne cours pas devant les directeurs !";
   show("roleScreen");
   setTimeout(() => { if (state === "role") { state = "play"; last = 0; show(null); } }, 2600);
 }
@@ -780,17 +798,17 @@ function endLevel(won) {
     title.textContent = "À L'HEURE !"; title.className = "big blue";
     crewPortrait("endCanvas", COLORS[playerColor], "crown");
     if (levelIdx < LEVELS.length - 1) {
-      $("endText").textContent = "Tu es entré·e avec " + spare + " secondes d'avance. La journée continue…";
+      $("endText").textContent = "Tu es arrivé·e en classe avec " + spare + " secondes d'avance. Demain, ce sera plus serré…";
       mk("NIVEAU SUIVANT", () => startLevel(levelIdx + 1)).focus();
     } else {
-      $("endText").textContent = "Trois matins de suite à l'heure ! Avance totale : " + totalSpare + " secondes. Un vrai champion de la ponctualité.";
+      $("endText").textContent = "Toute la semaine à l'heure en classe ! Avance totale : " + totalSpare + " secondes. Un vrai champion de la ponctualité.";
       mk("REJOUER", () => { totalSpare = 0; startLevel(0); }).focus();
     }
   } else {
     sfx.bell(); setTimeout(sfx.lose, 900);
     title.textContent = "EN RETARD !"; title.className = "big red";
     crewPortrait("endCanvas", COLORS[playerColor], "crown");
-    $("endText").textContent = "La cloche a sonné. Direction le secrétariat pour un billet de retard…";
+    $("endText").textContent = "La cloche a sonné et tu n'es pas en classe. Direction le secrétariat pour un billet de retard…";
     mk("RÉESSAYER", () => startLevel(levelIdx)).focus();
   }
   mk("MENU", () => { totalSpare = 0; state = "menu"; show("menuScreen"); });
@@ -823,7 +841,7 @@ Object.entries(COLORS).forEach(([name, hex]) => {
 
 // Légende
 const LEGEND = [
-  { color: () => COLORS[playerColor], acc: "crown", name: "Toi", text: "Rejoins la porte de l'école avant la cloche." },
+  { color: () => COLORS[playerColor], acc: "crown", name: "Toi", text: "Rejoins ta classe (porte jaune) avant la cloche." },
   { color: () => "#71491e", acc: "phone", name: "Élèves lents", text: "Ils marchent au ralenti et te bloquent le passage." },
   { color: () => "#2b2f3a", acc: "tie", name: "Directeurs", text: "Si tu cours dans leur champ de vision, ils t'arrêtent." },
   { color: () => "#ed54ba", acc: "bow", name: "Ami·es", text: "Ils veulent jaser et te ralentissent." },
