@@ -86,6 +86,11 @@ body {
   color: var(--paper); font-family: var(--display); font-size: 20px; cursor: pointer;
 }
 [hidden] { display: none !important; }
+.reveal { animation: reveal .7s ease-out both; animation-delay: var(--d, 0s); }
+@keyframes reveal { from { opacity: 0; transform: translateY(12px) scale(.96); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .reveal { animation: none; } }
+#twistScreen { background: #000; }
+#twistScreen .role { font-family: var(--display); font-size: clamp(20px, 3.4vw, 30px); opacity: .8; }
 /* centré quand ça rentre, défilable sans couper le haut quand ça ne rentre pas */
 .screen > :first-child { margin-top: auto; }
 .screen > :last-child { margin-bottom: auto; }
@@ -107,6 +112,7 @@ body {
   <div class="row">
     <button class="btn" id="playBtn" type="button">JOUER</button>
     <button class="btn" id="continueBtn" type="button" hidden>CONTINUER</button>
+    <button class="btn" id="secretBtn" type="button" hidden>NIVEAU SECRET</button>
   </div>
 </section>
 
@@ -115,6 +121,16 @@ body {
   <h2 class="big blue" id="roleTitle" style="font-size:clamp(48px,11vw,104px)">ÉLÈVE</h2>
   <canvas id="roleCanvas" width="320" height="400"></canvas>
   <p class="sub" id="roleText"></p>
+</section>
+
+<section class="screen" id="twistScreen" hidden>
+  <p class="sub reveal" style="--d:0s">MR-PLANTE n'était <b>pas</b> le vrai monstre final…</p>
+  <p class="sub reveal" style="--d:1.6s">Le vrai monstre se cachait depuis le début. C'est lui qui criait tes secondes.</p>
+  <div class="role reveal" style="--d:3.2s">Le vrai monstre final</div>
+  <h2 class="big red reveal" style="--d:3.6s;font-size:clamp(40px,10vw,96px)">MR-BEAUCHEMIN</h2>
+  <canvas id="twistCanvas" class="reveal" style="--d:3.6s;width:120px;height:150px" width="320" height="400"></canvas>
+  <p class="sub reveal" style="--d:4.4s">Une course d'obstacles extrême t'attend. Saute au bon moment, survis à ses cris pendant 25 secondes.</p>
+  <button class="btn reveal" style="--d:4.8s" id="fightBtn" type="button">AFFRONTER</button>
 </section>
 
 <section class="screen" id="pauseScreen" hidden>
@@ -184,7 +200,10 @@ const LEVELS = Array.from({ length: 15 }, (_, i) => {
     cone: [220 + i * 6, 0.5 + i * 0.017],
     freeze: +(2.4 + i * 0.1).toFixed(1),
     chat: +(2.8 + i * 0.1).toFixed(1),
-    directors: DIRECTOR_POOL.slice(0, Math.min(6, 1 + Math.floor(i / 2.5)))
+    directors: DIRECTOR_POOL.slice(0, Math.min(6, 1 + Math.floor(i / 2.5))),
+    // MR-BEAUCHEMIN annonce le temps : aux 5 s au début (avec le décompte final 5-4-3-2-1),
+    // puis aux 10, 15, 20 et 25 s dans les niveaux difficiles.
+    every: [5, 10, 15, 20, 25][Math.floor(i / 3)]
   };
 });
 // Le dernier niveau : MR-PLANTE garde la porte du A-217. Presque impossible.
@@ -296,8 +315,9 @@ function drawCrew(ctx, x, y, color, o = {}) {
   rr(ctx, -15, -30, 9, 18, [0, 0, 0, 7]); ctx.fill(); ctx.globalAlpha = 1;
   rr(ctx, -15, -52, 30, 40, [15, 15, 7, 7]); ctx.stroke();
   // visière
-  ctx.fillStyle = "#7fb6c8"; ctx.beginPath(); ctx.ellipse(5, -39, 11, 7, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = "#a9e3f0"; ctx.beginPath(); ctx.ellipse(6, -41, 9, 4.5, 0, 0, Math.PI * 2); ctx.fill();
+  const vis = o.visor || ["#7fb6c8", "#a9e3f0"];
+  ctx.fillStyle = vis[0]; ctx.beginPath(); ctx.ellipse(5, -39, 11, 7, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = vis[1]; ctx.beginPath(); ctx.ellipse(6, -41, 9, 4.5, 0, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.ellipse(10, -42, 3.5, 1.8, 0, 0, Math.PI * 2); ctx.fill();
   ctx.beginPath(); ctx.ellipse(5, -39, 11, 7, 0, 0, Math.PI * 2); ctx.stroke();
   // accessoires
@@ -329,6 +349,12 @@ function drawCrew(ctx, x, y, color, o = {}) {
     ctx.fillStyle = "#ff3b3b"; ctx.beginPath(); ctx.ellipse(8, -39, 3, 2.5, 0, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = "#1f5e27";
     [[-15, -40], [-15, -26], [15, -24]].forEach(([x, y]) => { ctx.beginPath(); ctx.moveTo(x, y - 4); ctx.lineTo(x + (x < 0 ? -6 : 6), y); ctx.lineTo(x, y + 4); ctx.closePath(); ctx.fill(); ctx.stroke(); });
+  } else if (o.acc === "megaphone") {
+    // moustache et porte-voix
+    ctx.fillStyle = "#0a0a0a"; ctx.beginPath(); ctx.ellipse(6, -29, 7, 2.5, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = o.mega || "#e8e8e8";
+    ctx.beginPath(); ctx.moveTo(14, -37); ctx.lineTo(31, -46); ctx.lineTo(31, -23); ctx.lineTo(14, -30); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = o.mega ? "#0a0a0a" : "#ff3b3b"; rr(ctx, 8, -37, 7, 8, 2); ctx.fill(); ctx.stroke();
   } else if (o.acc === "crown") {
     ctx.fillStyle = "#ffd23f";
     ctx.beginPath(); ctx.moveTo(-9, -52); ctx.lineTo(-9, -62); ctx.lineTo(-4, -57); ctx.lineTo(1, -64); ctx.lineTo(6, -57); ctx.lineTo(11, -62); ctx.lineTo(11, -52); ctx.closePath(); ctx.fill(); ctx.stroke();
@@ -353,12 +379,21 @@ function beep(freq, dur, type = "square", vol = 0.06, slide = 0) {
     o.connect(g).connect(audio.destination); o.start(t); o.stop(t + dur);
   } catch (e) { /* pas de son, tant pis */ }
 }
+// MR-BEAUCHEMIN parle avec la voix du navigateur quand elle existe.
+function speak(text) {
+  if (muted) return;
+  try {
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = "fr-CA"; u.rate = 1.2; u.pitch = 0.6; u.volume = 1;
+    speechSynthesis.cancel(); speechSynthesis.speak(u);
+  } catch (e) { /* pas de voix, le texte suffit */ }
+}
 const sfx = {
   whistle: () => { beep(2400, 0.25, "sine", 0.08); setTimeout(() => beep(2600, 0.35, "sine", 0.08), 120); },
   chat: () => { beep(520, 0.08, "triangle"); setTimeout(() => beep(660, 0.1, "triangle"), 90); },
   boost: () => beep(300, 0.3, "sawtooth", 0.05, 600),
   bump: () => beep(140, 0.08, "square", 0.04),
-  tick: () => beep(880, 0.05, "square", 0.03),
+  megaphone: () => { beep(220, 0.18, "sawtooth", 0.05, 80); beep(330, 0.18, "square", 0.03, 60); },
   roar: () => { beep(90, 0.6, "sawtooth", 0.09, -40); beep(130, 0.5, "square", 0.05, -60); },
   bell: () => { for (let i = 0; i < 8; i++) setTimeout(() => beep(1300, 0.12, "square", 0.05), i * 110); },
   win: () => [523, 659, 784, 1046].forEach((f, i) => setTimeout(() => beep(f, 0.2, "triangle", 0.08), i * 120)),
@@ -413,7 +448,7 @@ function newLevel(i) {
   add("slow", L.slow, () => rand(28, 50), () => pick(slowCols), { acc: "phone" });
   add("friend", L.friends, () => rand(30, 45), () => pick(["#ed54ba", "#f5f557", "#50ef39"]), { acc: "bow" });
   add("tes", L.tes, () => rand(45, 60), () => "#117f2d", { acc: "whistle" });
-  G = { L, p, npcs, time: L.time, elapsed: 0, cam: { x: 0, y: WORLD.h }, flash: null, lastTick: L.time, shake: 0,
+  G = { L, p, npcs, time: L.time, elapsed: 0, cam: { x: 0, y: WORLD.h }, flash: null, lastSec: null, ann: null, shake: 0,
         stats: { stops: 0, chats: 0, boosts: 0 } };
 }
 
@@ -439,12 +474,20 @@ function npcWander(n, dt) {
 function camClamp(v, world, view) { return world <= view ? (world - view) / 2 : clamp(v, 0, world - view); }
 
 function say(ent, text, dur = 2.2) { ent.bubble = { text, t: dur }; }
+function announce(text, spoken, dur) { G.ann = { text, t: dur, max: dur }; sfx.megaphone(); speak(spoken); }
 
 function update(dt) {
   const p = G.p;
   G.elapsed += dt; G.time -= dt; p.t += dt;
-  if (G.time <= 10 && Math.ceil(G.time) !== Math.ceil(G.lastTick)) sfx.tick();
-  G.lastTick = G.time;
+  // Le temps n'est plus affiché : c'est MR-BEAUCHEMIN qui le crie.
+  const secs = Math.ceil(G.time);
+  if (secs !== G.lastSec) {
+    const first = G.lastSec === null;
+    G.lastSec = secs;
+    if (G.L.every === 5 && secs <= 5 && secs > 0) announce(secs + " !", String(secs), 0.9);
+    else if (first || (secs > 0 && secs % G.L.every === 0)) announce("IL RESTE " + secs + " SECONDES !", "Il reste " + secs + " secondes !", 2.2);
+  }
+  if (G.ann) { G.ann.t -= dt; if (G.ann.t <= 0) G.ann = null; }
   if (G.time <= 0) { G.time = 0; return endLevel(false); }
 
   // --- Entrée
@@ -751,18 +794,8 @@ function drawHUD(t) {
   ctx.fillStyle = "#cfd6e0"; ctx.font = "14px 'Lilita One', sans-serif";
   ctx.strokeText("Niveau " + (levelIdx + 1) + " · " + G.L.name, pad, pad + 46); ctx.fillText("Niveau " + (levelIdx + 1) + " · " + G.L.name, pad, pad + 46);
 
-  // Horloge
-  const secs = Math.ceil(G.time);
-  const [bh, bm] = BELL_TIME.split(":").map(Number), left = bh * 3600 + bm * 60 - secs;
-  const clock = Math.floor(left / 3600) + ":" + String(Math.floor(left / 60) % 60).padStart(2, "0") + ":" + String(left % 60).padStart(2, "0");
-  const urgent = G.time <= 10;
-  const cx = w / 2, cy = pad + (w < 520 ? 70 : 6);
-  ctx.fillStyle = urgent ? (Math.floor(t * 4) % 2 ? "#ff3b3b" : "#8a1010") : "#1b2a52";
-  rr(ctx, cx - 78, cy, 156, 54, 12); ctx.fill(); ctx.stroke();
-  ctx.textAlign = "center"; ctx.fillStyle = "#fff"; ctx.font = "30px 'Lilita One', sans-serif";
-  ctx.fillText(secs + " s", cx, cy + 32);
-  ctx.font = "13px 'Nunito', sans-serif"; ctx.font = "900 13px 'Nunito', sans-serif"; ctx.fillStyle = "#cfd6e0";
-  ctx.fillText(clock + " → cloche " + BELL_TIME, cx, cy + 48);
+  // MR-BEAUCHEMIN crie le temps qui reste
+  if (G.ann) drawBeauchemin(ctx, w / 2, pad + (w < 520 ? 70 : 6), G.ann, t);
 
   // Endurance + états
   const sy = h - pad - 22 - (isTouch ? 0 : 0);
@@ -813,24 +846,358 @@ function drawHUD(t) {
   }
 }
 
+const BEAU_COLOR = "#c77d2e";
+function drawBeauchemin(c, cx, top, ann, t) {
+  const k = Math.min(1, (ann.max - ann.t) * 6, ann.t * 4);   // apparition et disparition
+  const shake = (Math.random() - 0.5) * 4;
+  c.save(); c.globalAlpha = k; c.translate(cx + shake, top);
+  c.font = "24px 'Lilita One', sans-serif";
+  const tw = Math.max(150, c.measureText(ann.text).width + 30), bw = tw + 70;
+  c.fillStyle = "rgba(10,10,20,.85)"; c.strokeStyle = "#0a0a0a"; c.lineWidth = 3;
+  rr(c, -bw / 2, 0, bw, 66, 14); c.fill(); c.stroke();
+  drawCrew(c, -bw / 2 + 34, 60, BEAU_COLOR, { acc: "megaphone", scale: 0.95, noShadow: true });
+  c.textAlign = "left"; c.fillStyle = "#ffd23f"; c.font = "13px 'Lilita One', sans-serif";
+  c.fillText("MR-BEAUCHEMIN", -bw / 2 + 66, 20);
+  c.font = "24px 'Lilita One', sans-serif"; c.lineWidth = 5; c.strokeText(ann.text, -bw / 2 + 66, 50);
+  c.fillStyle = "#fff"; c.fillText(ann.text, -bw / 2 + 66, 50);
+  c.restore();
+}
+
+// ---------- Niveau secret : la course de MR-BEAUCHEMIN (style Geometry Dash) ----------
+// Monde en tuiles de 40 px, 9 rangées (la rangée 8 est le sol). Le cube avance tout seul ; on ne contrôle que le saut.
+const TILE = 40, ROWS = 9, GROUND = 8 * TILE, STEP = 1 / 240;
+const DASH = { speed: 416, gravity: 4800, jump: 960, pad: 1300, orb: 900, size: 34 };
+
+const COURSE = (() => {
+  const W = 330;
+  const m = Array.from({ length: ROWS }, (_, r) => Array(W).fill(r === 8 ? "#" : " "));
+  const put = (x, r, c) => { if (x >= 0 && x < W && r >= 0 && r < ROWS) m[r][x] = c; };
+  const spike = (x, n = 1) => { for (let i = 0; i < n; i++) put(x + i, 7, "^"); };
+  const block = (x, h, w = 1) => { for (let i = 0; i < w; i++) for (let k = 0; k < h; k++) put(x + i, 7 - k, "#"); };
+  const pit = (x, w) => { for (let i = 0; i < w; i++) put(x + i, 8, " "); };
+  const ceiling = (x, r, w) => { for (let i = 0; i < w; i++) { for (let k = 0; k <= r; k++) put(x + i, k, "#"); put(x + i, r + 1, "v"); } };
+
+  // Section 1 (blanc) : on apprend à sauter
+  spike(15); spike(23); spike(30, 2); block(38, 1); block(44, 1, 3); spike(48);
+  spike(54, 3); block(61, 1); block(62, 2); block(63, 3); spike(68);
+  // Section 2 (cyan) : trous et marches
+  pit(74, 3); pit(82, 4); pit(89, 8); put(92, 7, "#"); put(93, 7, "#");
+  spike(101, 2); block(103, 1, 2); block(110, 1); spike(111, 3); block(114, 2); spike(115, 2);
+  spike(122, 3); pit(129, 4); spike(136, 2);
+  // Section 3 (magenta) : trampolines et orbes
+  put(145, 7, "*"); block(149, 3); spike(150, 2);
+  pit(158, 7); put(160, 5, "o");
+  put(170, 7, "*"); spike(172, 4);
+  pit(183, 9); put(185, 5, "o"); put(189, 5, "o");
+  spike(198, 3); block(204, 1, 3); spike(205, 1);
+  // Section 4 (rouge) : extrême
+  ceiling(212, 4, 10); spike(226, 3);
+  block(233, 1); spike(234, 2); block(236, 2); spike(237, 2); block(239, 3); spike(243, 2);
+  spike(250, 2); spike(255, 3); pit(261, 4);
+  put(268, 5, "o"); block(271, 4, 2); spike(273, 4);
+  // Section 5 (jaune) : la fin avant le boss
+  spike(282); spike(286, 2); spike(291, 3); block(296, 1, 4); put(299, 6, "^"); pit(304, 4);
+  spike(311, 3); put(316, 7, "*"); block(320, 4); spike(321, 3);
+  return { m, w: W };
+})();
+const BOSS_X = COURSE.w * TILE;
+const SECTIONS = [[0, 0, 0], [70, 185, 90], [140, 300, 85], [210, 355, 90], [280, 50, 95]];   // [colonne, teinte, saturation]
+
+// MR-BEAUCHEMIN lance ses cris : "low" = onde au sol (saute !), "tall" = onde haute (saute tôt),
+// "high" = cri en hauteur (ne saute pas !). t = moment où le cri arrive sur toi.
+const BOSS_TIME = 25, SHOUT_SPEED = 260;
+const SHOUTS = [
+  [2.0, "low"], [3.2, "low"], [4.4, "high"], [5.4, "low"], [6.2, "low"], [7.4, "high"], [8.2, "high"], [9.0, "low"],
+  [9.75, "low"], [10.6, "tall"], [11.6, "high"], [12.4, "low"], [13.1, "low"], [13.8, "low"], [15.0, "high"],
+  [15.8, "low"], [16.6, "high"], [17.4, "tall"], [18.2, "low"], [18.9, "low"], [19.6, "high"], [20.4, "low"],
+  [21.1, "low"], [21.8, "tall"], [22.6, "high"], [23.4, "low"], [24.1, "low"]
+].map(([t, kind]) => ({ t, kind }));
+const SHOUT_BOX = { low: [30, 0, 26], tall: [30, 0, 56], high: [34, 58, 100] };   // largeur, bas, haut (au-dessus du sol)
+
+function shoutX(sh, tb) { return BOSS_X + DASH.speed * sh.t + DASH.size / 2 + (sh.t - tb) * SHOUT_SPEED; }
+
+function tileAt(c, r) {
+  if (r >= ROWS) return "#";
+  if (r < 0 || c < 0 || c >= COURSE.w) return r === 8 ? "#" : " ";
+  return COURSE.m[r][c];
+}
+const overlap = (ax, ay, aw, ah, bx, by, bw, bh) => ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by;
+
+// Un pas de physique. Renvoie "dead", "orb" (l'appui a servi) ou null. Fonction pure sur s = { x, y, vy, g }.
+function dashStep(s, held, press, dt) {
+  const S = DASH.size;
+  s.x += DASH.speed * dt;
+  s.vy += DASH.gravity * dt;
+  const prevBottom = s.y + S;
+  s.y += s.vy * dt;
+  s.g = false;
+  const c0 = Math.floor(s.x / TILE), c1 = Math.floor((s.x + S - 0.01) / TILE);
+  for (let c = c0; c <= c1; c++) {
+    for (let r = Math.floor(s.y / TILE); r <= Math.floor((s.y + S - 0.01) / TILE); r++) {
+      if (tileAt(c, r) !== "#") continue;
+      const top = r * TILE;
+      if (s.vy >= 0 && prevBottom <= top + 10) { s.y = top - S; s.vy = 0; s.g = true; }
+      else return "dead";
+    }
+  }
+  let used = null;
+  const r0 = Math.floor(s.y / TILE), r1 = Math.floor((s.y + S - 0.01) / TILE);
+  for (let c = c0; c <= c1; c++) for (let r = Math.max(0, r0 - 1); r <= r1 + 1; r++) {
+    const ch = tileAt(c, r), x = c * TILE, y = r * TILE;
+    if (ch === "^" && overlap(s.x + 3, s.y + 3, S - 6, S - 6, x + 13, y + 16, 14, 24)) return "dead";
+    if (ch === "v" && overlap(s.x + 3, s.y + 3, S - 6, S - 6, x + 13, y, 14, 24)) return "dead";
+    if (ch === "*" && overlap(s.x, s.y, S, S, x + 4, y + 30, 32, 10)) { s.vy = -DASH.pad; s.g = false; }
+    if (ch === "o" && press && !used && Math.hypot(s.x + S / 2 - x - 20, s.y + S / 2 - y - 20) < 40) { s.vy = -DASH.orb; s.g = false; used = "orb"; }
+  }
+  if (s.x >= BOSS_X) {
+    const tb = (s.x - BOSS_X) / DASH.speed;
+    for (const sh of SHOUTS) {
+      if (Math.abs(sh.t - tb) > 1) continue;
+      const [w, lo, hi] = SHOUT_BOX[sh.kind], px = shoutX(sh, tb);
+      if (overlap(s.x + 3, s.y + 3, S - 6, S - 6, px - w / 2, GROUND - hi, w, hi - lo)) return "dead";
+    }
+  }
+  if (s.g && held) { s.vy = -DASH.jump; s.g = false; }
+  if (s.y > GROUND + 240) return "dead";
+  return used;
+}
+
+let D = null, mode = "school", beatTimer = null, pointerHeld = false;
+const dashHeld = () => !!(keys.Space || keys.ArrowUp || keys.KeyW || keys.KeyZ || pointerHeld);
+
+function startBeat() {
+  stopBeat();
+  let n = 0;
+  beatTimer = setInterval(() => {
+    if (state !== "dash") return;
+    if (n % 2 === 0) beep(110, 0.14, "sine", 0.14, -70); else beep(5200, 0.03, "square", 0.012);
+    if (n % 8 === 4) beep(220, 0.08, "triangle", 0.05);
+    n++;
+  }, 231);
+}
+function stopBeat() { if (beatTimer) clearInterval(beatTimer); beatTimer = null; }
+
+function startDash() {
+  mode = "dash";
+  D = { s: null, checkpoint: 0, attempts: 0, dead: 0, acc: 0, buf: 0, rot: 0, parts: [], flash: null, ann: null,
+        lastSec: null, won: 0, bossHit: 0, best: 0 };
+  dashRespawn();
+  state = "dash"; last = 0; show(null); startBeat();
+  try { localStorage.setItem("enrtow-secret", "1"); } catch (e) {}
+}
+function dashRespawn() {
+  D.s = { x: D.checkpoint, y: GROUND - DASH.size, vy: 0, g: true };
+  D.attempts++; D.lastSec = null; D.ann = null; D.rot = 0; D.acc = 0;
+  D.flash = { text: "ESSAI " + D.attempts, t: 0.9 };
+}
+function dashAnnounce(text, spoken, dur) { D.ann = { text, t: dur, max: dur }; sfx.megaphone(); speak(spoken); }
+
+function dashUpdate(dt) {
+  D.parts = D.parts.filter((q) => (q.t -= dt) > 0);
+  D.parts.forEach((q) => { q.x += q.vx * dt; q.y += q.vy * dt; q.vy += 1400 * dt; });
+  if (D.flash) { D.flash.t -= dt; if (D.flash.t <= 0) D.flash = null; }
+  if (D.ann) { D.ann.t -= dt; if (D.ann.t <= 0) D.ann = null; }
+  if (D.dead > 0) { D.dead -= dt; if (D.dead <= 0) dashRespawn(); return; }
+  if (D.won) { D.won += dt; if (D.won > 2.6) dashEnd(); return; }
+  D.buf = Math.max(0, D.buf - dt);
+  D.acc += dt;
+  const s = D.s;
+  while (D.acc >= STEP) {
+    D.acc -= STEP;
+    const ev = dashStep(s, dashHeld(), D.buf > 0, STEP);
+    if (ev === "orb") D.buf = 0;
+    if (ev === "dead") return dashDie();
+  }
+  D.best = Math.max(D.best, Math.min(1, s.x / BOSS_X));
+  if (s.g) D.rot += angDiff(Math.round(D.rot / (Math.PI / 2)) * (Math.PI / 2), D.rot) * Math.min(1, dt * 20);
+  else D.rot += dt * 7.8;
+  if (Math.random() < 0.6) D.parts.push({ x: s.x, y: s.y + DASH.size - 6, vx: -60, vy: -40 * Math.random(), t: 0.35, k: 0.35, sz: 6 });
+
+  if (s.x >= BOSS_X) {
+    if (D.checkpoint < BOSS_X) { D.checkpoint = BOSS_X; D.flash = { text: "POINT DE CONTRÔLE", t: 1.3 }; }
+    const tb = (s.x - BOSS_X) / DASH.speed, left = Math.ceil(BOSS_TIME - tb);
+    if (left !== D.lastSec) {
+      D.lastSec = left;
+      if (left <= 0) {
+        D.won = 0.001; dashAnnounce("QUOI ?! TU ES À L'HEURE ?!", "Quoi ?! Tu es à l'heure ?!", 2.5);
+        sfx.win();
+      } else if (left <= 5) dashAnnounce(left + " !", String(left), 0.9);
+      else if (left % 5 === 0) dashAnnounce("IL RESTE " + left + " SECONDES !", "Il reste " + left + " secondes !", 2);
+    }
+  }
+}
+function burst(x, y, n, life) {
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * Math.PI * 2, v = rand(150, 650);
+    D.parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 200, t: life, k: life, sz: rand(5, 12) });
+  }
+}
+function dashDie() {
+  D.dead = 0.75; burst(D.s.x + DASH.size / 2, D.s.y + DASH.size / 2, 30, 0.7); sfx.bump(); beep(80, 0.3, "sawtooth", 0.08, -40);
+  if (D.s.x >= BOSS_X) dashAnnounce("EN RETARD !", "En retard !", 0.8);
+}
+
+function dashColor(x) {
+  const col = Math.floor(x / TILE);
+  if (col >= COURSE.w - 2) return [355, 85];
+  let h = SECTIONS[0];
+  for (const sec of SECTIONS) if (col >= sec[0]) h = sec;
+  return [h[1], h[2]];
+}
+
+function dashRender(t) {
+  const W = cv.width, H = cv.height, w = W / dpr, h = H / dpr;
+  const s = D.s, [hue, sat] = dashColor(s.x);
+  const col = (l, a = 1) => "hsla(" + hue + "," + sat + "%," + l + "%," + a + ")";
+  const z = clamp(Math.min(h / 430, w / 520), 0.5, 2);
+  const camX = s.x - (w / z) * 0.28, groundY = h * 0.72;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.fillStyle = col(5); ctx.fillRect(0, 0, w, h);
+  // fond : grands carrés qui défilent lentement et pulsent au rythme
+  const beat = 1 - ((performance.now() / 462) % 1);
+  ctx.strokeStyle = col(14 + beat * 6); ctx.lineWidth = 2;
+  for (let i = -1; i < w / 160 + 2; i++) for (let j = 0; j < h / 160 + 1; j++) {
+    const x = i * 160 - ((camX * z * 0.25) % 160);
+    ctx.strokeRect(x + 20, j * 160 + 20, 120, 120);
+  }
+  ctx.save();
+  ctx.translate(-camX * z, groundY - GROUND * z); ctx.scale(z, z);
+  // sol
+  const c0 = Math.floor(camX / TILE) - 1, c1 = c0 + Math.ceil(w / z / TILE) + 2;
+  for (let c = c0; c <= c1; c++) {
+    if (tileAt(c, 8) !== "#") continue;
+    ctx.fillStyle = col(9); ctx.fillRect(c * TILE, GROUND, TILE + 1, 400);
+    ctx.fillStyle = col(85); ctx.fillRect(c * TILE, GROUND, TILE + 1, 3);
+  }
+  // tuiles
+  for (let c = c0; c <= c1; c++) for (let r = 0; r < 8; r++) {
+    const ch = tileAt(c, r), x = c * TILE, y = r * TILE;
+    if (ch === "#") {
+      ctx.fillStyle = col(8); ctx.fillRect(x, y, TILE, TILE);
+      ctx.strokeStyle = col(80); ctx.lineWidth = 2.5; ctx.strokeRect(x + 1.5, y + 1.5, TILE - 3, TILE - 3);
+      ctx.strokeStyle = col(35); ctx.lineWidth = 1.5; ctx.strokeRect(x + 9, y + 9, TILE - 18, TILE - 18);
+    } else if (ch === "^" || ch === "v") {
+      const up = ch === "^";
+      ctx.fillStyle = col(4); ctx.strokeStyle = col(88); ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      if (up) { ctx.moveTo(x + 2, y + TILE); ctx.lineTo(x + TILE / 2, y + 2); ctx.lineTo(x + TILE - 2, y + TILE); }
+      else { ctx.moveTo(x + 2, y); ctx.lineTo(x + TILE / 2, y + TILE - 2); ctx.lineTo(x + TILE - 2, y); }
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+    } else if (ch === "*") {
+      ctx.fillStyle = col(70); ctx.beginPath(); ctx.ellipse(x + 20, y + TILE, 16, 9, 0, Math.PI, 0); ctx.fill();
+    } else if (ch === "o") {
+      const pr = 13 + Math.sin(t * 8) * 2;
+      ctx.strokeStyle = col(85); ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(x + 20, y + 20, pr + 5, 0, Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = col(65, 0.8); ctx.beginPath(); ctx.arc(x + 20, y + 20, pr - 3, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+  // cris de MR-BEAUCHEMIN
+  if (s.x >= BOSS_X - 800) {
+    const tb = (s.x - BOSS_X) / DASH.speed;
+    for (const sh of SHOUTS) {
+      if (D.won || sh.t < tb - 0.6 || sh.t > tb + 2.2) continue;
+      const [sw, lo, hi] = SHOUT_BOX[sh.kind], px = shoutX(sh, tb);
+      ctx.fillStyle = col(sh.kind === "high" ? 70 : 85); ctx.strokeStyle = col(30); ctx.lineWidth = 2;
+      if (sh.kind === "high") {
+        ctx.beginPath(); ctx.arc(px, GROUND - (lo + hi) / 2, (hi - lo) / 2, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = col(5); ctx.font = "26px 'Lilita One', sans-serif"; ctx.textAlign = "center"; ctx.fillText("!", px, GROUND - (lo + hi) / 2 + 9);
+      } else {
+        for (let k = 0; k < 3; k++) {
+          ctx.strokeStyle = col(85 - k * 20); ctx.lineWidth = 4;
+          ctx.beginPath(); ctx.ellipse(px - k * 9, GROUND, sw / 2, hi, 0, Math.PI, Math.PI * 1.5); ctx.stroke();
+        }
+        ctx.fillStyle = col(85, 0.35); ctx.fillRect(px - sw / 2, GROUND - hi, sw, hi);
+      }
+    }
+  }
+  // particules
+  D.parts.forEach((q) => { ctx.fillStyle = col(85, q.t / q.k); ctx.fillRect(q.x - q.sz / 2, q.y - q.sz / 2, q.sz, q.sz); });
+  // cube du joueur (avec la visière du personnage)
+  if (D.dead <= 0) {
+    const S = DASH.size;
+    ctx.save(); ctx.translate(s.x + S / 2, s.y + S / 2); ctx.rotate(D.rot);
+    ctx.fillStyle = col(92); ctx.strokeStyle = "#000"; ctx.lineWidth = 3;
+    ctx.fillRect(-S / 2, -S / 2, S, S); ctx.strokeRect(-S / 2, -S / 2, S, S);
+    ctx.fillStyle = col(20); ctx.fillRect(-S / 2 + 6, -S / 2 + 6, S - 12, S - 12);
+    ctx.fillStyle = col(75); ctx.beginPath(); ctx.ellipse(4, -3, 10, 6, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.ellipse(8, -5, 3, 1.6, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+  ctx.restore();
+
+  // MR-BEAUCHEMIN, le vrai monstre final, flotte à droite pendant le combat
+  const bx = w - Math.min(170, w * 0.22), by = groundY - 40 + Math.sin(t * 2.2) * 18, sc = clamp(z * 3, 1.6, 4);
+  if (D.won && !D.exploded) {
+    // il explose en morceaux (les particules vivent dans le monde, d'où la conversion)
+    D.exploded = true; burst(camX + bx / z, GROUND - (groundY - by + 40 * sc) / z, 90, 1.6); beep(60, 0.8, "sawtooth", 0.1, -30);
+  }
+  if (s.x >= BOSS_X - 600 && !D.won) {
+    drawCrew(ctx, bx, by, "hsl(" + hue + "," + sat + "%,45%)", { scale: sc, face: -1, acc: "megaphone", mega: "hsl(" + hue + "," + sat + "%,85%)",
+      visor: ["hsl(" + hue + "," + sat + "%,15%)", "hsl(" + hue + "," + sat + "%,30%)"], noShadow: true, t, moving: true });
+    label("MR-BEAUCHEMIN", bx, by - 80 * sc - 14, "hsl(" + hue + "," + sat + "%,80%)", 20);
+  }
+
+  // interface : barre de progression, essais, cris
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const pw = Math.min(360, w * 0.6), px0 = (w - pw) / 2;
+  ctx.strokeStyle = col(85); ctx.lineWidth = 2; ctx.strokeRect(px0, 14, pw, 14);
+  ctx.fillStyle = col(85); ctx.fillRect(px0 + 3, 17, (pw - 6) * Math.min(1, s.x / BOSS_X), 8);
+  ctx.font = "15px 'Lilita One', sans-serif"; ctx.textAlign = "center"; ctx.fillStyle = col(90);
+  const pct = Math.floor(Math.min(1, s.x / BOSS_X) * 100);
+  ctx.fillText(s.x >= BOSS_X ? "COMBAT FINAL  ·  ESSAI " + D.attempts : pct + " %  ·  ESSAI " + D.attempts, w / 2, 46);
+  if (D.ann) {
+    const k = Math.min(1, (D.ann.max - D.ann.t) * 6, D.ann.t * 4);
+    ctx.save(); ctx.globalAlpha = k; ctx.translate(w / 2 + (Math.random() - 0.5) * 8, h * 0.24);
+    ctx.font = clamp(w / 14, 26, 60) + "px 'Lilita One', sans-serif"; ctx.lineWidth = 8; ctx.strokeStyle = "#000";
+    ctx.strokeText(D.ann.text, 0, 0); ctx.fillStyle = col(92); ctx.fillText(D.ann.text, 0, 0);
+    ctx.restore();
+  }
+  if (D.flash) {
+    ctx.save(); ctx.globalAlpha = Math.min(1, D.flash.t * 2);
+    ctx.font = "34px 'Lilita One', sans-serif"; ctx.textAlign = "center"; ctx.lineWidth = 6; ctx.strokeStyle = "#000";
+    ctx.strokeText(D.flash.text, w / 2, h * 0.4); ctx.fillStyle = col(90); ctx.fillText(D.flash.text, w / 2, h * 0.4);
+    ctx.restore();
+  }
+  if (D.attempts === 1 && s.x < 12 * TILE && !D.dead) {
+    ctx.font = "18px 'Nunito', sans-serif"; ctx.font = "900 18px 'Nunito', sans-serif"; ctx.textAlign = "center"; ctx.fillStyle = col(80);
+    ctx.fillText(isTouch ? "Touche l'écran pour sauter" : "Espace, ↑ ou clic pour sauter (garde enfoncé pour enchaîner)", w / 2, h * 0.88);
+  }
+}
+
+function dashEnd() {
+  state = "end"; stopBeat();
+  const title = $("endTitle"), btns = $("endButtons");
+  btns.innerHTML = "";
+  title.textContent = "LÉGENDE !"; title.className = "big blue";
+  crewPortrait("endCanvas", COLORS[playerColor], "crown");
+  $("endText").textContent = "Tu as vaincu MR-BEAUCHEMIN, le vrai monstre final. Plus personne ne sera en retard au A-217.";
+  $("endStats").textContent = "Essais : " + D.attempts;
+  const mk = (txt, fn) => { const b = document.createElement("button"); b.className = "btn"; b.type = "button"; b.textContent = txt; b.onclick = fn; btns.appendChild(b); return b; };
+  mk("REJOUER LA COURSE", startDash).focus();
+  mk("MENU", goMenu);
+  show("endScreen");
+}
+
 // ---------- Boucle ----------
 function loop(now) {
   const t = now / 1000;
   const dt = Math.min(0.05, last ? t - last : 0);
   last = t;
   if (state === "play") update(dt);
-  if (G) render(t);
+  else if (state === "dash") dashUpdate(dt);
+  if (mode === "dash") dashRender(t);
+  else if (G) render(t);
   requestAnimationFrame(loop);
 }
 
 // ---------- Écrans ----------
 const $ = (id) => document.getElementById(id);
-const screens = ["menuScreen", "roleScreen", "pauseScreen", "endScreen"];
+const screens = ["menuScreen", "roleScreen", "pauseScreen", "endScreen", "twistScreen"];
 function show(id) {
   screens.forEach((s) => { $(s).hidden = s !== id; });
   const playing = id === null;
   $("pauseBtn").hidden = !playing;
-  $("touch").hidden = !(playing && isTouch);
+  $("touch").hidden = !(playing && isTouch && state !== "dash");
 }
 
 function crewPortrait(canvasId, color, acc) {
@@ -854,7 +1221,7 @@ function startLevel(i) {
     $("roleKicker").textContent = "Tu es";
     $("roleTitle").textContent = "ÉLÈVE"; $("roleTitle").className = "big blue";
     crewPortrait("roleCanvas", COLORS[playerColor], "crown");
-    $("roleText").textContent = "Niveau " + (i + 1) + " · " + L.name + ". Départ : " + STARTS[L.start].label.toLowerCase() + ". Rends-toi au A-217 avant " + BELL_TIME + ". Tu as " + L.time + " secondes. Ne cours pas devant les directeurs !";
+    $("roleText").textContent = "Niveau " + (i + 1) + " · " + L.name + ". Départ : " + STARTS[L.start].label.toLowerCase() + ". Rends-toi au A-217 avant " + BELL_TIME + ". Tu as " + L.time + " secondes. MR-BEAUCHEMIN criera le temps qui reste " + (L.every === 5 ? "toutes les 5 secondes." : "seulement aux " + L.every + " secondes.");
   }
   show("roleScreen");
   setTimeout(() => { if (state === "role") { state = "play"; last = 0; show(null); } }, 2600);
@@ -880,8 +1247,9 @@ function endLevel(won) {
       mk("NIVEAU SUIVANT", () => startLevel(levelIdx + 1)).focus();
     } else {
       title.textContent = "MR-PLANTE BATTU !";
-      $("endText").textContent = "Incroyable ! Tu as passé les 15 niveaux et déjoué le monstre final. Tu es arrivé·e au A-217 à l'heure. Légende de l'école.";
-      mk("REJOUER", () => { totalSpare = 0; startLevel(0); }).focus();
+      $("endText").textContent = "Tu as passé les 15 niveaux et déjoué MR-PLANTE. Tu es arrivé·e au A-217 à l'heure… mais quelque chose cloche.";
+      try { localStorage.setItem("enrtow-secret", "1"); } catch (e) {}
+      mk("CONTINUER…", showTwist).focus();
     }
   } else {
     sfx.bell(); setTimeout(sfx.lose, 900);
@@ -895,10 +1263,20 @@ function endLevel(won) {
   show("endScreen");
 }
 
+let pausedFrom = "play";
 function pause(on) {
-  if (on && state === "play") { state = "pause"; show("pauseScreen"); $("resumeBtn").focus(); }
-  else if (!on && state === "pause") { state = "play"; last = 0; show(null); }
+  if (on && (state === "play" || state === "dash")) { pausedFrom = state; state = "pause"; show("pauseScreen"); $("resumeBtn").focus(); }
+  else if (!on && state === "pause") { state = pausedFrom; last = 0; show(null); }
 }
+function showTwist() {
+  state = "twist"; stopBeat();
+  crewPortrait("twistCanvas", BEAU_COLOR, "megaphone");
+  show("twistScreen");
+  sfx.lose();
+  setTimeout(() => speak("Il reste… zéro seconde."), 3600);
+}
+$("fightBtn").onclick = startDash;
+$("secretBtn").onclick = showTwist;
 $("pauseBtn").onclick = () => pause(true);
 $("resumeBtn").onclick = () => pause(false);
 $("quitBtn").onclick = goMenu;
@@ -909,7 +1287,10 @@ $("continueBtn").onclick = () => { beep(660, 0.08, "triangle"); totalSpare = 0; 
 function savedLevel() { try { return clamp(parseInt(localStorage.getItem("enrtow-niveau"), 10) || 0, 0, LEVELS.length - 1); } catch (e) { return 0; } }
 function saveProgress(i) { try { if (i > savedLevel()) localStorage.setItem("enrtow-niveau", String(Math.min(i, LEVELS.length - 1))); } catch (e) {} }
 function goMenu() {
-  totalSpare = 0; state = "menu";
+  totalSpare = 0; state = "menu"; mode = "school"; stopBeat();
+  let secret = false;
+  try { secret = localStorage.getItem("enrtow-secret") === "1"; } catch (e) {}
+  $("secretBtn").hidden = !secret;
   const lv = savedLevel(), c = $("continueBtn");
   c.hidden = lv === 0; c.textContent = "CONTINUER · NIVEAU " + (lv + 1);
   show("menuScreen");
@@ -938,6 +1319,7 @@ const LEGEND = [
   { color: () => "#2b2f3a", acc: "tie", name: "Directeurs", text: "Si tu cours dans leur champ de vision, ils t'arrêtent." },
   { color: () => "#ed54ba", acc: "bow", name: "Ami·es", text: "Ils veulent jaser et te ralentissent." },
   { color: () => "#117f2d", acc: "whistle", name: "TES", text: "Ils te crient de te dépêcher : turbo !" },
+  { color: () => BEAU_COLOR, acc: "megaphone", name: "MR-BEAUCHEMIN", text: "Il crie le temps qui reste. Gentil… vraiment ?" },
   { color: () => BOSS_COLOR, acc: "plant", name: "MR-PLANTE", text: "Le monstre final du A-217. Il voit tout, même si tu marches." }
 ];
 function drawLegend() {
@@ -957,8 +1339,9 @@ if (document.fonts && document.fonts.ready) document.fonts.ready.then(drawLegend
 // Clavier
 window.addEventListener("keydown", (e) => {
   keys[e.code] = true;
-  if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space"].includes(e.code) && state === "play") e.preventDefault();
-  if (e.code === "KeyP" || e.code === "Escape") pause(state === "play");
+  if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space"].includes(e.code) && (state === "play" || state === "dash")) e.preventDefault();
+  if (state === "dash" && !e.repeat && ["Space", "ArrowUp", "KeyW", "KeyZ"].includes(e.code)) D.buf = 0.15;
+  if (e.code === "KeyP" || e.code === "Escape") pause(state === "play" || state === "dash");
   if (e.code === "KeyM") muted = !muted;
 });
 window.addEventListener("keyup", (e) => { keys[e.code] = false; });
@@ -966,6 +1349,7 @@ window.addEventListener("blur", () => { for (const k in keys) keys[k] = false; p
 
 // Tactile : joystick à gauche, bouton COURIR à droite
 cv.addEventListener("pointerdown", (e) => {
+  if (state === "dash") { pointerHeld = true; D.buf = 0.15; cv.setPointerCapture(e.pointerId); return; }
   if (state !== "play" || joy.active) return;
   joy.active = true; joy.id = e.pointerId; joy.sx = e.clientX; joy.sy = e.clientY; joy.dx = joy.dy = 0;
   cv.setPointerCapture(e.pointerId);
@@ -976,7 +1360,7 @@ cv.addEventListener("pointermove", (e) => {
   const m = Math.hypot(dx, dy); if (m > 1) { dx /= m; dy /= m; }
   joy.dx = dx; joy.dy = dy;
 });
-const endJoy = (e) => { if (e.pointerId === joy.id) { joy.active = false; joy.dx = joy.dy = 0; } };
+const endJoy = (e) => { pointerHeld = false; if (e.pointerId === joy.id) { joy.active = false; joy.dx = joy.dy = 0; } };
 cv.addEventListener("pointerup", endJoy); cv.addEventListener("pointercancel", endJoy);
 const runBtn = $("runBtn");
 runBtn.addEventListener("pointerdown", (e) => { e.preventDefault(); touchRun = true; runBtn.classList.add("on"); });
