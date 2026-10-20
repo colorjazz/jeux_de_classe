@@ -27,7 +27,7 @@ body {
 }
 #game { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
 .screen {
-  position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
   gap: 18px; text-align: center; z-index: 5; overflow-y: auto;
   padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
   padding-block: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-bottom, 0px));
@@ -86,6 +86,9 @@ body {
   color: var(--paper); font-family: var(--display); font-size: 20px; cursor: pointer;
 }
 [hidden] { display: none !important; }
+/* centré quand ça rentre, défilable sans couper le haut quand ça ne rentre pas */
+.screen > :first-child { margin-top: auto; }
+.screen > :last-child { margin-bottom: auto; }
 @media (prefers-reduced-motion: reduce) { .big { text-shadow: 0 6px 0 var(--ink); } }
 </style>
 </head>
@@ -97,16 +100,19 @@ body {
 
 <section class="screen" id="menuScreen">
   <h1 class="big">ENRTOW!</h1>
-  <p class="sub">La cloche sonne à <b>9 h 35</b>. Traverse la place publique et rends-toi dans ta classe avant qu'il soit trop tard.</p>
+  <p class="sub">La cloche sonne à <b>9 h 35</b>. Traverse la place publique et rends-toi dans ta classe, le <b>A-217</b>, avant qu'il soit trop tard. 15 niveaux, et MR-PLANTE t'attend au bout…</p>
   <div class="colors" id="colors" role="group" aria-label="Choisis ta couleur"></div>
   <div class="legend" id="legend"></div>
   <p class="keys">Bouger : <kbd>←↑↓→</kbd> ou <kbd>WASD</kbd> · Courir : <kbd>Maj</kbd> ou <kbd>Espace</kbd> · Pause : <kbd>P</kbd> · Son : <kbd>M</kbd></p>
-  <button class="btn" id="playBtn" type="button">JOUER</button>
+  <div class="row">
+    <button class="btn" id="playBtn" type="button">JOUER</button>
+    <button class="btn" id="continueBtn" type="button" hidden>CONTINUER</button>
+  </div>
 </section>
 
 <section class="screen" id="roleScreen" hidden>
-  <div class="role">Tu es</div>
-  <h2 class="big blue" style="font-size:clamp(48px,11vw,104px)">ÉLÈVE</h2>
+  <div class="role" id="roleKicker">Tu es</div>
+  <h2 class="big blue" id="roleTitle" style="font-size:clamp(48px,11vw,104px)">ÉLÈVE</h2>
   <canvas id="roleCanvas" width="320" height="400"></canvas>
   <p class="sub" id="roleText"></p>
 </section>
@@ -137,37 +143,58 @@ const COLORS = {
   jaune: "#f5f557", cyan: "#38fedc", violet: "#6b2fbb", blanc: "#d6e0f0", lime: "#50ef39"
 };
 const WORLD = { w: 1500, h: 1600 };
-const START = { x: 750, y: 1530 };
-// Portes des classes le long du mur de l'école ; chaque niveau choisit la tienne.
+// Points de départ possibles en bas de la place.
+const STARTS = {
+  bus: { x: 750, y: 1530, label: "ARRÊT D'AUTOBUS" },
+  parc: { x: 210, y: 1545, label: "STATIONNEMENT" },
+  velo: { x: 1250, y: 1545, label: "SUPPORT À VÉLOS" }
+};
+let START = STARTS.bus;
+// Portes des locaux le long du mur de l'école ; ta classe est toujours le A-217, au bout à droite.
 const DOORS = [
-  { x: 90, local: 101 }, { x: 380, local: 102 }, { x: 680, local: 103 }, { x: 980, local: 104 }, { x: 1270, local: 105 }
+  { x: 90, local: "A-213" }, { x: 380, local: "A-214" }, { x: 680, local: "A-215" }, { x: 980, local: "A-216" }, { x: 1270, local: "A-217" }
 ].map((d) => Object.assign(d, { w: 140, y: 150 }));
-let DOOR = DOORS[2];
+const DOOR = DOORS[4];
 const SPEED = { walk: 135, run: 240, slowFactor: 0.42, boostFactor: 1.6 };
 const BELL_TIME = "9:35";
 
-// Plus le niveau monte, moins il y a de temps. cone = portée et demi-angle de la vision des directeurs,
-// freeze = durée d'un arrêt, chat = durée d'une jasette.
-const POST = { x: 750, y: 520, base: Math.PI / 2 };
-const LEVELS = [
-  { name: "Lundi", time: 50, slow: 6, friends: 2, tes: 3, door: 2, cone: [230, 0.55], freeze: 2.5, chat: 3,
-    directors: [Object.assign({ sweep: 0.9 }, POST)] },
-  { name: "Mardi", time: 44, slow: 9, friends: 3, tes: 2, door: 1, cone: [240, 0.6], freeze: 2.6, chat: 3.2,
-    directors: [Object.assign({ sweep: 1.0 }, POST), { path: [[180, 950], [560, 1130]] }] },
-  { name: "Mercredi, jour de pluie", time: 38, slow: 12, friends: 4, tes: 2, door: 3, cone: [250, 0.6], freeze: 2.8, chat: 3.4,
-    directors: [Object.assign({ sweep: 1.1 }, POST), { path: [[180, 950], [560, 1130]] }, { path: [[1320, 760], [1320, 1120]] }] },
-  { name: "Jeudi", time: 32, slow: 16, friends: 6, tes: 2, door: 0, cone: [265, 0.65], freeze: 3, chat: 3.6,
-    directors: [Object.assign({ sweep: 1.2 }, POST), { path: [[180, 950], [560, 1130]] }, { path: [[1320, 760], [1320, 1120]] },
-                { x: 300, y: 250, base: Math.PI * 0.4, sweep: 0.9 }] },
-  { name: "Vendredi, jour d'examen", time: 27, slow: 22, friends: 8, tes: 1, door: 4, cone: [290, 0.7], freeze: 3.5, chat: 4,
-    directors: [Object.assign({ sweep: 1.3 }, POST), { path: [[180, 950], [560, 1130]] }, { path: [[1360, 760], [1360, 1150]] },
-                { x: 1220, y: 250, base: Math.PI * 0.7, sweep: 0.8 }, { path: [[620, 1300], [880, 1300]] }] }
+// Directeurs, dans l'ordre où ils apparaissent au fil des niveaux.
+const DIRECTOR_POOL = [
+  { x: 750, y: 520, base: Math.PI / 2, sweep: 1.0 },
+  { path: [[180, 950], [560, 1130]] },
+  { path: [[1360, 760], [1360, 1150]] },
+  { x: 1100, y: 250, base: Math.PI * 0.55, sweep: 0.9 },
+  { path: [[620, 1300], [880, 1300]] },
+  { path: [[380, 770], [600, 770]] }
 ];
+const DAYS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"];
+const START_ORDER = ["parc", "bus", "velo"];
+
+// 15 niveaux (3 semaines). Plus le niveau monte, moins il y a de temps.
+// cone = portée et demi-angle de la vision des directeurs, freeze = durée d'un arrêt, chat = durée d'une jasette.
+const LEVELS = Array.from({ length: 15 }, (_, i) => {
+  const start = START_ORDER[i % 3];
+  return {
+    name: "Semaine " + (Math.floor(i / 5) + 1) + " · " + DAYS[i % 5],
+    start,
+    time: Math.round(60 - i * 2.6),
+    slow: Math.round(5 + i * 1.3),
+    friends: 1 + Math.floor(i * 0.55),
+    tes: Math.max(1, 3 - Math.floor(i / 5)),
+    cone: [220 + i * 6, 0.5 + i * 0.017],
+    freeze: +(2.4 + i * 0.1).toFixed(1),
+    chat: +(2.8 + i * 0.1).toFixed(1),
+    directors: DIRECTOR_POOL.slice(0, Math.min(6, 1 + Math.floor(i / 2.5)))
+  };
+});
+// Le dernier niveau : MR-PLANTE garde la porte du A-217. Presque impossible.
+Object.assign(LEVELS[14], { name: "Semaine 3 · Vendredi · MR-PLANTE", start: "velo", time: 24, boss: true, slow: 26, friends: 9 });
 
 const FRIEND_LINES = ["Hé ! T'as vu le match hier ?", "Attends, j'te montre un truc !", "T'as fait les devoirs ?",
   "Tu viens chez moi samedi ?", "Regarde mes nouvelles chaussures !", "J'ai trop une histoire à te raconter…"];
 const TES_LINES = ["Dépêche-toi, la cloche va sonner !", "Allez, plus vite que ça !", "Tu vas être en retard !", "Go go go !"];
 const DIR_LINES = ["On ne court pas dans la cour !", "Hop hop hop ! On marche !", "Arrête-toi tout de suite !"];
+const BOSS_LINES = ["En retard dans MON cours ?!", "Retourne au début !", "Je te vois…", "Personne n'entre au A-217 !"];
 const SLOW_LINES = ["…", "Pardon ?", "zzz", "Hé, pousse pas !"];
 
 // ---------- Décor fixe ----------
@@ -291,6 +318,17 @@ function drawCrew(ctx, x, y, color, o = {}) {
   } else if (o.acc === "phone") {
     ctx.fillStyle = "#222"; rr(ctx, 9, -30, 7, 11, 2); ctx.fill(); ctx.stroke();
     ctx.fillStyle = "#7df"; ctx.fillRect(10.5, -28.5, 4, 7);
+  } else if (o.acc === "plant") {
+    // tige et feuilles sur la tête, sourcils fâchés
+    ctx.strokeStyle = "#1f5e27"; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(0, -52); ctx.quadraticCurveTo(-2, -62, 2, -70); ctx.stroke();
+    ctx.lineWidth = 3; ctx.strokeStyle = "#0a0a0a"; ctx.fillStyle = "#4fd35a";
+    ctx.beginPath(); ctx.ellipse(-9, -70, 10, 5, -0.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(12, -73, 11, 5, 0.4, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.lineWidth = 3.5; ctx.beginPath(); ctx.moveTo(-4, -50); ctx.lineTo(14, -45); ctx.stroke();
+    ctx.fillStyle = "#ff3b3b"; ctx.beginPath(); ctx.ellipse(8, -39, 3, 2.5, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#1f5e27";
+    [[-15, -40], [-15, -26], [15, -24]].forEach(([x, y]) => { ctx.beginPath(); ctx.moveTo(x, y - 4); ctx.lineTo(x + (x < 0 ? -6 : 6), y); ctx.lineTo(x, y + 4); ctx.closePath(); ctx.fill(); ctx.stroke(); });
   } else if (o.acc === "crown") {
     ctx.fillStyle = "#ffd23f";
     ctx.beginPath(); ctx.moveTo(-9, -52); ctx.lineTo(-9, -62); ctx.lineTo(-4, -57); ctx.lineTo(1, -64); ctx.lineTo(6, -57); ctx.lineTo(11, -62); ctx.lineTo(11, -52); ctx.closePath(); ctx.fill(); ctx.stroke();
@@ -321,6 +359,7 @@ const sfx = {
   boost: () => beep(300, 0.3, "sawtooth", 0.05, 600),
   bump: () => beep(140, 0.08, "square", 0.04),
   tick: () => beep(880, 0.05, "square", 0.03),
+  roar: () => { beep(90, 0.6, "sawtooth", 0.09, -40); beep(130, 0.5, "square", 0.05, -60); },
   bell: () => { for (let i = 0; i < 8; i++) setTimeout(() => beep(1300, 0.12, "square", 0.05), i * 110); },
   win: () => [523, 659, 784, 1046].forEach((f, i) => setTimeout(() => beep(f, 0.2, "triangle", 0.08), i * 120)),
   lose: () => [392, 330, 262, 196].forEach((f, i) => setTimeout(() => beep(f, 0.3, "sawtooth", 0.06), i * 180))
@@ -349,11 +388,16 @@ window.addEventListener("resize", resize); resize();
 
 function newLevel(i) {
   const L = LEVELS[i];
-  DOOR = DOORS[L.door];
+  START = STARTS[L.start];
   const p = { x: START.x, y: START.y, face: 1, moving: false, running: false, stamina: 100, frozen: 0, immune: 0,
               slowed: 0, boosted: 0, chatWith: null, t: 0, bubble: null };
   const npcs = [];
   const avoid = [START];
+  if (L.boss) {
+    // MR-PLANTE tourne sur lui-même devant le A-217, et change de sens sans prévenir.
+    npcs.push({ kind: "boss", x: 1340, y: 285, ang: Math.PI / 2, spin: 1.6, flip: 2, range: 340, half: 0.8, t: 0, face: -1 });
+    avoid.push({ x: 1340, y: 285 }, { x: 1340, y: 450 });
+  }
   L.directors.forEach((d) => {
     if (d.path) npcs.push({ kind: "dir", x: d.path[0][0], y: d.path[0][1], path: d.path, pi: 1, speed: 55, ang: 0, t: 0, face: 1 });
     else npcs.push({ kind: "dir", x: d.x, y: d.y, base: d.base, sweep: d.sweep, ang: d.base, t: rand(0, 6), face: 1, post: true });
@@ -446,7 +490,21 @@ function update(dt) {
     n.cool = Math.max(0, (n.cool || 0) - dt);
     const d = dist(n, p);
 
-    if (n.kind === "dir") {
+    if (n.kind === "boss") {
+      n.flip -= dt;
+      if (n.flip <= 0) { n.flip = rand(0.8, 2.6); n.spin = (Math.random() < 0.5 ? -1 : 1) * rand(1.3, 2.1); }
+      n.ang += n.spin * dt; n.face = Math.cos(n.ang) >= 0 ? 1 : -1;
+      // Lui, il t'attrape même si tu marches, et il te renvoie au départ.
+      if (p.frozen <= 0 && p.immune <= 0 && d < n.range) {
+        const a = Math.atan2(p.y - 30 - (n.y - 50), p.x - n.x);
+        if (Math.abs(angDiff(a, n.ang)) < n.half) {
+          p.x = START.x; p.y = START.y; p.frozen = 1.5; p.immune = 2.5; p.slowed = 0; G.stats.stops++;
+          if (p.chatWith) { p.chatWith.cool = 6; p.chatWith = null; }
+          say(n, pick(BOSS_LINES), 2.5); G.flash = { text: "RETOURNE AU DÉBUT !", color: "#ff3b3b", t: 1.6 }; G.shake = 0.6; sfx.roar();
+          G.cam.x = camClamp(START.x - VW / 2, WORLD.w, VW); G.cam.y = camClamp(START.y, WORLD.h, VH);
+        }
+      }
+    } else if (n.kind === "dir") {
       if (n.post) { n.ang = n.base + Math.sin(n.t * 0.9) * n.sweep; n.moving = false; n.face = Math.cos(n.ang) >= 0 ? 1 : -1; }
       else {
         const [tx, ty] = n.path[n.pi], dx = tx - n.x, dy = ty - n.y, dd = Math.hypot(dx, dy);
@@ -491,7 +549,7 @@ function update(dt) {
     }
 
     // Les PNJ (sauf l'ami en pleine discussion) sont des obstacles
-    if (p.chatWith !== n && pushOutCircle(p, 14, n, 15)) {
+    if (p.chatWith !== n && pushOutCircle(p, 14, n, n.kind === "boss" ? 28 : 15)) {
       if (n.kind === "slow" && !n.bubble && Math.random() < 0.02) { say(n, pick(SLOW_LINES), 1.2); sfx.bump(); }
     }
   }
@@ -529,7 +587,7 @@ function drawGround() {
   [[1000, 1290], [1040, 1290], [1020, 1250], [1000, 1210], [1040, 1210]].forEach(([x, y]) => ctx.strokeRect(x, y - 40, 40, 40));
   // départ
   ctx.fillStyle = "rgba(255,255,255,.6)"; ctx.font = "26px 'Lilita One', sans-serif"; ctx.textAlign = "center";
-  ctx.fillText("ARRÊT D'AUTOBUS", START.x, WORLD.h - 14);
+  ctx.fillText(START.label, START.x, WORLD.h - 14);
 }
 
 function drawObstacle(o, t) {
@@ -555,7 +613,7 @@ function drawObstacle(o, t) {
       ctx.fillStyle = mine ? "#ffd23f" : "#1b2a52"; rr(ctx, d.x + 5, 12, d.w - 10, 40, 8); ctx.fill(); ctx.stroke();
       ctx.fillStyle = mine ? "#0a0a0a" : "#fff"; ctx.textAlign = "center";
       ctx.font = (mine ? 17 : 20) + "px 'Lilita One', sans-serif";
-      ctx.fillText(mine ? "TA CLASSE " + d.local : "LOCAL " + d.local, cx, 39);
+      ctx.fillText(mine ? "TA CLASSE " + d.local : d.local, cx, 39);
     });
     // flèche lumineuse au sol devant ta classe
     const pulse = 0.5 + Math.sin(t * 5) * 0.3, dx = DOOR.x + DOOR.w / 2;
@@ -592,13 +650,15 @@ function drawTreeTop(o) {
 }
 
 function drawCone(n) {
-  const [len, half] = G.L.cone;
-  const g = ctx.createRadialGradient(n.x, n.y - 30, 10, n.x, n.y - 30, len);
-  g.addColorStop(0, "rgba(255,225,80,.45)"); g.addColorStop(1, "rgba(255,225,80,0)");
+  const boss = n.kind === "boss";
+  const [len, half] = boss ? [n.range, n.half] : G.L.cone, oy = n.y - (boss ? 50 : 30);
+  const rgb = boss ? "255,50,50" : "255,225,80";
+  const g = ctx.createRadialGradient(n.x, oy, 10, n.x, oy, len);
+  g.addColorStop(0, "rgba(" + rgb + ",.45)"); g.addColorStop(1, "rgba(" + rgb + ",0)");
   ctx.fillStyle = g;
-  ctx.beginPath(); ctx.moveTo(n.x, n.y - 30); ctx.arc(n.x, n.y - 30, len, n.ang - half, n.ang + half); ctx.closePath(); ctx.fill();
-  ctx.strokeStyle = "rgba(255,210,63,.6)"; ctx.lineWidth = 2; ctx.setLineDash([8, 8]);
-  ctx.beginPath(); ctx.moveTo(n.x, n.y - 30); ctx.arc(n.x, n.y - 30, len, n.ang - half, n.ang + half); ctx.closePath(); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(n.x, oy); ctx.arc(n.x, oy, len, n.ang - half, n.ang + half); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = "rgba(" + rgb + ",.6)"; ctx.lineWidth = 2; ctx.setLineDash([8, 8]);
+  ctx.beginPath(); ctx.moveTo(n.x, oy); ctx.arc(n.x, oy, len, n.ang - half, n.ang + half); ctx.closePath(); ctx.stroke();
   ctx.setLineDash([]);
 }
 
@@ -617,6 +677,7 @@ function bubble(text, x, y) {
   ctx.fillStyle = "#111"; ctx.textAlign = "center"; ctx.fillText(text, x, y - 10, w - 12);
 }
 
+const BOSS_COLOR = "#2f8f3a";
 const KIND = {
   dir: { name: "Directeur", color: "#2b2f3a", acc: "tie", tag: "#ffd23f" },
   tes: { name: "TES", tag: "#43d36b" },
@@ -635,10 +696,15 @@ function render(t) {
 
   drawGround();
   OBST.forEach((o) => { if (o.d !== "tree") drawObstacle(o, t); });
-  G.npcs.forEach((n) => { if (n.kind === "dir") drawCone(n); });
+  G.npcs.forEach((n) => { if (n.kind === "dir" || n.kind === "boss") drawCone(n); });
 
   // personnages triés par profondeur
   const ents = G.npcs.map((n) => ({ y: n.y, draw: () => {
+    if (n.kind === "boss") {
+      drawCrew(ctx, n.x, n.y, BOSS_COLOR, { face: n.face, t: n.t, acc: "plant", scale: 1.8 });
+      label("MR-PLANTE", n.x, n.y - 132, "#ff3b3b", 22);
+      return;
+    }
     const k = KIND[n.kind];
     drawCrew(ctx, n.x, n.y, n.kind === "dir" ? k.color : n.color, { face: n.face, t: n.t, moving: n.moving, acc: n.kind === "dir" ? "tie" : n.acc });
     if (k.name) label(k.name, n.x, n.y - (n.kind === "dir" ? 78 : 66), k.tag, 15);
@@ -661,7 +727,7 @@ function render(t) {
   ents.sort((a, b) => a.y - b.y).forEach((e) => e.draw());
 
   // bulles par-dessus tout
-  G.npcs.forEach((n) => { if (n.bubble) bubble(n.bubble.text, n.x, n.y - (n.kind === "dir" ? 88 : 76)); });
+  G.npcs.forEach((n) => { if (n.bubble) bubble(n.bubble.text, n.x, n.y - (n.kind === "boss" ? 150 : n.kind === "dir" ? 88 : 76)); });
   if (p.bubble) bubble(p.bubble.text, p.x, p.y - 84);
 
   drawHUD(t);
@@ -681,13 +747,14 @@ function drawHUD(t) {
   rr(ctx, pad, pad, bw, 26, 4); ctx.fill(); ctx.stroke();
   ctx.fillStyle = "#43d36b"; ctx.fillRect(pad + 3, pad + 3, (bw - 6) * prog, 20);
   ctx.font = "15px 'Lilita One', sans-serif"; ctx.textAlign = "left"; ctx.fillStyle = "#fff";
-  ctx.lineWidth = 3; ctx.strokeText("VERS LA CLASSE " + DOOR.local, pad + 8, pad + 19); ctx.fillText("VERS LA CLASSE " + DOOR.local, pad + 8, pad + 19);
+  ctx.lineWidth = 3; ctx.strokeText("VERS LE " + DOOR.local, pad + 8, pad + 19); ctx.fillText("VERS LE " + DOOR.local, pad + 8, pad + 19);
   ctx.fillStyle = "#cfd6e0"; ctx.font = "14px 'Lilita One', sans-serif";
   ctx.strokeText("Niveau " + (levelIdx + 1) + " · " + G.L.name, pad, pad + 46); ctx.fillText("Niveau " + (levelIdx + 1) + " · " + G.L.name, pad, pad + 46);
 
   // Horloge
   const secs = Math.ceil(G.time);
-  const clock = "9:34:" + String(clamp(60 - secs, 0, 59)).padStart(2, "0");
+  const [bh, bm] = BELL_TIME.split(":").map(Number), left = bh * 3600 + bm * 60 - secs;
+  const clock = Math.floor(left / 3600) + ":" + String(Math.floor(left / 60) % 60).padStart(2, "0") + ":" + String(left % 60).padStart(2, "0");
   const urgent = G.time <= 10;
   const cx = w / 2, cy = pad + (w < 520 ? 70 : 6);
   ctx.fillStyle = urgent ? (Math.floor(t * 4) % 2 ? "#ff3b3b" : "#8a1010") : "#1b2a52";
@@ -769,7 +836,7 @@ function show(id) {
 function crewPortrait(canvasId, color, acc) {
   const c = $(canvasId), x = c.getContext("2d");
   x.clearRect(0, 0, c.width, c.height);
-  drawCrew(x, c.width / 2, c.height - 30, color, { scale: c.width / 60, acc, noShadow: false });
+  drawCrew(x, c.width / 2, c.height - 22, color, { scale: c.width / 68, acc });
 }
 
 function startLevel(i) {
@@ -777,8 +844,18 @@ function startLevel(i) {
   G.cam.x = camClamp(START.x - VW / 2, WORLD.w, VW);
   G.cam.y = camClamp(WORLD.h, WORLD.h, VH);
   state = "role";
-  crewPortrait("roleCanvas", COLORS[playerColor], "crown");
-  $("roleText").textContent = "Niveau " + (i + 1) + " · " + LEVELS[i].name + ". Rends-toi dans ta classe (local " + DOORS[LEVELS[i].door].local + ") avant " + BELL_TIME + ". Tu as " + LEVELS[i].time + " secondes. Ne cours pas devant les directeurs !";
+  const L = LEVELS[i];
+  if (L.boss) {
+    $("roleKicker").textContent = "Niveau 15 · Le monstre final";
+    $("roleTitle").textContent = "MR-PLANTE"; $("roleTitle").className = "big red";
+    crewPortrait("roleCanvas", BOSS_COLOR, "plant");
+    $("roleText").textContent = "Il garde la porte du A-217 et tourne sans arrêt. S'il te voit, même en marchant, tu retournes au début. Tu as " + L.time + " secondes. Bonne chance…";
+  } else {
+    $("roleKicker").textContent = "Tu es";
+    $("roleTitle").textContent = "ÉLÈVE"; $("roleTitle").className = "big blue";
+    crewPortrait("roleCanvas", COLORS[playerColor], "crown");
+    $("roleText").textContent = "Niveau " + (i + 1) + " · " + L.name + ". Départ : " + STARTS[L.start].label.toLowerCase() + ". Rends-toi au A-217 avant " + BELL_TIME + ". Tu as " + L.time + " secondes. Ne cours pas devant les directeurs !";
+  }
   show("roleScreen");
   setTimeout(() => { if (state === "role") { state = "play"; last = 0; show(null); } }, 2600);
 }
@@ -797,21 +874,24 @@ function endLevel(won) {
     sfx.win();
     title.textContent = "À L'HEURE !"; title.className = "big blue";
     crewPortrait("endCanvas", COLORS[playerColor], "crown");
+    saveProgress(levelIdx + 1);
     if (levelIdx < LEVELS.length - 1) {
-      $("endText").textContent = "Tu es arrivé·e en classe avec " + spare + " secondes d'avance. Demain, ce sera plus serré…";
+      $("endText").textContent = "Tu es arrivé·e au A-217 avec " + spare + " secondes d'avance. " + (levelIdx === LEVELS.length - 2 ? "Prochain niveau : MR-PLANTE…" : "Demain, ce sera plus serré…");
       mk("NIVEAU SUIVANT", () => startLevel(levelIdx + 1)).focus();
     } else {
-      $("endText").textContent = "Toute la semaine à l'heure en classe ! Avance totale : " + totalSpare + " secondes. Un vrai champion de la ponctualité.";
+      title.textContent = "MR-PLANTE BATTU !";
+      $("endText").textContent = "Incroyable ! Tu as passé les 15 niveaux et déjoué le monstre final. Tu es arrivé·e au A-217 à l'heure. Légende de l'école.";
       mk("REJOUER", () => { totalSpare = 0; startLevel(0); }).focus();
     }
   } else {
     sfx.bell(); setTimeout(sfx.lose, 900);
     title.textContent = "EN RETARD !"; title.className = "big red";
     crewPortrait("endCanvas", COLORS[playerColor], "crown");
-    $("endText").textContent = "La cloche a sonné et tu n'es pas en classe. Direction le secrétariat pour un billet de retard…";
+    $("endText").textContent = G.L.boss ? "MR-PLANTE t'a eu. Il te regarde arriver en retard avec un sourire…" : "La cloche a sonné et tu n'es pas au A-217. Direction le secrétariat pour un billet de retard…";
+    if (G.L.boss) crewPortrait("endCanvas", BOSS_COLOR, "plant");
     mk("RÉESSAYER", () => startLevel(levelIdx)).focus();
   }
-  mk("MENU", () => { totalSpare = 0; state = "menu"; show("menuScreen"); });
+  mk("MENU", goMenu);
   show("endScreen");
 }
 
@@ -821,8 +901,20 @@ function pause(on) {
 }
 $("pauseBtn").onclick = () => pause(true);
 $("resumeBtn").onclick = () => pause(false);
-$("quitBtn").onclick = () => { totalSpare = 0; state = "menu"; show("menuScreen"); };
+$("quitBtn").onclick = goMenu;
 $("playBtn").onclick = () => { beep(660, 0.08, "triangle"); totalSpare = 0; startLevel(0); };
+$("continueBtn").onclick = () => { beep(660, 0.08, "triangle"); totalSpare = 0; startLevel(savedLevel()); };
+
+// Progression : le niveau atteint est retenu dans ce navigateur.
+function savedLevel() { try { return clamp(parseInt(localStorage.getItem("enrtow-niveau"), 10) || 0, 0, LEVELS.length - 1); } catch (e) { return 0; } }
+function saveProgress(i) { try { if (i > savedLevel()) localStorage.setItem("enrtow-niveau", String(Math.min(i, LEVELS.length - 1))); } catch (e) {} }
+function goMenu() {
+  totalSpare = 0; state = "menu";
+  const lv = savedLevel(), c = $("continueBtn");
+  c.hidden = lv === 0; c.textContent = "CONTINUER · NIVEAU " + (lv + 1);
+  show("menuScreen");
+}
+goMenu();
 
 // Couleurs
 const colorBox = $("colors");
@@ -841,11 +933,12 @@ Object.entries(COLORS).forEach(([name, hex]) => {
 
 // Légende
 const LEGEND = [
-  { color: () => COLORS[playerColor], acc: "crown", name: "Toi", text: "Rejoins ta classe (porte jaune) avant la cloche." },
+  { color: () => COLORS[playerColor], acc: "crown", name: "Toi", text: "Rejoins le A-217 (porte jaune) avant la cloche." },
   { color: () => "#71491e", acc: "phone", name: "Élèves lents", text: "Ils marchent au ralenti et te bloquent le passage." },
   { color: () => "#2b2f3a", acc: "tie", name: "Directeurs", text: "Si tu cours dans leur champ de vision, ils t'arrêtent." },
   { color: () => "#ed54ba", acc: "bow", name: "Ami·es", text: "Ils veulent jaser et te ralentissent." },
-  { color: () => "#117f2d", acc: "whistle", name: "TES", text: "Ils te crient de te dépêcher : turbo !" }
+  { color: () => "#117f2d", acc: "whistle", name: "TES", text: "Ils te crient de te dépêcher : turbo !" },
+  { color: () => BOSS_COLOR, acc: "plant", name: "MR-PLANTE", text: "Le monstre final du A-217. Il voit tout, même si tu marches." }
 ];
 function drawLegend() {
   const box = $("legend"); box.innerHTML = "";
