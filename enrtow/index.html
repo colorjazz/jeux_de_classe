@@ -1233,6 +1233,14 @@ const COURSE = (() => {
   return { m, w: W };
 })();
 const BOSS_X = COURSE.w * TILE;
+// Points de contrôle : au début de chaque section, sur un bout de sol libre assez long pour repartir sans mourir.
+const CHECKPOINTS = [70, 140, 210, 280].map((b) => {
+  const clear = (c) => tileAt(c, 8) === "#" && tileAt(c, 7) === " " && tileAt(c, 6) === " ";
+  for (let d = 0; d <= 14; d++) for (const c of [b - d, b + d]) {
+    if ([0, 1, 2, 3, 4].every((k) => clear(c + k))) return c * TILE;
+  }
+  return null;
+}).filter((x) => x !== null).concat([BOSS_X]);
 const SECTIONS = [[0, 0, 0], [70, 185, 90], [140, 300, 85], [210, 355, 90], [280, 50, 95]];   // [colonne, teinte, saturation]
 
 // MR-BEAUCHEMIN lance ses cris : "low" = onde au sol (saute !), "tall" = onde haute (saute tôt),
@@ -1320,6 +1328,7 @@ function startDash() {
 function dashRespawn() {
   D.s = { x: D.checkpoint, y: GROUND - DASH.size, vy: 0, g: true };
   D.attempts++; D.lastSec = null; D.ann = null; D.rot = 0; D.acc = 0;
+  D.wait = D.checkpoint > 0 ? 0.6 : 0;   // une petite pause pour se préparer au point de contrôle
   D.flash = { text: "ESSAI " + D.attempts, t: 0.9 };
 }
 function dashAnnounce(text, spoken, dur) { D.ann = { text, t: dur, max: dur }; sfx.megaphone(); speak(spoken); }
@@ -1331,6 +1340,7 @@ function dashUpdate(dt) {
   if (D.ann) { D.ann.t -= dt; if (D.ann.t <= 0) D.ann = null; }
   if (D.dead > 0) { D.dead -= dt; if (D.dead <= 0) dashRespawn(); return; }
   if (D.won) { D.won += dt; if (D.won > 2.6) dashEnd(); return; }
+  if (D.wait > 0) { D.wait -= dt; return; }
   D.buf = Math.max(0, D.buf - dt);
   D.acc += dt;
   const s = D.s;
@@ -1345,8 +1355,13 @@ function dashUpdate(dt) {
   else D.rot += dt * 7.8;
   if (Math.random() < 0.6) D.parts.push({ x: s.x, y: s.y + DASH.size - 6, vx: -60, vy: -40 * Math.random(), t: 0.35, k: 0.35, sz: 6 });
 
+  for (const cp of CHECKPOINTS) {
+    if (s.x >= cp && D.checkpoint < cp) {
+      D.checkpoint = cp; D.flash = { text: "POINT DE CONTRÔLE", t: 1.3 };
+      [660, 880, 1320].forEach((f, i) => setTimeout(() => beep(f, 0.1, "triangle", 0.06), i * 70));
+    }
+  }
   if (s.x >= BOSS_X) {
-    if (D.checkpoint < BOSS_X) { D.checkpoint = BOSS_X; D.flash = { text: "POINT DE CONTRÔLE", t: 1.3 }; }
     const tb = (s.x - BOSS_X) / DASH.speed, left = Math.ceil(BOSS_TIME - tb);
     if (left !== D.lastSec) {
       D.lastSec = left;
@@ -1423,6 +1438,14 @@ function dashRender(t) {
       ctx.fillStyle = col(65, 0.8); ctx.beginPath(); ctx.arc(x + 20, y + 20, pr - 3, 0, Math.PI * 2); ctx.fill();
     }
   }
+  // points de contrôle : un losange sur une tige, plein quand il est atteint
+  for (const cp of CHECKPOINTS) {
+    if (cp >= BOSS_X || cp < camX - 60 || cp > camX + w / z + 60) continue;
+    const got = D.checkpoint >= cp, x = cp + DASH.size / 2;
+    ctx.strokeStyle = col(80); ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x, GROUND); ctx.lineTo(x, GROUND - 70); ctx.stroke();
+    ctx.fillStyle = got ? col(85) : col(10); ctx.beginPath();
+    ctx.moveTo(x, GROUND - 98); ctx.lineTo(x + 14, GROUND - 84); ctx.lineTo(x, GROUND - 70); ctx.lineTo(x - 14, GROUND - 84); ctx.closePath(); ctx.fill(); ctx.stroke();
+  }
   // cris de MR-BEAUCHEMIN
   if (s.x >= BOSS_X - 800) {
     const tb = (s.x - BOSS_X) / DASH.speed;
@@ -1474,6 +1497,11 @@ function dashRender(t) {
   const pw = Math.min(360, w * 0.6), px0 = (w - pw) / 2;
   ctx.strokeStyle = col(85); ctx.lineWidth = 2; ctx.strokeRect(px0, 14, pw, 14);
   ctx.fillStyle = col(85); ctx.fillRect(px0 + 3, 17, (pw - 6) * Math.min(1, s.x / BOSS_X), 8);
+  for (const cp of CHECKPOINTS) if (cp < BOSS_X) {
+    const x = px0 + 3 + (pw - 6) * cp / BOSS_X;
+    ctx.fillStyle = D.checkpoint >= cp ? col(95) : col(40);
+    ctx.beginPath(); ctx.moveTo(x, 8); ctx.lineTo(x + 6, 14); ctx.lineTo(x, 20); ctx.lineTo(x - 6, 14); ctx.closePath(); ctx.fill();
+  }
   ctx.font = "15px 'Lilita One', sans-serif"; ctx.textAlign = "center"; ctx.fillStyle = col(90);
   const pct = Math.floor(Math.min(1, s.x / BOSS_X) * 100);
   ctx.fillText(s.x >= BOSS_X ? "COMBAT FINAL  ·  ESSAI " + D.attempts : pct + " %  ·  ESSAI " + D.attempts, w / 2, 46);

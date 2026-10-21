@@ -33,6 +33,6 @@ Rends-toi dans ta classe avant la cloche de 9 h 35 ! Traverse la place publique 
 
 Le jeu retient le niveau atteint (bouton CONTINUER).
 
-**Niveau secret** : MR-PLANTE était un faux monstre final. Après le niveau 15, le vrai monstre se révèle : MR-BEAUCHEMIN. Il t'attend au bout d'une course d'obstacles extrême aux couleurs monochromes, dans le style de Geometry Dash (on saute avec Espace, ↑ ou un clic). Au bout, il faut survivre 25 secondes à ses cris. Une fois débloqué, le niveau secret reste accessible depuis le menu.
+**Niveau secret** : MR-PLANTE était un faux monstre final. Après le niveau 15, le vrai monstre se révèle : MR-BEAUCHEMIN. Il t'attend au bout d'une course d'obstacles extrême aux couleurs monochromes, dans le style de Geometry Dash (on saute avec Espace, ↑ ou un clic). Au bout, il faut survivre 25 secondes à ses cris. Il y a un point de contrôle au début de chaque section de couleur et un juste avant le combat. Une fois débloqué, le niveau secret reste accessible depuis le menu.
 
 Commandes : flèches ou WASD pour bouger, Maj ou Espace pour courir (attention au souffle), P pour la pause, M pour le son. Sur tablette : glisser le doigt pour bouger, bouton COURIR à droite.
