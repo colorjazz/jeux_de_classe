@@ -35,4 +35,6 @@ Le jeu retient le niveau atteint (bouton CONTINUER).
 
 **Niveau secret** : MR-PLANTE était un faux monstre final. Après le niveau 15, le vrai monstre se révèle : MR-BEAUCHEMIN. Il t'attend au bout d'une course d'obstacles extrême aux couleurs monochromes, dans le style de Geometry Dash (on saute avec Espace, ↑ ou un clic). Au bout, il faut survivre 25 secondes à ses cris. Il y a un point de contrôle au début de chaque section de couleur et un juste avant le combat. Une fois débloqué, le niveau secret reste accessible depuis le menu.
 
+**Palmarès** : à la fin de la course, on écrit son nom et on entre dans le palmarès de ceux qui ont vaincu MR-BEAUCHEMIN en le moins d'essais (bouton PALMARÈS dans le menu). Le palmarès est gardé sur l'appareil. Dans la version publiée sur claude.ai, il est aussi partagé avec toute la classe pour les personnes connectées qui ont le droit de modifier (niveau Contributeur ou plus).
+
 Commandes : flèches ou WASD pour bouger, Maj ou Espace pour courir (attention au souffle), P pour la pause, M pour le son. Sur tablette : glisser le doigt pour bouger, bouton COURIR à droite.

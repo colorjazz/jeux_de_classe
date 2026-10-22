@@ -86,6 +86,22 @@ body {
   color: var(--paper); font-family: var(--display); font-size: 20px; cursor: pointer;
 }
 [hidden] { display: none !important; }
+.pal-form { display: flex; flex-direction: column; gap: 8px; align-items: center; }
+.pal-form label { font-family: var(--display); font-size: 18px; letter-spacing: .5px; }
+.pal-form input {
+  font: 900 18px var(--body); padding: 8px 12px; border-radius: 10px; border: 3px solid var(--paper);
+  background: rgba(255, 255, 255, .08); color: var(--paper); width: min(240px, 60vw);
+}
+.pal-form input:focus-visible { outline: 3px dashed var(--amber); outline-offset: 2px; }
+.pal { width: min(420px, 100%); }
+.pal table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.pal th { font-family: var(--display); font-weight: 400; font-size: 14px; letter-spacing: 1px; opacity: .75; text-align: left; padding: 4px 8px; }
+.pal td { text-align: left; padding: 7px 8px; border-top: 1px solid rgba(255, 255, 255, .15); font-size: 16px; }
+.pal td.rank { font-family: var(--display); font-size: 20px; width: 2.5em; }
+.pal td.num { text-align: right; font-family: var(--display); font-size: 18px; }
+.pal tr.me td { background: rgba(57, 211, 255, .15); }
+.pal .where { font-size: 13px; opacity: .7; margin: 6px 0 0; }
+.pal .empty { opacity: .8; text-align: center; }
 .reveal { animation: reveal .7s ease-out both; animation-delay: var(--d, 0s); }
 @keyframes reveal { from { opacity: 0; transform: translateY(12px) scale(.96); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .reveal { animation: none; } }
@@ -113,6 +129,7 @@ body {
     <button class="btn" id="playBtn" type="button">JOUER</button>
     <button class="btn" id="continueBtn" type="button" hidden>CONTINUER</button>
     <button class="btn" id="secretBtn" type="button" hidden>NIVEAU SECRET</button>
+    <button class="btn" id="palBtn" type="button">PALMARÈS</button>
   </div>
 </section>
 
@@ -133,6 +150,13 @@ body {
   <button class="btn reveal" style="--d:4.8s" id="fightBtn" type="button">AFFRONTER</button>
 </section>
 
+<section class="screen" id="palScreen" hidden>
+  <h2 class="big" style="font-size:clamp(40px,9vw,84px)">PALMARÈS</h2>
+  <p class="sub">Ceux qui ont vaincu MR-BEAUCHEMIN en le moins d'essais.</p>
+  <div id="palBox2" class="pal"></div>
+  <button class="btn" id="palBack" type="button">RETOUR</button>
+</section>
+
 <section class="screen" id="pauseScreen" hidden>
   <h2 class="big">PAUSE</h2>
   <div class="row">
@@ -146,6 +170,14 @@ body {
   <canvas id="endCanvas" width="320" height="400"></canvas>
   <p class="sub" id="endText"></p>
   <div class="stats" id="endStats"></div>
+  <form id="palForm" class="pal-form" hidden>
+    <label for="palName">Ton nom pour le palmarès</label>
+    <div class="row">
+      <input id="palName" maxlength="20" autocomplete="off" placeholder="Ton prénom">
+      <button class="btn small" type="submit">AJOUTER</button>
+    </div>
+  </form>
+  <div id="palBox" class="pal" hidden></div>
   <div class="row" id="endButtons"></div>
 </section>
 
@@ -1533,9 +1565,85 @@ function dashEnd() {
   $("endText").textContent = "Tu as vaincu MR-BEAUCHEMIN, le vrai monstre final. Plus personne ne sera en retard au A-217.";
   $("endStats").textContent = "Essais : " + D.attempts;
   const mk = (txt, fn) => { const b = document.createElement("button"); b.className = "btn"; b.type = "button"; b.textContent = txt; b.onclick = fn; btns.appendChild(b); return b; };
-  mk("REJOUER LA COURSE", startDash).focus();
+  mk("REJOUER LA COURSE", startDash);
   mk("MENU", goMenu);
+  palPending = { attempts: D.attempts, at: Date.now() };
+  $("palForm").hidden = false; $("palBox").hidden = false; palMine = null;
+  renderPal();
   show("endScreen");
+  $("palName").focus();
+}
+
+// ---------- Palmarès : ceux qui ont vaincu MR-BEAUCHEMIN en le moins d'essais ----------
+// Toujours gardé sur l'appareil (pratique sur un ordinateur de classe). Dans claude.ai, il est aussi partagé
+// avec toute la classe quand la personne a le droit d'écrire : un document par personne, palmares/<id>.
+const PAL_KEY = "enrtow-palmares";
+let palDb = null, palUid = null, palShared = null, palPending = null, palMine = null;
+function palLocal() { try { return JSON.parse(localStorage.getItem(PAL_KEY)) || []; } catch (e) { return []; } }
+function palSaveLocal(list) { try { localStorage.setItem(PAL_KEY, JSON.stringify(list.slice(-100))); } catch (e) {} }
+async function palInit() {
+  try {
+    if (!window.claude || !window.claude.use) return;
+    const [db, user] = await Promise.all([window.claude.use("db"), window.claude.use("user")]);
+    if (!db || !user) return;
+    palUid = await user.id();
+    palDb = db;
+    db.collection("palmares").onSnapshot((snap) => {
+      palShared = [];
+      snap.docs.forEach((d) => {
+        const e = d.data() && d.data().entries;
+        if (Array.isArray(e)) e.forEach((x) => { if (x && typeof x.name === "string" && Number.isFinite(x.attempts)) palShared.push({ name: x.name.slice(0, 20), attempts: x.attempts, at: +x.at || 0, id: x.id }); });
+      });
+      renderPal();
+    }, () => { palShared = null; renderPal(); });
+  } catch (e) { palDb = null; }
+}
+palInit();
+
+async function palAdd(name) {
+  const entry = { id: Math.random().toString(36).slice(2, 10), name, attempts: palPending.attempts, at: palPending.at };
+  palPending = null; palMine = entry.id;
+  const local = palLocal(); local.push(Object.assign({ shared: false }, entry)); palSaveLocal(local);
+  renderPal();
+  if (!palDb || !palUid) return;
+  try {
+    const ref = palDb.doc("palmares/" + palUid);
+    const snap = await ref.get();
+    const entries = (snap.exists && Array.isArray(snap.data().entries) ? snap.data().entries.slice() : []).concat([entry]).slice(-50);
+    await ref.set({ entries });
+    palSaveLocal(palLocal().map((x) => (x.id === entry.id ? Object.assign({}, x, { shared: true }) : x)));
+  } catch (e) { /* pas le droit d'écrire ici : il reste sur cet appareil */ }
+  renderPal();
+}
+
+function renderPal() {
+  const local = palLocal();
+  // Les scores partagés, plus ceux de cet appareil qui ne le sont pas encore
+  const list = (palShared || []).concat(local.filter((x) => !x.shared || !palShared));
+  const seen = new Set(), rows = list.filter((x) => (x.id && seen.has(x.id) ? false : (seen.add(x.id), true)))
+    .sort((a, b) => a.attempts - b.attempts || a.at - b.at).slice(0, 10);
+  for (const box of [$("palBox"), $("palBox2")]) {
+    box.textContent = "";
+    if (!rows.length) {
+      const p = document.createElement("p"); p.className = "empty"; p.textContent = "Personne pour l'instant. Seras-tu le premier ou la première ?"; box.appendChild(p);
+    } else {
+      const table = document.createElement("table");
+      table.innerHTML = "<thead><tr><th>#</th><th>Nom</th><th style=\"text-align:right\">Essais</th></tr></thead>";
+      const tb = document.createElement("tbody");
+      rows.forEach((r, i) => {
+        const tr = document.createElement("tr"); if (r.id && r.id === palMine) tr.className = "me";
+        const medal = ["🥇", "🥈", "🥉"][i];
+        [[medal || String(i + 1), "rank"], [r.name, ""], [String(r.attempts), "num"]].forEach(([txt, cls]) => {
+          const td = document.createElement("td"); td.textContent = txt; if (cls) td.className = cls; tr.appendChild(td);
+        });
+        tb.appendChild(tr);
+      });
+      table.appendChild(tb); box.appendChild(table);
+    }
+    const w = document.createElement("p"); w.className = "where";
+    w.textContent = palShared ? "Palmarès partagé avec toute la classe." : "Palmarès de cet appareil.";
+    box.appendChild(w);
+  }
 }
 
 // ---------- Boucle ----------
@@ -1552,7 +1660,7 @@ function loop(now) {
 
 // ---------- Écrans ----------
 const $ = (id) => document.getElementById(id);
-const screens = ["menuScreen", "roleScreen", "pauseScreen", "endScreen", "twistScreen"];
+const screens = ["menuScreen", "roleScreen", "pauseScreen", "endScreen", "twistScreen", "palScreen"];
 function show(id) {
   screens.forEach((s) => { $(s).hidden = s !== id; });
   const playing = id === null;
@@ -1600,6 +1708,7 @@ function endLevel(won) {
   const title = $("endTitle"), btns = $("endButtons");
   btns.innerHTML = "";
   const mk = (txt, fn) => { const b = document.createElement("button"); b.className = "btn"; b.type = "button"; b.textContent = txt; b.onclick = fn; btns.appendChild(b); return b; };
+  $("palForm").hidden = true; $("palBox").hidden = true;
   const s = G.stats;
   $("endStats").textContent = "Arrêts : " + s.stops + " · Jasettes : " + s.chats + " · Turbos : " + s.boosts;
   if (won) {
@@ -1663,6 +1772,16 @@ function goMenu() {
 }
 goMenu();
 
+$("palForm").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const name = $("palName").value.trim().slice(0, 20);
+  if (!name || !palPending) return;
+  $("palForm").hidden = true; $("palName").value = "";
+  palAdd(name);
+});
+$("palBtn").onclick = () => { renderPal(); show("palScreen"); $("palBack").focus(); };
+$("palBack").onclick = goMenu;
+
 // Couleurs
 const colorBox = $("colors");
 Object.entries(COLORS).forEach(([name, hex]) => {
@@ -1704,6 +1823,7 @@ if (document.fonts && document.fonts.ready) document.fonts.ready.then(drawLegend
 
 // Clavier
 window.addEventListener("keydown", (e) => {
+  if (e.target && e.target.tagName === "INPUT") return;
   keys[e.code] = true;
   if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space"].includes(e.code) && (state === "play" || state === "dash")) e.preventDefault();
   if (state === "dash" && !e.repeat && ["Space", "ArrowUp", "KeyW", "KeyZ"].includes(e.code)) D.buf = 0.15;
