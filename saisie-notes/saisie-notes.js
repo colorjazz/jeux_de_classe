@@ -16,9 +16,13 @@
   var existing = document.getElementById(ID);
   if (existing) { existing.remove(); return; }
 
+  /* Clé API Claude : insérée dans le favori par la page d'installation (sinon demandée dans le panneau) */
+  var CLE_API = '__CLE_API__';
+  /*@LECTURE@*/
+
   /* ---------- Outils texte ---------- */
   function norm(s) {
-    return String(s).normalize('NFD').replace(/[̀-ͯ]/g, '')
+    return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '')
       .toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
   }
   function tokens(s) {
@@ -206,7 +210,12 @@
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">' +
     '<strong>Saisie de notes</strong>' +
     '<button data-a="close" style="border:0;background:none;font-size:18px;cursor:pointer" title="Fermer">✕</button></div>' +
-    '<div style="font-size:12px;color:#555;margin-bottom:6px">Collez une ligne par élève : <code>Nom Prénom ; note</code></div>' +
+    '<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">' +
+    '<button data-a="photo" style="padding:6px 10px;cursor:pointer">📷 Lire une photo ou un PDF</button>' +
+    '<input type="file" data-a="file" accept="image/*,application/pdf" multiple style="display:none"></div>' +
+    '<input type="password" data-a="key" placeholder="Clé API Claude (sk-ant-…)" style="width:100%;box-sizing:border-box;margin-bottom:6px;display:none">' +
+    '<div data-a="read" style="font-size:12px;margin-bottom:6px"></div>' +
+    '<div style="font-size:12px;color:#555;margin-bottom:6px">… ou collez une ligne par élève : <code>Nom Prénom ; note</code></div>' +
     '<textarea data-a="list" rows="9" style="width:100%;box-sizing:border-box;font:13px monospace" ' +
     'placeholder="Tremblay, Léa ; 25&#10;Samuel Gagnon 43,5&#10;Roy Emma : abs"></textarea>' +
     '<div data-a="col" style="font-size:12px;margin:6px 0;color:#555"></div>' +
@@ -241,6 +250,47 @@
   function esc(s) {
     return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; });
   }
+
+  /* ---------- Lecture d'une photo / d'un PDF ---------- */
+  var hasKey = /^sk-ant-/.test(CLE_API);
+  if (!hasKey) { q('key').style.display = 'block'; }
+
+  /* Noms des élèves affichés sur la page (aide Claude à lire les noms manuscrits) */
+  function pageNames() {
+    var inputs = gradeInputs().filter(function (i) { return targetX === null || Math.abs(i.r.cx - targetX) < 10; });
+    var texts = textElements().map(function (t) { return { el: t.el, r: absRect(t.el) }; });
+    var names = [];
+    inputs.forEach(function (i) {
+      var row = texts.filter(function (t) {
+        return t.r.right <= i.r.left && Math.abs(t.r.cy - i.r.cy) <= Math.max(t.r.height, i.r.height) / 2 + 4;
+      });
+      row = row.filter(function (t) { return !row.some(function (o) { return o !== t && t.el.contains(o.el); }); });
+      var txt = row.map(function (t) { return t.el.textContent.trim(); }).join(' ').replace(/\s+/g, ' ');
+      if (txt && names.indexOf(txt) < 0) { names.push(txt); }
+    });
+    return names.slice(0, 200);
+  }
+
+  function readFiles(files) {
+    var key = hasKey ? CLE_API : q('key').value.trim();
+    var box = q('read');
+    box.innerHTML = '⏳ Lecture par Claude en cours (de 10 secondes à 1 minute)…';
+    q('photo').disabled = true;
+    lireFeuille(files, key, pageNames()).then(function (res) {
+      q('list').value = res.notes.map(function (n) { return n.nom + ' ; ' + n.note; }).join('\n');
+      var html = '<div style="background:#e8f5e9;padding:6px;border-radius:4px">✔ ' + res.notes.length + ' note(s) lue(s). ' +
+        '<b>Comparez avec la feuille avant de remplir.</b> <span style="color:#777">(coût ≈ ' + res.cout.toFixed(3).replace('.', ',') + ' $ US)</span></div>';
+      if (res.a_verifier.length) {
+        html += '<div style="background:#fff8e1;padding:6px;border-radius:4px;margin-top:4px"><b>À vérifier :</b><br>' +
+          res.a_verifier.map(esc).join('<br>') + '</div>';
+      }
+      box.innerHTML = html;
+      analyse();
+    }, function (err) {
+      box.innerHTML = '<div style="background:#ffebee;color:#c62828;padding:6px;border-radius:4px">' + esc(err.message) + '</div>';
+    }).then(function () { q('photo').disabled = false; q('file').value = ''; });
+  }
+  q('file').addEventListener('change', function () { if (this.files.length) { readFiles(this.files); } });
 
   var plan = [];
   function analyse() {
@@ -282,8 +332,13 @@
     });
     var html = '<div><b style="color:' + GREEN + '">' + counts.ok + ' prête(s)</b>' +
       (counts.pb ? ' · <b style="color:#c62828">' + counts.pb + ' problème(s)</b>' : '') + '</div>';
-    if (parsed.rejected.length) {
-      html += '<div style="color:#c62828">Lignes non comprises : ' + parsed.rejected.map(esc).join(' | ') + '</div>';
+    var unreadable = parsed.rejected.filter(function (l) { return /\?\?/.test(l); });
+    var other = parsed.rejected.filter(function (l) { return unreadable.indexOf(l) < 0; });
+    if (unreadable.length) {
+      html += '<div style="color:#c62828">Note illisible, à saisir à la main : ' + unreadable.map(esc).join(' | ') + '</div>';
+    }
+    if (other.length) {
+      html += '<div style="color:#c62828">Lignes non comprises : ' + other.map(esc).join(' | ') + '</div>';
     }
     html += '<table style="width:100%;border-collapse:collapse;margin-top:4px">' + rows.join('') + '</table>';
     html += '<div style="font-size:11px;color:#555;margin-top:4px">Vert = trouvé · Jaune (≈) = nom approchant, à vérifier · Orange = déjà rempli</div>';
@@ -317,6 +372,12 @@
       panel.remove();
     } else if (a === 'check') { analyse(); }
     else if (a === 'fill') { fill(); }
+    else if (a === 'photo') {
+      if (!hasKey && !/^sk-ant-/.test(q('key').value.trim())) {
+        q('read').innerHTML = '<span style="color:#c62828">Entrez d\'abord votre clé API Claude ci-dessus.</span>';
+        q('key').focus();
+      } else { q('file').click(); }
+    }
   });
   q('list').addEventListener('input', function () { q('fill').disabled = true; q('fill').textContent = '2. Remplir'; });
   q('list').focus();

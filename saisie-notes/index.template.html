@@ -24,10 +24,26 @@
 <body>
 <main>
 <h1>Saisie de notes automatique</h1>
-<p>Un favori qui inscrit les notes de vos élèves dans le site de notes (Mozaïk ou autre), au bon endroit, à partir d'une liste <code>Nom ; note</code>.</p>
+<p>Un favori qui lit votre feuille de notes (photo ou PDF, même manuscrite) et inscrit les notes de vos élèves dans le site de notes (Mozaïk ou autre), au bon endroit.</p>
+
+<section>
+<h2>0. Obtenir une clé API Claude (une seule fois)</h2>
+<p>La lecture des photos utilise Claude via une clé API. Elle se paie à part de l'abonnement Claude : environ <b>2 à 7 sous par feuille</b>.</p>
+<ol>
+<li>Créez un compte sur <a href="https://console.anthropic.com" target="_blank" rel="noopener">console.anthropic.com</a>.</li>
+<li>Dans <i>Billing</i>, ajoutez un petit montant de crédits (par exemple 5 $).</li>
+<li>Dans <i>Limits</i>, fixez une limite de dépenses mensuelle basse, par sécurité.</li>
+<li>Dans <i>API Keys</i>, cliquez sur <i>Create Key</i> et copiez la clé (elle commence par <code>sk-ant-</code>).</li>
+</ol>
+<p>Gardez cette clé pour vous : quiconque l'a peut utiliser vos crédits. Sans clé, le favori fonctionne quand même, en collant la liste à la main.</p>
+<p><b>Confidentialité :</b> la photo (avec les noms des élèves) et la liste des noms du groupe sont envoyées à Anthropic pour être lues. Vérifiez que c'est permis par votre centre de services scolaire.</p>
+</section>
 
 <section>
 <h2>1. Installer le favori (une seule fois)</h2>
+<p><label>Collez votre clé API (facultatif) :<br>
+<input id="cle" type="password" autocomplete="off" placeholder="sk-ant-…" style="width:100%;max-width:420px;padding:6px;box-sizing:border-box"></label>
+<span id="cle-etat" style="font-size:14px"></span></p>
 <p>Affichez la barre de favoris (<kbd>Ctrl</kbd>+<kbd>Maj</kbd>+<kbd>B</kbd>), puis <b>glissez ce bouton</b> dans la barre :</p>
 <p><a class="favori" href="{{FAVORI_HREF}}" onclick="alert('Glissez ce bouton dans la barre de favoris au lieu de cliquer dessus.'); return false;">📝 Saisie notes</a></p>
 <details>
@@ -36,52 +52,68 @@
 <textarea id="code" rows="4" readonly>{{FAVORI_TEXTE}}</textarea>
 <button onclick="var t=document.getElementById('code'); t.select(); navigator.clipboard.writeText(t.value); this.textContent='Copié ✔';">Copier le code</button>
 </details>
+<p style="font-size:14px">La clé est enregistrée dans le favori lui-même. Si vous changez de clé, supprimez l'ancien favori et refaites cette étape.</p>
 </section>
 
 <section>
-<h2>2. Transformer le PDF en liste</h2>
-<p>Peu importe la forme du PDF (tableau, feuille manuscrite, photo), il faut obtenir une liste comme :</p>
-<pre>Tremblay, Léa ; 25
-Gagnon Samuel ; 43,5
-Roy Emma ; abs</pre>
-<ul>
-<li><b>PDF avec du texte</b> : un copier-coller suffit souvent.</li>
-<li><b>PDF manuscrit ou scanné</b> : déposez-le dans Claude avec la demande ci-dessous. Pour éviter les erreurs de lecture des noms, collez aussi la liste de votre groupe (copiée depuis Mozaïk).</li>
-</ul>
-<pre id="prompt">Lis ce document et donne-moi les notes de chaque élève, une ligne par élève, au format exact :
-Nom Prénom ; note
-
-Règles :
-- Ne mets rien d'autre que la liste (pas de titre, pas de commentaire), dans un bloc de code.
-- Utilise l'orthographe des noms de la liste de mon groupe ci-dessous quand c'est le même élève.
-- Si une note est illisible ou douteuse, écris ?? à la place de la note et ajoute après la liste les cas à vérifier.
-- Absent : écris « abs ».
-
-Liste de mon groupe :
-(collez ici les noms copiés depuis Mozaïk)</pre>
-<button onclick="navigator.clipboard.writeText(document.getElementById('prompt').textContent); this.textContent='Copié ✔';">Copier la demande</button>
-<p><b>Relisez toujours la liste</b> : une note manuscrite mal lue reste possible. Les lignes avec <code>??</code> sont ignorées par le favori et signalées en rouge.</p>
-</section>
-
-<section>
-<h2>3. Remplir Mozaïk</h2>
+<h2>2. Remplir Mozaïk</h2>
 <ol>
 <li>Ouvrez la page de saisie des notes de l'évaluation.</li>
 <li>S'il y a plusieurs évaluations (colonnes) sur la page, <b>cliquez dans une case de la bonne colonne</b>.</li>
 <li>Cliquez sur le favori <b>📝 Saisie notes</b> : un panneau s'ouvre à droite.</li>
-<li>Collez la liste, puis <b>1. Vérifier</b> : chaque élève est repéré et sa case est entourée.
+<li>Cliquez sur <b>📷 Lire une photo ou un PDF</b> et choisissez le fichier (plusieurs pages possibles).
+  Claude lit la feuille en s'aidant des noms affichés dans Mozaïk, et la liste apparaît dans le panneau.
+  Vous pouvez aussi coller une liste <code>Nom ; note</code> vous-même.</li>
+<li><b>Comparez la liste avec la feuille</b>, surtout les cas « À vérifier ». Corrigez au besoin directement dans la liste.</li>
+<li><b>1. Vérifier</b> : chaque élève est repéré et sa case est entourée.
   <ul>
     <li><span style="color:#2e7d32">Vert</span> : trouvé.</li>
     <li><span style="color:#f9a825">Jaune (≈)</span> : nom approchant (faute de frappe, nom incomplet), à vérifier.</li>
     <li><span style="color:#ef6c00">Orange</span> : case déjà remplie (non remplacée, sauf si vous cochez l'option).</li>
-    <li><span style="color:#c62828">Rouge</span> : élève introuvable ou ambigu, à saisir à la main.</li>
+    <li><span style="color:#c62828">Rouge</span> : élève introuvable, ambigu, ou note illisible (<code>??</code>) : à saisir à la main.</li>
   </ul>
 </li>
 <li><b>2. Remplir</b> : les notes sont inscrites. Les cases restées vides dans la colonne sont entourées en orange.</li>
 <li>Vérifiez, puis cliquez sur <b>Enregistrer</b> dans Mozaïk. Le favori n'enregistre jamais à votre place.</li>
 </ol>
-<p>Tout se passe dans votre navigateur : aucune donnée n'est envoyée ailleurs.</p>
 </section>
+
+<section>
+<h2>Secours : lire la photo ici</h2>
+<p>Si le favori affiche « Connexion à Claude impossible », Mozaïk bloque peut-être la connexion. Lisez alors la feuille ici (avec la clé collée plus haut), copiez la liste et collez-la dans le panneau du favori.</p>
+<p><label>Noms du groupe (facultatif, un par ligne, aide à lire les noms) :<br>
+<textarea id="noms" rows="3"></textarea></label></p>
+<p><input type="file" id="fichier" accept="image/*,application/pdf" multiple></p>
+<p id="lecture-etat"></p>
+<textarea id="resultat" rows="8" readonly></textarea>
+<button onclick="var t=document.getElementById('resultat'); navigator.clipboard.writeText(t.value); this.textContent='Copié ✔';">Copier la liste</button>
+</section>
+
+<p>Sans la lecture de photo, tout se passe dans votre navigateur. Avec, seuls la feuille et les noms du groupe sont envoyés à Claude ; les notes ne sont écrites dans Mozaïk que par votre navigateur.</p>
 </main>
+<script>
+{{LECTURE_JS}}
+(function () {
+  var lien = document.querySelector('.favori'), code = document.getElementById('code');
+  var base = lien.getAttribute('href'), cle = document.getElementById('cle'), etat = document.getElementById('cle-etat');
+  function cleValide() { return /^sk-ant-[A-Za-z0-9_-]+$/.test(cle.value.trim()); }
+  cle.addEventListener('input', function () {
+    var ok = cleValide();
+    lien.href = code.value = ok ? base.replace('__CLE_API__', cle.value.trim()) : base;
+    etat.textContent = !cle.value.trim() ? '' : ok ? '✔ Clé ajoutée au bouton ci-dessous : glissez-le maintenant.' : '✖ Cette clé ne ressemble pas à une clé API (sk-ant-…).';
+  });
+  document.getElementById('fichier').addEventListener('change', function () {
+    var f = this.files, e = document.getElementById('lecture-etat'), r = document.getElementById('resultat');
+    if (!f.length) { return; }
+    var noms = document.getElementById('noms').value.split('\n').map(function (n) { return n.trim(); }).filter(Boolean);
+    e.textContent = '⏳ Lecture par Claude en cours…';
+    lireFeuille(f, cle.value.trim(), noms).then(function (res) {
+      r.value = res.notes.map(function (n) { return n.nom + ' ; ' + n.note; }).join('\n');
+      e.textContent = '✔ ' + res.notes.length + ' note(s) lue(s) (coût ≈ ' + res.cout.toFixed(3).replace('.', ',') + ' $ US).' +
+        (res.a_verifier.length ? ' À vérifier : ' + res.a_verifier.join(' · ') : '');
+    }, function (err) { e.textContent = '✖ ' + err.message; });
+  });
+})();
+</script>
 </body>
 </html>
