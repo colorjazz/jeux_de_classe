@@ -55,9 +55,35 @@ function pcmVersWav(pcm, frequence) {
   return Buffer.concat([entete, pcm]);
 }
 
+// Consigne de secours, plus simple, si le modèle refuse la consigne détaillée.
+const SIMPLE = {
+  chuchote: "Whisper", presse: "Whisper urgently", cri: "Shout", peur: "Say fearfully", fatigue: "Say wearily",
+  douleur: "Say weakly, in pain", tendre: "Say softly", triste: "Say sadly", joie: "Say with relief", berceuse: "Sing very softly",
+};
+function consigneSimple(r) {
+  const langue = r.qui === "agent" ? "English" : "Spanish";
+  return (SIMPLE[r.ton] || "Say") + " in " + langue + ": ";
+}
+
 async function generer(id, r) {
   const voix = voixGemini[r.qui] || "Aoede";
-  const texte = (r.direction || "Say in Spanish: ") + "\"" + r.texte + "\"";
+  // Le modèle en préversion refuse parfois (finishReason « OTHER ») : on réessaie,
+  // puis on passe à une consigne plus simple.
+  const consignes = [r.direction || consigneSimple(r), r.direction || consigneSimple(r), consigneSimple(r), consigneSimple(r)];
+  let derniere = "";
+  for (const [n, consigne] of consignes.entries()) {
+    const res = await appeler(consigne + "\"" + r.texte + "\"", voix);
+    if (res.pcm) {
+      if (n >= 2) console.log(`  ${id} : consigne simplifiée utilisée`);
+      return { ...res, voix };
+    }
+    derniere = res.raison;
+    await pause(3000);
+  }
+  throw new Error("pas d'audio (" + derniere + ")");
+}
+
+async function appeler(texte, voix) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${modele}:generateContent`;
   const entetes = { "Content-Type": "application/json" };
   if (cle) entetes["x-goog-api-key"] = cle; // la clé en en-tête, jamais dans l'adresse
@@ -79,11 +105,11 @@ async function generer(id, r) {
     const json = await rep.json();
     if (!rep.ok) throw new Error(`${rep.status} ${JSON.stringify(json.error || json).slice(0, 300)}`);
     const part = json?.candidates?.[0]?.content?.parts?.find((p) => p.inlineData);
-    if (!part) throw new Error("pas d'audio dans la réponse : " + JSON.stringify(json).slice(0, 300));
+    if (!part) return { raison: json?.candidates?.[0]?.finishReason || json?.promptFeedback?.blockReason || "réponse vide" };
     const frequence = parseInt((part.inlineData.mimeType || "").match(/rate=(\d+)/)?.[1] || "24000", 10);
-    return { pcm: Buffer.from(part.inlineData.data, "base64"), frequence, voix };
+    return { pcm: Buffer.from(part.inlineData.data, "base64"), frequence };
   }
-  throw new Error("échec après 5 essais");
+  throw new Error("serveur indisponible après 5 essais");
 }
 
 function enregistrer(id, pcm, frequence) {
