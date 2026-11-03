@@ -11,6 +11,7 @@
 //   GEMINI_API_KEY=votre_cle node outils/generer-voix.mjs --seulement depart,alerte
 //   GEMINI_API_KEY=votre_cle node outils/generer-voix.mjs --forcer        (tout régénérer)
 //   GEMINI_API_KEY=votre_cle node outils/generer-voix.mjs --modele gemini-2.5-pro-preview-tts
+//   node outils/generer-voix.mjs --volume                 (seulement réajuster le volume des fichiers existants)
 //
 // Chaque réplique est jouée selon son « direction » (indication d'acteur) et
 // le timbre de son personnage (voixGemini), définis dans frontiere-mexique/js/contenu.js.
@@ -30,7 +31,8 @@ const seulement = option("--seulement") ? option("--seulement").split(",").map((
 const modele = option("--modele") || "gemini-2.5-flash-preview-tts";
 const cle = process.env.GEMINI_API_KEY;
 
-if (!cle) {
+const volumeSeulement = args.includes("--volume");
+if (!cle && !volumeSeulement) {
   // Pas de variable : la clé peut être ajoutée par le proxy (secret réseau, en-tête x-goog-api-key).
   console.warn("GEMINI_API_KEY absente : on suppose que la clé est fournie comme secret réseau (en-tête x-goog-api-key).");
 }
@@ -112,6 +114,28 @@ async function appeler(texte, voix) {
   throw new Error("serveur indisponible après 5 essais");
 }
 
+// Les prises très chuchotées sortent parfois presque inaudibles : on remonte celles dont le
+// niveau moyen est sous -28 dB (les chuchotements restent plus doux que le reste), avec un
+// limiteur pour ne jamais saturer.
+const NIVEAU_MIN = -28;
+function niveauMoyen(fichier) {
+  const r = spawnSync("ffmpeg", ["-i", fichier, "-af", "volumedetect", "-f", "null", "-"]);
+  const m = r.stderr.toString().match(/mean_volume: (-?[\d.]+) dB/);
+  return m ? parseFloat(m[1]) : null;
+}
+function ajusterVolume(fichier) {
+  if (!ffmpeg) return null;
+  const moyen = niveauMoyen(fichier);
+  if (moyen === null || moyen >= NIVEAU_MIN) return null;
+  const gain = Math.min(20, NIVEAU_MIN - moyen);
+  const tmp = fichier.replace(/(\.\w+)$/, ".tmp$1");
+  const r = spawnSync("ffmpeg", ["-y", "-loglevel", "error", "-i", fichier, "-af", `volume=${gain.toFixed(1)}dB,alimiter=limit=0.89`,
+    "-codec:a", "libmp3lame", "-b:a", "64k", tmp]);
+  if (r.status !== 0) { fs.rmSync(tmp, { force: true }); return null; }
+  fs.renameSync(tmp, fichier);
+  return gain;
+}
+
 function enregistrer(id, pcm, frequence) {
   if (ffmpeg) {
     const sortie = path.join(dossierVoix, id + ".mp3");
@@ -119,10 +143,22 @@ function enregistrer(id, pcm, frequence) {
       "-af", "silenceremove=start_periods=1:start_threshold=-50dB,areverse,silenceremove=start_periods=1:start_threshold=-50dB,areverse,apad=pad_dur=0.15",
       "-codec:a", "libmp3lame", "-b:a", "64k", sortie], { input: pcm });
     if (r.status !== 0) throw new Error("ffmpeg : " + r.stderr.toString());
+    const gain = ajusterVolume(sortie);
+    if (gain) console.log(`  ${id} : prise trop faible, volume remonté de ${gain.toFixed(1)} dB`);
     return id + ".mp3";
   }
   fs.writeFileSync(path.join(dossierVoix, id + ".wav"), pcmVersWav(pcm, frequence));
   return id + ".wav";
+}
+
+if (volumeSeulement) {
+  for (const id of Object.keys(repliques)) {
+    const f = path.join(dossierVoix, id + ".mp3");
+    if (!fs.existsSync(f)) continue;
+    const gain = ajusterVolume(f);
+    if (gain) console.log(`  ${id} : volume remonté de ${gain.toFixed(1)} dB`);
+  }
+  process.exit(0);
 }
 
 const ids = Object.keys(repliques).filter((id) => !seulement || seulement.includes(id));
