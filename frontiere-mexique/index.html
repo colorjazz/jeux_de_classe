@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sable · Frontière Mexique</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- 0. Avertissement -->
+  <section id="accueil" class="ecran visible">
+    <div class="carte">
+      <h1>Sable</h1>
+      <p class="sous">Une traversée · Frontière Mexique – États-Unis</p>
+      <div class="avertissement">
+        <p><strong>Avant de commencer</strong></p>
+        <ul>
+          <li>Durée : environ 6 à 8 minutes, sans pause.</li>
+          <li>Cette expérience montre une arrestation à la frontière : cris, lumières violentes, armes suggérées.</li>
+          <li>Les personnages parlent espagnol et anglais. C'est voulu : vous ne comprendrez pas tout.</li>
+          <li>Vous pouvez arrêter à tout moment en appuyant sur <kbd>Échap</kbd> deux fois, puis en fermant l'onglet.</li>
+        </ul>
+      </div>
+      <div class="casque">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 14v-2a8 8 0 0 1 16 0v2M4 14h3v6H5a1 1 0 0 1-1-1zM20 14h-3v6h2a1 1 0 0 0 1-1z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+        <p>Mettez un <strong>casque audio</strong>. Le son est en 3D : c'est lui qui vous place dans le désert.<br>Éteignez la lumière si vous le pouvez.</p>
+      </div>
+      <button id="btn-entrer">Je suis prêt·e</button>
+    </div>
+  </section>
+
+  <!-- 1. Sas -->
+  <section id="sas" class="ecran">
+    <p id="sas-texte"></p>
+  </section>
+
+  <!-- 2–3. Désert (le canvas 3D est ajouté par desert.js) -->
+  <div id="sous-titre"></div>
+  <div id="invite"></div>
+  <div id="aide">
+    <span class="souris">Cliquez pour regarder autour de vous</span>
+    <span class="clavier">Z Q S D ou flèches pour marcher · souris pour regarder</span>
+  </div>
+  <div id="voile"></div>
+
+  <!-- 4. Témoignages -->
+  <section id="temoignages" class="ecran">
+    <article id="portrait">
+      <p class="detail" id="p-detail"></p>
+      <h2 id="p-nom"></h2>
+      <p class="recit" id="p-recit"></p>
+      <p class="apres" id="p-apres"></p>
+    </article>
+    <button id="btn-suivant" class="discret">Continuer</button>
+  </section>
+
+  <!-- 5. Fin -->
+  <section id="fin" class="ecran">
+    <div id="fin-texte"></div>
+    <p class="mention">Prenez un moment avant de retirer votre casque.</p>
+    <div class="actions">
+      <button id="btn-recommencer" class="discret">Recommencer</button>
+    </div>
+  </section>
+
+  <script src="../vendor/three.min.js"></script>
+  <script src="js/contenu.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/desert.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
