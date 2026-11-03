@@ -1,5 +1,5 @@
 // Moteur sonore entièrement procédural (Web Audio API) : aucun fichier audio requis.
-// Le son est spatialisé en binaural (HRTF) : le casque est indispensable.
+// Le son est spatialisé en binaural (HRTF) : les écouteurs sont indispensables.
 // Les voix utilisent la synthèse vocale du navigateur en attendant de vrais enregistrements.
 
 window.Audio3D = (function () {
@@ -223,20 +223,128 @@ window.Audio3D = (function () {
     p.positionX.value = x; p.positionY.value = y; p.positionZ.value = z;
   }
 
-  // --- Moteur du pick-up ---
-  function moteur(x, z) {
-    const p = panner(x, 1, z); p.refDistance = 8;
+  // --- Moteurs (pick-up de la patrouille, voiture lointaine) ---
+  function creerMoteur(x, z, volume, ref) {
+    const p = panner(x, 1, z); p.refDistance = ref || 8;
     const o = ctx.createOscillator(); o.type = "sawtooth"; o.frequency.value = 42;
     const f = ctx.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 220;
     const g = ctx.createGain(); g.gain.value = 0;
     o.connect(f).connect(g).connect(p).connect(master); o.start();
-    rampe(g.gain, 0.5, 3);
-    sons.moteur = { p, g, o };
+    rampe(g.gain, volume, 3);
+    return { p, g, o };
   }
+  function moteur(x, z) { sons.moteur = creerMoteur(x, z, 0.5); }
   function positionMoteur(x, z) {
     if (!sons.moteur) return;
     sons.moteur.p.positionX.value = x; sons.moteur.p.positionZ.value = z;
   }
+  function voiture(x, z) { sons.voiture = creerMoteur(x, z, 0.9, 40); return sons.voiture; }
+  function positionVoiture(x, z) {
+    if (!sons.voiture) return;
+    sons.voiture.p.positionX.value = x; sons.voiture.p.positionZ.value = z;
+  }
+  function voitureFin() {
+    if (!sons.voiture) return;
+    const v = sons.voiture; sons.voiture = null;
+    rampe(v.g.gain, 0, 3); setTimeout(() => v.o.stop(), 3500);
+  }
+
+  // --- Coyotes au loin : hurlements glissés, sous 1 kHz (rien de strident) ---
+  function coyotes(x, z) {
+    if (!ctx || sons.silence) return;
+    const p = panner(x, 2, z); p.refDistance = 40;
+    const f = ctx.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 1400;
+    f.connect(p).connect(master);
+    for (let v = 0; v < 3; v++) {
+      const d0 = t() + v * 0.9 + Math.random() * 0.4;
+      const o = ctx.createOscillator(); o.type = "triangle";
+      const vib = ctx.createOscillator(); vib.frequency.value = 5 + Math.random() * 2;
+      const vibG = ctx.createGain(); vibG.gain.value = 12;
+      vib.connect(vibG).connect(o.frequency);
+      const g = ctx.createGain(); g.gain.value = 0;
+      const base = 420 + Math.random() * 120;
+      o.frequency.setValueAtTime(base, d0);
+      o.frequency.linearRampToValueAtTime(base * 1.9, d0 + 0.5);
+      o.frequency.setValueAtTime(base * 1.9, d0 + 1.4);
+      o.frequency.linearRampToValueAtTime(base * 1.3, d0 + 2.4);
+      g.gain.setValueAtTime(0, d0);
+      g.gain.linearRampToValueAtTime(0.09, d0 + 0.4);
+      g.gain.setValueAtTime(0.09, d0 + 1.6);
+      g.gain.linearRampToValueAtTime(0, d0 + 2.5);
+      o.connect(g).connect(f);
+      o.start(d0); vib.start(d0); o.stop(d0 + 2.6); vib.stop(d0 + 2.6);
+    }
+  }
+
+  // --- Échelle métallique : choc sourd ---
+  function echelon() {
+    if (!ctx) return;
+    const n = ctx.createBufferSource(); n.buffer = bruitBuffer;
+    const f = ctx.createBiquadFilter(); f.type = "bandpass"; f.frequency.value = 700; f.Q.value = 6;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.5, t()); g.gain.exponentialRampToValueAtTime(0.001, t() + 0.35);
+    n.connect(f).connect(g).connect(master); n.start(t(), Math.random() * 3, 0.4);
+  }
+
+  // --- Gorgées d'eau ---
+  function gorgees() {
+    if (!ctx) return;
+    for (let i = 0; i < 3; i++) {
+      const d0 = t() + 0.3 + i * 0.55;
+      const o = ctx.createOscillator(); o.frequency.setValueAtTime(220, d0); o.frequency.exponentialRampToValueAtTime(90, d0 + 0.15);
+      const g = ctx.createGain(); g.gain.setValueAtTime(0, d0);
+      g.gain.linearRampToValueAtTime(0.25, d0 + 0.02); g.gain.exponentialRampToValueAtTime(0.001, d0 + 0.2);
+      o.connect(g).connect(master); o.start(d0); o.stop(d0 + 0.22);
+    }
+  }
+
+  // --- Nappe d'espoir (chaude, douce) et coupure brutale ---
+  function espoir() {
+    if (!ctx || sons.espoir) return;
+    const g = ctx.createGain(); g.gain.value = 0;
+    const f = ctx.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 1200;
+    const osc = [];
+    [146.8, 220, 277.2, 370].forEach((fr, i) => {
+      const o = ctx.createOscillator(); o.type = "sine"; o.frequency.value = fr;
+      o.detune.value = (Math.random() - 0.5) * 10;
+      const og = ctx.createGain(); og.gain.value = 0.08 / (i + 1);
+      o.connect(og).connect(f); o.start(); osc.push(o);
+    });
+    f.connect(g).connect(master);
+    g.gain.setValueAtTime(0, t()); g.gain.linearRampToValueAtTime(0.4, t() + 10);
+    sons.espoir = { g, osc };
+  }
+  function espoirCouper() {
+    if (!sons.espoir) return;
+    const e = sons.espoir; sons.espoir = null;
+    e.g.gain.cancelScheduledValues(t()); e.g.gain.setValueAtTime(e.g.gain.value, t());
+    e.g.gain.linearRampToValueAtTime(0, t() + 0.08);
+    setTimeout(() => e.osc.forEach((o) => o.stop()), 300);
+  }
+
+  // --- Bourdon de tension (grave, monte avec la peur) ---
+  function tension(v) {
+    if (!ctx) return;
+    if (!sons.tension) {
+      const o = ctx.createOscillator(); o.type = "sawtooth"; o.frequency.value = 55;
+      const o2 = ctx.createOscillator(); o2.type = "sawtooth"; o2.frequency.value = 55.7;
+      const f = ctx.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 160;
+      const g = ctx.createGain(); g.gain.value = 0;
+      o.connect(f); o2.connect(f); f.connect(g).connect(master); o.start(); o2.start();
+      sons.tension = { g, o, o2 };
+    }
+    rampe(sons.tension.g.gain, v, 4);
+  }
+
+  // --- Vent : intensité réglable (il forcit et refroidit en deuxième partie) ---
+  function setVent(v) { if (sons.vent) rampe(sons.vent.g.gain, v, 8); }
+
+  // --- Pause ---
+  function pause() {
+    if (window.speechSynthesis) speechSynthesis.cancel();
+    if (ctx && ctx.state === "running") ctx.suspend();
+  }
+  function reprise() { if (ctx && ctx.state === "suspended") ctx.resume(); }
 
   // --- Auditeur = caméra ---
   function auditeur(pos, avant) {
@@ -284,7 +392,7 @@ window.Audio3D = (function () {
     if (window.speechSynthesis) speechSynthesis.cancel();
     rampe(master.gain, 0, 0.15);
     setTimeout(() => {
-      ["vent", "helico", "moteur", "resp"].forEach((k) => sons[k] && sons[k].g && (sons[k].g.gain.cancelScheduledValues(t()), sons[k].g.gain.setValueAtTime(0, t())));
+      ["vent", "helico", "moteur", "resp", "tension", "voiture"].forEach((k) => sons[k] && sons[k].g && (sons[k].g.gain.cancelScheduledValues(t()), sons[k].g.gain.setValueAtTime(0, t())));
       if (sons.moteur) sons.moteur.o.stop();
       clearTimeout(sons.coeurTimer); sons.coeurTimer = null;
       master.gain.setValueAtTime(0.9, t() + 0.1);
@@ -314,6 +422,8 @@ window.Audio3D = (function () {
   return {
     demarrer, sasDebut, sasFin, vent, insectes, pas, pasAutre, respiration,
     setFatigue, setPeur, coeur, helicoptere, positionHelico, moteur, positionMoteur,
+    voiture, positionVoiture, voitureFin, coyotes, echelon, gorgees, espoir, espoirCouper,
+    tension, setVent, pause, reprise,
     auditeur, parler, silence, nappe, toutCouper,
   };
 })();

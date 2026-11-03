@@ -15,15 +15,15 @@
       <div class="avertissement">
         <p><strong>Avant de commencer</strong></p>
         <ul>
-          <li>Durée : environ 6 à 8 minutes, sans pause.</li>
+          <li>Durée : environ 12 minutes.</li>
           <li>Cette expérience montre une arrestation à la frontière : cris, lumières violentes, armes suggérées.</li>
           <li>Les personnages parlent espagnol et anglais. Leurs paroles sont sous-titrées.</li>
-          <li>Vous pouvez arrêter à tout moment en appuyant sur <kbd>Échap</kbd> deux fois, puis en fermant l'onglet.</li>
+          <li>Vous pouvez faire une pause à tout moment : bouton <strong>Pause</strong> en haut à droite, touche <kbd>P</kbd> ou <kbd>Échap</kbd>.</li>
         </ul>
       </div>
       <div class="casque">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 14v-2a8 8 0 0 1 16 0v2M4 14h3v6H5a1 1 0 0 1-1-1zM20 14h-3v6h2a1 1 0 0 0 1-1z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
-        <p>Mettez un <strong>casque audio</strong>. Le son est en 3D : c'est lui qui vous place dans le désert.<br>Éteignez la lumière si vous le pouvez.</p>
+        <p>Mettez vos <strong>écouteurs</strong>. Le son est en 3D : c'est lui qui vous place dans le désert.<br>Éteignez la lumière si vous le pouvez.</p>
       </div>
       <fieldset class="langue">
         <legend>Sous-titres</legend>
@@ -44,9 +44,19 @@
   <div id="invite"></div>
   <div id="aide">
     <span class="souris">Cliquez pour regarder autour de vous</span>
-    <span class="clavier">Z Q S D ou flèches pour marcher · souris pour regarder</span>
+    <span class="clavier">Z Q S D ou flèches pour marcher · souris pour regarder · E pour agir · P pour la pause</span>
   </div>
   <div id="voile"></div>
+
+  <button id="btn-pause" aria-label="Pause"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>Pause</button>
+  <section id="pause" class="ecran" aria-live="polite">
+    <div class="carte">
+      <h2>Pause</h2>
+      <p>Prenez le temps qu'il faut.</p>
+      <button id="btn-reprendre">Reprendre</button>
+      <button id="btn-quitter" class="discret visible">Recommencer depuis le début</button>
+    </div>
+  </section>
 
   <!-- 4. Témoignages -->
   <section id="temoignages" class="ecran">
@@ -62,7 +72,7 @@
   <!-- 5. Fin -->
   <section id="fin" class="ecran">
     <div id="fin-texte"></div>
-    <p class="mention">Prenez un moment avant de retirer votre casque.</p>
+    <p class="mention">Prenez un moment avant de retirer vos écouteurs.</p>
     <div class="actions">
       <button id="btn-recommencer" class="discret">Recommencer</button>
     </div>

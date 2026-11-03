@@ -1,7 +1,7 @@
 // Enchaînement des séquences : avertissement → sas → désert → témoignages → fin.
 // Paramètres d'URL utiles pour l'enseignant ou les tests :
-//   ?scene=desert        commencer directement dans le désert
-//   ?scene=desert&t=145  … juste avant l'arrivée de l'hélicoptère
+//   ?scene=desert        commencer directement au mur
+//   ?scene=desert&t=160  … la marche à 160 s (halte) ; t=270 fausse alerte ; t=345 l'espoir
 //   ?scene=reve          commencer à la rupture onirique
 //   ?scene=temoignages   aller directement aux témoignages
 
@@ -9,14 +9,60 @@
   const C = window.CONTENU;
   const A = window.Audio3D;
   const $ = (id) => document.getElementById(id);
-  const attendre = (ms) => new Promise((r) => setTimeout(r, ms));
   const params = new URLSearchParams(location.search);
+
+  // ---------- Pause ----------
+  // Bouton, touche P, ou Échap pendant le désert. Le temps, le son et les voix s'arrêtent.
+  const Pause = (window.Pause = {
+    actif: false,
+    disponible: false,
+    activer() {
+      if (this.actif || !this.disponible) return;
+      this.actif = true;
+      A.pause();
+      if (document.exitPointerLock) document.exitPointerLock();
+      montrer("pause");
+      $("btn-reprendre").focus();
+    },
+    reprendre() {
+      if (!this.actif) return;
+      this.actif = false;
+      A.reprise();
+      cacher("pause");
+      const cv = $("scene3d");
+      if (cv && cv.requestPointerLock && cv.style.display !== "none") cv.requestPointerLock();
+    },
+    basculer() { this.actif ? this.reprendre() : this.activer(); },
+  });
+  function pauseDisponible(oui) {
+    Pause.disponible = oui;
+    $("btn-pause").classList.toggle("visible", oui);
+  }
+  $("btn-pause").addEventListener("click", () => Pause.activer());
+  $("btn-reprendre").addEventListener("click", () => Pause.reprendre());
+  $("btn-quitter").addEventListener("click", () => { location.href = location.pathname; });
+  window.addEventListener("keydown", (e) => { if (e.code === "KeyP") Pause.basculer(); });
+
+  // Attente qui s'arrête pendant la pause.
+  function attendre(ms) {
+    return new Promise((r) => {
+      let reste = ms, avant = performance.now();
+      const tic = () => {
+        const n = performance.now();
+        if (!Pause.actif) reste -= n - avant;
+        avant = n;
+        if (reste <= 0) r(); else setTimeout(tic, Math.min(100, reste));
+      };
+      setTimeout(tic, Math.min(100, ms));
+    });
+  }
 
   function montrer(id) { $(id).classList.add("visible"); }
   function cacher(id) { $(id).classList.remove("visible"); }
 
   async function sas() {
     cacher("accueil");
+    pauseDisponible(true);
     await attendre(1500);
     montrer("sas");
     A.sasDebut();
@@ -40,6 +86,7 @@
   }
 
   async function temoignages() {
+    pauseDisponible(false);
     $("voile").style.opacity = "0";
     montrer("temoignages");
     const portrait = $("portrait");
@@ -106,7 +153,8 @@
     if (!scene) return sas();
     // Accès direct à une séquence
     cacher("accueil");
-    if (scene === "desert") desert({ temps: parseFloat(params.get("t")) || 0 });
+    pauseDisponible(scene !== "temoignages");
+    if (scene === "desert") desert({ temps: params.has("t") ? parseFloat(params.get("t")) || 0 : null });
     else if (scene === "reve") desert({ reve: true });
     else if (scene === "temoignages") temoignages();
   });

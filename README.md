@@ -11,7 +11,7 @@ Elles sont conçues pour une classe d'élèves de 16 à 17 ans.
 
 ## Lancer
 
-Ouvrez `frontiere-mexique/index.html` dans Chrome, Edge ou Firefox, en double-cliquant dessus. Il n'y a rien à installer et aucune connexion n'est nécessaire. **Le casque audio est indispensable.**
+Ouvrez `frontiere-mexique/index.html` dans Chrome, Edge ou Firefox, en double-cliquant dessus. Il n'y a rien à installer et aucune connexion n'est nécessaire. **Les écouteurs sont indispensables.**
 
 Le guide pour l'enseignant (déroulé, précautions, questions de débrief) se trouve dans [`docs/guide-enseignant.md`](docs/guide-enseignant.md).
 
@@ -31,4 +31,4 @@ docs/guide-enseignant.md
 
 Tous les textes se trouvent dans `js/contenu.js`. On peut les retravailler sans toucher au code.
 
-Pour les tests, `?scene=desert&t=145`, `?scene=reve` et `?scene=temoignages` permettent d'aller directement à une séquence. `&acc=3` accélère le temps.
+Pour les tests, `?scene=desert&t=345`, `?scene=reve` et `?scene=temoignages` permettent d'aller directement à une séquence. `&acc=3` accélère le temps.

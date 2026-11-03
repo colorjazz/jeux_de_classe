@@ -32,11 +32,11 @@ kbd { font-family: ui-monospace, monospace; font-size: 13px; border: 1px solid #
 .langue legend { float: left; margin-right: 6px; color: var(--doux); font-family: system-ui, sans-serif; font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase; }
 .langue label { cursor: pointer; display: inline-flex; gap: 8px; align-items: center; }
 .langue input { accent-color: var(--sable); margin: 0; }
-#btn-entrer {
+#btn-entrer, #btn-reprendre {
   background: transparent; color: var(--texte); border: 1px solid var(--sable);
   padding: 14px 34px; letter-spacing: 0.08em; transition: background 0.3s, color 0.3s;
 }
-#btn-entrer:hover, #btn-entrer:focus-visible { background: var(--sable); color: var(--fond); outline: none; }
+#btn-entrer:hover, #btn-entrer:focus-visible, #btn-reprendre:hover, #btn-reprendre:focus-visible { background: var(--sable); color: var(--fond); outline: none; }
 
 /* Sas */
 #sas { background: #07090b; }
@@ -98,3 +98,18 @@ kbd { font-family: ui-monospace, monospace; font-size: 13px; border: 1px solid #
 .mention { color: var(--doux); font-family: system-ui, sans-serif; font-size: 13px; margin-top: 30px; opacity: 0; transition: opacity 2s; }
 .mention.visible { opacity: 1; }
 .actions .discret { margin-top: 24px; }
+
+/* Pause */
+#btn-pause {
+  position: fixed; top: 16px; right: 16px; z-index: 20; display: none; align-items: center; gap: 8px;
+  background: rgba(5, 6, 8, 0.55); color: rgba(233, 227, 214, 0.75); border: 1px solid rgba(200, 180, 140, 0.35);
+  border-radius: 4px; padding: 8px 14px; font-family: system-ui, sans-serif; font-size: 13px; letter-spacing: 0.08em;
+}
+#btn-pause.visible { display: inline-flex; }
+#btn-pause svg { width: 14px; height: 14px; fill: currentColor; }
+#btn-pause:hover, #btn-pause:focus-visible { color: var(--texte); border-color: var(--sable); outline: none; }
+#pause { z-index: 30; background: rgba(5, 6, 8, 0.88); text-align: center; transition: opacity 0.3s; }
+#pause .carte { max-width: 420px; }
+#pause h2 { font-weight: 400; font-size: 44px; letter-spacing: 0.12em; color: var(--sable); margin: 0 0 8px; }
+#pause p { color: var(--doux); margin: 0 0 32px; }
+#pause .discret { display: block; margin: 28px auto 0; }

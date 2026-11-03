@@ -1,5 +1,10 @@
-// Scène 3D : la traversée nocturne, l'arrestation, puis la rupture onirique.
+// Scène 3D : le mur, la traversée nocturne, l'arrestation, puis la rupture onirique.
 // Aucune condition de victoire ni d'échec : quoi que fasse le joueur, l'issue est la même.
+//
+// Courbe émotionnelle :
+//   le mur (appréhension) → première marche (calme, présentations, la croix)
+//   → la halte (intimité) → deuxième marche (froid, soif, fausse alerte, chute)
+//   → les lumières de la ville (espoir) → le choc → la rupture.
 
 window.Desert = (function () {
   const C = window.CONTENU;
@@ -15,122 +20,256 @@ window.Desert = (function () {
       + 1.4 * Math.sin(x * 0.053 + 1.3) * Math.sin(z * 0.041 + 0.4)
       + 0.5 * Math.sin(x * 0.13 + z * 0.11)
       + 0.25 * Math.sin(x * 0.31 - z * 0.27);
-    // Montagnes lointaines
-    const r = Math.sqrt(x * x + (z + 200) * (z + 200));
-    if (r > 260) h += Math.min(1, (r - 260) / 200) * (40 + 25 * Math.sin(x * 0.012) * Math.cos(z * 0.009));
+    // Montagnes sur les côtés et derrière ; le nord reste ouvert vers les lumières.
+    const ax = Math.abs(x);
+    if (ax > 230) h += Math.min(1, (ax - 230) / 160) * (45 + 25 * Math.sin(z * 0.011) * Math.cos(x * 0.008));
+    if (z > 140) h += Math.min(1, (z - 140) / 150) * (35 + 15 * Math.sin(x * 0.014));
     return h;
   }
+
+  // ---------- Réglages ----------
+  const ESPACEMENT = 2.3;
+  const MUR_Z = 22;                // le mur frontalier
+  const ECHELLE_X = 0;
+  const S_DEPART = 16;             // position du guide au début de la marche
+  const S_CROIX = 175;             // la croix au bord du chemin
 
   // ---------- État ----------
   let renderer, scene, camera, horloge, onFin;
   let chemin, longueur;
-  const groupe = [];   // personnages du groupe
-  const agents = [];   // agents de la patrouille
+  const groupe = [];
+  const agents = [];
   let joueur, helico, pickup, particules, ciel, lune, faisceauHelico, spotHelico;
-  let phase = "marche"; // marche → alerte → reve → fin
-  let tp = 0, ta = 0, tr = 0;
-  let sLeader = 16;
-  const ESPACEMENT = 2.3;
+  let lumieresVille, voitureLoin, croix, flamme;
+  let mains;
+  let phase = "mur"; // mur → marche → alerte → reve → fin
+  let tm = 0, tp = 0, ta = 0, tr = 0;
+  let sLeader = S_DEPART;
+  let arret = false;     // le guide est arrêté (halte, fausse alerte)
   const touches = {};
   let lacet = 0, tangage = 0, verrouille = false;
   const evenements = {};
   let ernesto = null, ernestoEtat = "marche", ernestoChuteT = 0;
+  let julio = null;
   let dernierAppel = -99;
   let centreAlerte = null;
   let voile, sousTitre, invite, aide;
   let acceleration = 1; // > 1 uniquement pour les tests automatisés
+  let eauOfferte = false, eauBue = false;
+  let gesteMain = null, gesteFin = 0;
 
-  // ---------- Construction d'un personnage ----------
-  function mat(c) { return new THREE.MeshLambertMaterial({ color: c }); }
+  // =====================================================================
+  //  Personnages articulés
+  // =====================================================================
+  const materiaux = {};
+  function mat(c) {
+    if (!materiaux[c]) materiaux[c] = new THREE.MeshLambertMaterial({ color: c });
+    return materiaux[c];
+  }
+  function maille(geo, couleur, parent, x, y, z) {
+    const m = new THREE.Mesh(geo, mat(couleur));
+    m.position.set(x || 0, y || 0, z || 0);
+    parent.add(m);
+    return m;
+  }
+  function pivot(parent, x, y, z) {
+    const g = new THREE.Group(); g.position.set(x || 0, y || 0, z || 0); parent.add(g); return g;
+  }
 
-  function creerPersonnage(couleur, taille, options) {
-    options = options || {};
-    const s = taille / 1.75;
-    const m = mat(couleur);
-    const mPeau = mat(0x2b211b);
+  // o : { haut, bas, peau, chaussures, coiffe, cheveux, jupe, sac, objet, chale, gilet, s }
+  function creerPersonnage(o) {
+    const s = o.taille / 1.72;
     const racine = new THREE.Group();
-    const hanches = new THREE.Group(); hanches.position.y = 0.85 * s; racine.add(hanches);
-    const haut = new THREE.Group(); hanches.add(haut);
+    racine.rotation.order = "YXZ";
+    const corps = pivot(racine);              // échelle globale
+    corps.scale.setScalar(s);
+    const bassin = pivot(corps, 0, 0.92, 0);
+    const peau = o.peau || 0x6b4a36;
 
-    const torse = new THREE.Mesh(new THREE.CapsuleGeometry(0.19 * s, 0.42 * s, 4, 8), m);
-    torse.position.y = 0.36 * s; haut.add(torse);
-    const tete = new THREE.Mesh(new THREE.SphereGeometry(0.12 * s, 12, 10), mPeau);
-    tete.position.y = 0.78 * s; haut.add(tete);
-    if (options.casquette) {
-      const cas = new THREE.Mesh(new THREE.CylinderGeometry(0.13 * s, 0.13 * s, 0.07 * s, 12), m);
-      cas.position.y = 0.86 * s; haut.add(cas);
-    }
-    if (!options.sansSac) {
-      const sac = new THREE.Mesh(new THREE.BoxGeometry(0.3 * s, 0.38 * s, 0.16 * s), mat(0x1c1a17));
-      sac.position.set(0, 0.4 * s, -0.2 * s); haut.add(sac);
-    }
-    const bras = [];
-    [-1, 1].forEach((cote) => {
-      const pivot = new THREE.Group(); pivot.position.set(0.25 * s * cote, 0.6 * s, 0); haut.add(pivot);
-      const b = new THREE.Mesh(new THREE.CapsuleGeometry(0.05 * s, 0.5 * s, 3, 6), m);
-      b.position.y = -0.3 * s; pivot.add(b);
-      pivot.userData.cote = cote;
-      bras.push(pivot);
-    });
+    // Bassin
+    const pb = maille(new THREE.SphereGeometry(0.15, 12, 8), o.bas, bassin, 0, 0.0, 0);
+    pb.scale.set(1.12, 0.75, 0.8);
+
+    // Jambes : hanche → cuisse → genou → tibia → pied
     const jambes = [];
     [-1, 1].forEach((cote) => {
-      const pivot = new THREE.Group(); pivot.position.set(0.1 * s * cote, 0, 0); hanches.add(pivot);
-      const j = new THREE.Mesh(new THREE.CapsuleGeometry(0.07 * s, 0.66 * s, 3, 6), mat(0x1d1f22));
-      j.position.y = -0.42 * s; pivot.add(j);
-      jambes.push(pivot);
+      const hanche = pivot(bassin, 0.085 * cote, -0.02, 0);
+      maille(new THREE.CapsuleGeometry(0.068, 0.32, 4, 8), o.bas, hanche, 0, -0.21, 0);
+      const genou = pivot(hanche, 0, -0.44, 0);
+      maille(new THREE.CapsuleGeometry(0.055, 0.34, 4, 8), o.bas, genou, 0, -0.2, 0);
+      const cheville = pivot(genou, 0, -0.44, 0);
+      maille(new THREE.BoxGeometry(0.095, 0.07, 0.24), o.chaussures || 0x1a1714, cheville, 0, 0.0, 0.045);
+      jambes.push({ hanche, genou, cheville });
     });
+    if (o.jupe) {
+      const jupe = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.26, 0.55, 14, 1, true), mat(o.jupe));
+      jupe.material.side = THREE.DoubleSide;
+      jupe.position.y = -0.26; bassin.add(jupe);
+    }
+
+    // Haut du corps
+    const haut = pivot(bassin, 0, 0.02, 0);
+    const ventre = maille(new THREE.CapsuleGeometry(0.14, 0.12, 4, 10), o.haut, haut, 0, 0.17, 0);
+    ventre.scale.set(1.05, 1, 0.78);
+    const torse = maille(new THREE.CapsuleGeometry(0.16, 0.16, 4, 10), o.haut, haut, 0, 0.38, 0);
+    torse.scale.set(1.18, 1, 0.74);
+    if (o.gilet) {
+      maille(new THREE.BoxGeometry(0.38, 0.32, 0.28), o.gilet, haut, 0, 0.36, 0);
+      maille(new THREE.BoxGeometry(0.4, 0.06, 0.3), 0x15140f, haut, 0, 0.04, 0);          // ceinture
+      maille(new THREE.BoxGeometry(0.07, 0.16, 0.1), 0x15140f, haut, 0.2, -0.02, 0.02);  // étui
+    }
+    if (o.chale) {
+      const ch = maille(new THREE.CylinderGeometry(0.2, 0.25, 0.2, 14, 1, true), o.chale, haut, 0, 0.47, 0);
+      ch.material.side = THREE.DoubleSide; ch.scale.z = 0.8;
+    }
+    maille(new THREE.CylinderGeometry(0.045, 0.05, 0.1, 8), peau, haut, 0, 0.6, 0);
+
+    // Tête
+    const tete = pivot(haut, 0, 0.7, 0);
+    const crane = maille(new THREE.SphereGeometry(0.1, 16, 12), peau, tete);
+    crane.scale.set(0.92, 1.1, 1);
+    maille(new THREE.BoxGeometry(0.025, 0.04, 0.03), peau, tete, 0, -0.005, 0.1);  // nez
+    const coulCheveux = o.couleurCheveux || 0x0d0b0a;
+    if (o.cheveux !== "chauve") {
+      const ch = maille(new THREE.SphereGeometry(0.104, 16, 10, 0, Math.PI * 2, 0, Math.PI * 0.55), coulCheveux, tete, 0, 0.012, -0.008);
+      ch.scale.set(0.95, 1.1, 1.02);
+    }
+    if (o.cheveux === "longs") {
+      const l = maille(new THREE.SphereGeometry(0.1, 10, 10), coulCheveux, tete, 0, -0.07, -0.06);
+      l.scale.set(1.05, 1.5, 0.55);
+    }
+    if (o.cheveux === "tresse") {
+      for (let i = 0; i < 6; i++) maille(new THREE.SphereGeometry(0.028 - i * 0.002, 8, 6), coulCheveux, haut, 0, 0.66 - i * 0.055, -0.13 - (i < 2 ? i * 0.02 : 0.03));
+    }
+    if (o.coiffe === "casquette") {
+      const c = maille(new THREE.SphereGeometry(0.108, 14, 8, 0, Math.PI * 2, 0, Math.PI * 0.5), o.couleurCoiffe || 0x22201c, tete, 0, 0.02, 0);
+      c.scale.set(0.98, 0.9, 1.05);
+      const v = maille(new THREE.BoxGeometry(0.17, 0.012, 0.09), o.couleurCoiffe || 0x22201c, tete, 0, 0.035, 0.12);
+      v.rotation.x = 0.12;
+    }
+    if (o.coiffe === "sombrero") {
+      maille(new THREE.CylinderGeometry(0.2, 0.21, 0.012, 20), 0x6d5a3e, tete, 0, 0.07, 0);
+      maille(new THREE.CylinderGeometry(0.085, 0.1, 0.1, 14), 0x6d5a3e, tete, 0, 0.12, 0);
+    }
+    if (o.coiffe === "capuche") {
+      const c = maille(new THREE.SphereGeometry(0.125, 12, 10), o.haut, tete, 0, 0.0, -0.035);
+      c.scale.set(1.05, 1.1, 1.05);
+      maille(new THREE.TorusGeometry(0.11, 0.035, 6, 14), o.haut, haut, 0, 0.6, -0.02).rotation.x = Math.PI / 2;
+    }
+
+    // Bras : épaule → bras → coude → avant-bras → main
+    const bras = [];
+    [-1, 1].forEach((cote) => {
+      const epaule = pivot(haut, 0.2 * cote, 0.5, 0);
+      maille(new THREE.SphereGeometry(0.06, 8, 6), o.haut, epaule);
+      maille(new THREE.CapsuleGeometry(0.048, 0.2, 4, 8), o.haut, epaule, 0, -0.14, 0);
+      const coude = pivot(epaule, 0, -0.29, 0);
+      maille(new THREE.CapsuleGeometry(0.04, 0.19, 4, 8), o.manches === "courtes" ? peau : o.haut, coude, 0, -0.12, 0);
+      const poignet = pivot(coude, 0, -0.26, 0);
+      const main = maille(new THREE.BoxGeometry(0.06, 0.09, 0.035), peau, poignet, 0, -0.035, 0);
+      main.scale.set(1, 1, 1);
+      bras.push({ epaule, coude, poignet, cote });
+    });
+
+    // Sac à dos
+    if (o.sac) {
+      const dims = { grand: [0.3, 0.4, 0.17], petit: [0.24, 0.3, 0.13], ecole: [0.22, 0.27, 0.1] }[o.sac];
+      maille(new THREE.BoxGeometry(...dims), o.couleurSac || 0x1d1c19, haut, 0, 0.36, -0.12 - dims[2] / 2);
+      [-1, 1].forEach((c) => maille(new THREE.BoxGeometry(0.035, 0.3, 0.02), o.couleurSac || 0x1d1c19, haut, 0.09 * c, 0.4, 0.115));
+    }
+    // Objet tenu dans la main droite
+    const mainD = bras[1].poignet;
+    if (o.objet === "bidon") {
+      maille(new THREE.BoxGeometry(0.15, 0.22, 0.11), 0x0c0c0c, mainD, 0, -0.16, 0);
+      maille(new THREE.CylinderGeometry(0.02, 0.02, 0.04, 6), 0x0c0c0c, mainD, 0.04, -0.03, 0);
+    }
+    let baton = null;
+    if (o.objet === "baton") baton = maille(new THREE.CylinderGeometry(0.014, 0.018, 1.05, 6), 0x5a4630, mainD, 0, -0.4, 0.02);
+    if (o.objet === "sac") maille(new THREE.BoxGeometry(0.2, 0.22, 0.08), 0x3a3128, mainD, 0, -0.14, 0);
+    if (o.objet === "lampe") {
+      const l = maille(new THREE.CylinderGeometry(0.025, 0.03, 0.22, 8), 0x111111, mainD, 0, -0.06, 0.06);
+      l.rotation.x = Math.PI / 2;
+    }
+
     scene.add(racine);
     return {
-      racine, hanches, haut, bras, jambes, s,
-      pose: { bas: 0, jambe: 0, bras: 0, penche: 0 },
-      cible: "marche", cycle: alea() * 6, vitesse: 0, distPas: 0,
+      racine, corps, bassin, haut, tete, bras, jambes, s, baton,
+      pose: Object.assign({}, POSES.marche),
+      cible: "marche", cycle: alea() * 6, vitesse: 0, distPas: 0, yExtra: 0,
       x: 0, z: 0, cap: 0,
     };
   }
 
+  // Poses : valeurs cibles des articulations (en radians, hauteurs en mètres avant échelle).
+  //  bas      : descente du bassin       couche : 0 debout → 1 à plat ventre
+  //  penche   : inclinaison du buste      hanche : flexion des cuisses (vers l'avant)
+  //  genou    : flexion des genoux        bAvant : bras vers l'avant / le haut
+  //  bCote    : bras écartés              coude  : flexion des coudes   cZ : coudes levés (mains en l'air)
   const POSES = {
-    marche:   { bas: 0,    jambe: 0,    bras: 0,    penche: 0.08 },
-    accroupi: { bas: 0.38, jambe: 1.1,  bras: 0.2,  penche: 0.45 },
-    genoux:   { bas: 0.42, jambe: 1.45, bras: 2.75, penche: -0.05 },
-    chute:    { bas: 0.45, jambe: 1.45, bras: 0.6,  penche: 0.75 },
-    debout:   { bas: 0,    jambe: 0,    bras: 0,    penche: 0 },
+    marche:   { bas: 0,    couche: 0, penche: 0.07, hanche: 0,    genou: 0,    bAvant: 0,    bCote: 0.08, coude: 0.25, cZ: 0, tete: 0 },
+    debout:   { bas: 0,    couche: 0, penche: 0,    hanche: 0,    genou: 0,    bAvant: 0,    bCote: 0.06, coude: 0.1,  cZ: 0, tete: 0 },
+    accroupi: { bas: 0.6,  couche: 0, penche: 0.5,  hanche: 1.7,  genou: 2.3,  bAvant: 0.5,  bCote: 0.15, coude: 0.7,  cZ: 0, tete: -0.3 },
+    couche:   { bas: 0,    couche: 1, penche: 0,    hanche: 0,    genou: 0.15, bAvant: 2.6,  bCote: 0.35, coude: 1.9,  cZ: 0, tete: -0.6 },
+    genoux:   { bas: 0.44, couche: 0, penche: -0.04,hanche: 0,    genou: 1.55, bAvant: 0,    bCote: 1.45, coude: 0,    cZ: 1.5, tete: 0.05 },
+    chute:    { bas: 0.44, couche: 0, penche: 0.8,  hanche: 0.3,  genou: 1.55, bAvant: 1.1,  bCote: 0.1,  coude: 0.2,  cZ: 0, tete: 0.4 },
+    assis:    { bas: 0.66, couche: 0, penche: 0.25, hanche: 1.75, genou: 2.0,  bAvant: 0.9,  bCote: 0.12, coude: 1.0,  cZ: 0, tete: 0.1 },
+    dort:     { bas: 0.66, couche: 0, penche: 0.55, hanche: 1.75, genou: 2.0,  bAvant: 0.6,  bCote: 0.1,  coude: 1.2,  cZ: 0, tete: 0.6 },
+    grimpe:   { bas: 0,    couche: 0, penche: 0.1,  hanche: 0.6,  genou: 0.9,  bAvant: 2.7,  bCote: 0.1,  coude: 0.3,  cZ: 0, tete: -0.4 },
   };
 
   function animerPersonnage(p, dt) {
     const c = POSES[p.cible];
-    const k = Math.min(1, dt * 4);
+    const k = Math.min(1, dt * (p.cible === "couche" ? 3 : 4));
     for (const cle in c) p.pose[cle] += (c[cle] - p.pose[cle]) * k;
-    p.cycle += p.vitesse * dt * 3.2;
-    const balance = Math.sin(p.cycle) * Math.min(1, p.vitesse) * 0.5;
-    p.racine.position.set(p.x, hauteur(p.x, p.z) - p.pose.bas * p.s, p.z);
-    p.racine.rotation.y = p.cap;
-    p.haut.rotation.x = p.pose.penche;
-    p.jambes[0].rotation.x = -p.pose.jambe + balance;
-    p.jambes[1].rotation.x = -p.pose.jambe - balance;
-    p.bras.forEach((b, i) => {
-      b.rotation.x = (i ? 1 : -1) * balance * 0.8;
-      b.rotation.z = b.userData.cote * p.pose.bras * 0.95 + b.userData.cote * 0.05;
-      if (p.pose.bras > 2) b.rotation.x = -0.3;
+    const P = p.pose;
+    // Le bâton n'apparaît que debout (assis ou couché, il pourrait passer pour une arme).
+    if (p.baton) p.baton.visible = p.cible === "marche" || p.cible === "debout" || p.cible === "chute";
+    const amp = Math.min(1, p.vitesse) * (1 - P.couche);
+    const grimpe = p.cible === "grimpe";
+    p.cycle += (grimpe ? 4 : p.vitesse * 3.1) * dt;
+    const sn = Math.sin(p.cycle);
+
+    // À plat ventre : le corps pivote autour des pieds et se pose au sol.
+    const yCouche = P.couche * 0.16 * p.s;
+    p.racine.position.set(p.x, hauteur(p.x, p.z) + p.yExtra - P.bas * p.s + yCouche, p.z);
+    p.racine.rotation.set(P.couche * Math.PI / 2, p.cap, 0);
+    p.bassin.position.y = 0.92;
+    p.haut.rotation.x = P.penche;
+    p.tete.rotation.x = P.tete - P.penche * 0.5;
+
+    p.jambes.forEach((j, i) => {
+      const ph = i ? Math.PI : 0;
+      const balance = Math.sin(p.cycle + ph);
+      j.hanche.rotation.x = -P.hanche + balance * 0.42 * amp + (grimpe ? Math.sin(p.cycle + ph) * 0.4 : 0);
+      j.genou.rotation.x = P.genou + Math.max(0, Math.sin(p.cycle + ph + 1.4)) * 0.75 * amp;
+      j.cheville.rotation.x = -P.genou * 0.25 - (P.couche * 0.9);
     });
-    p.racine.position.y += Math.abs(Math.sin(p.cycle)) * 0.04 * Math.min(1, p.vitesse);
+    p.bras.forEach((b, i) => {
+      const ph = i ? 0 : Math.PI;
+      b.epaule.rotation.x = -P.bAvant + Math.sin(p.cycle + ph) * 0.32 * amp + (grimpe ? Math.sin(p.cycle + ph) * 0.25 : 0);
+      b.epaule.rotation.z = b.cote * P.bCote;
+      b.coude.rotation.x = -P.coude - Math.max(0, Math.sin(p.cycle + ph)) * 0.25 * amp;
+      b.coude.rotation.z = b.cote * P.cZ;
+    });
+    p.racine.position.y += Math.abs(sn) * 0.035 * amp;
   }
 
-  // ---------- Décor ----------
+  // =====================================================================
+  //  Décor
+  // =====================================================================
   function construireDecor() {
-    // Sol
-    const geo = new THREE.PlaneGeometry(1400, 1400, 260, 260);
+    const geo = new THREE.PlaneGeometry(1400, 1500, 260, 280);
     geo.rotateX(-Math.PI / 2);
     const pos = geo.attributes.position;
-    // Le maillage est centré sur z = -200 (le chemin part vers le nord, -z).
-    for (let i = 0; i < pos.count; i++) pos.setY(i, hauteur(pos.getX(i), pos.getZ(i) - 200));
-    const sol = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ color: 0x8c8272 }));
-    sol.position.z = -200;
+    for (let i = 0; i < pos.count; i++) pos.setY(i, hauteur(pos.getX(i), pos.getZ(i) - 300));
     geo.computeVertexNormals();
+    const sol = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ color: 0x8c8272 }));
+    sol.position.z = -300;
     scene.add(sol);
 
-    // Ciel : étoiles et lune suivent la caméra
+    // Ciel
     ciel = new THREE.Group();
-    const nb = 2500, etoiles = new Float32Array(nb * 3);
+    const nb = 2600, etoiles = new Float32Array(nb * 3);
     for (let i = 0; i < nb; i++) {
       const u = alea() * Math.PI * 2, v = Math.acos(alea() * 0.95);
       etoiles[i * 3] = Math.sin(v) * Math.cos(u) * 900;
@@ -145,21 +284,32 @@ window.Desert = (function () {
     ciel.add(lune);
     scene.add(ciel);
 
-    // Végétation : buissons, rochers, saguaros
-    const buisson = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(0.6, 0), mat(0x2b2f25), 1800);
-    const rocher = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(0.45, 0), mat(0x504a40), 900);
+    // Lumières de la ville, très loin au nord (révélées au moment de l'espoir)
+    const nbL = 420, pl = new Float32Array(nbL * 3);
+    for (let i = 0; i < nbL; i++) {
+      const x = (alea() - 0.5) * (alea() < 0.7 ? 260 : 520);
+      pl[i * 3] = x; pl[i * 3 + 1] = 4 + alea() * alea() * 18; pl[i * 3 + 2] = -1150 - alea() * 120;
+    }
+    const gL = new THREE.BufferGeometry();
+    gL.setAttribute("position", new THREE.BufferAttribute(pl, 3));
+    lumieresVille = new THREE.Points(gL, new THREE.PointsMaterial({ color: 0xffb36b, size: 2.2, sizeAttenuation: false, fog: false, transparent: true, opacity: 0 }));
+    scene.add(lumieresVille);
+
+    // Végétation
+    const buisson = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(0.6, 0), mat(0x2b2f25), 2200);
+    const rocher = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(0.45, 0), mat(0x504a40), 1100);
     const o = new THREE.Object3D();
-    for (let i = 0; i < 1800; i++) {
-      const x = (alea() - 0.5) * 500, z = 60 - alea() * 620;
+    for (let i = 0; i < 2200; i++) {
+      const x = (alea() - 0.5) * 520, z = 90 - alea() * 800;
       const e = 0.4 + alea() * 1.3;
       o.position.set(x, hauteur(x, z) + 0.15 * e, z);
       o.scale.set(e * (0.8 + alea() * 0.6), e * 0.7, e);
       o.rotation.set(0, alea() * 6, 0);
       o.updateMatrix(); buisson.setMatrixAt(i, o.matrix);
     }
-    for (let i = 0; i < 900; i++) {
-      const x = (alea() - 0.5) * 500, z = 60 - alea() * 620;
-      const e = 0.3 + alea() * 1.6;
+    for (let i = 0; i < 1100; i++) {
+      const x = (alea() - 0.5) * 520, z = 90 - alea() * 800;
+      const e = 0.3 + alea() * 1.4;
       o.position.set(x, hauteur(x, z), z);
       o.scale.set(e, e * 0.6, e * (0.7 + alea() * 0.6));
       o.rotation.set(alea(), alea() * 6, alea());
@@ -167,63 +317,100 @@ window.Desert = (function () {
     }
     scene.add(buisson, rocher);
 
-    const mSag = mat(0x26302a);
-    for (let i = 0; i < 90; i++) {
-      const x = (alea() - 0.5) * 460, z = 50 - alea() * 600;
-      if (Math.abs(x - pointChemin(Math.min(1, Math.max(0, -z / 440))).x) < 4) continue;
+    const mSag = 0x26302a;
+    for (let i = 0; i < 120; i++) {
+      const x = (alea() - 0.5) * 480, z = 80 - alea() * 780;
+      const surChemin = Math.abs(x - pointChemin(Math.min(1, Math.max(0, (8 - z) / 620))).x) < 5;
+      if (surChemin || Math.abs(z - MUR_Z) < 6) continue;
       const g = new THREE.Group();
       const h = 4 + alea() * 6;
-      const tronc = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.38, h, 8), mSag);
-      tronc.position.y = h / 2; g.add(tronc);
+      maille(new THREE.CylinderGeometry(0.32, 0.38, h, 10), mSag, g, 0, h / 2, 0);
       const nbBras = 1 + Math.floor(alea() * 3);
       for (let b = 0; b < nbBras; b++) {
         const cote = b % 2 ? 1 : -1, hb = 1.4 + alea() * 2, yb = h * (0.35 + alea() * 0.3);
-        const coude = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.9, 6), mSag);
-        coude.rotation.z = Math.PI / 2; coude.position.set(cote * 0.6, yb, 0); g.add(coude);
-        const bras = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.24, hb, 6), mSag);
-        bras.position.set(cote * 1.0, yb + hb / 2, 0); g.add(bras);
+        maille(new THREE.CylinderGeometry(0.22, 0.22, 0.9, 8), mSag, g, cote * 0.6, yb, 0).rotation.z = Math.PI / 2;
+        maille(new THREE.CylinderGeometry(0.22, 0.24, hb, 8), mSag, g, cote * 1.0, yb + hb / 2, 0);
       }
       g.position.set(x, hauteur(x, z) - 0.2, z);
       g.rotation.y = alea() * 6;
       scene.add(g);
     }
 
-    // Le mur frontalier, derrière le point de départ
+    // Le mur frontalier
     const nbBarreaux = 900;
     const barreaux = new THREE.InstancedMesh(new THREE.BoxGeometry(0.14, 5.6, 0.14), mat(0x3d3631), nbBarreaux);
     for (let i = 0; i < nbBarreaux; i++) {
-      const x = -160 + i * 0.36, z = 22 + Math.sin(x * 0.01) * 3;
-      o.position.set(x, hauteur(x, z) + 2.4, z);
+      const x = -160 + i * 0.36;
+      o.position.set(x, hauteur(x, MUR_Z) + 2.4, MUR_Z);
       o.scale.set(1, 1, 1); o.rotation.set(0, 0, 0);
       o.updateMatrix(); barreaux.setMatrixAt(i, o.matrix);
     }
     scene.add(barreaux);
+    // Les échelles, de chaque côté
+    const hMur = hauteur(ECHELLE_X, MUR_Z);
+    [1, -1].forEach((cote) => {
+      const e = new THREE.Group();
+      [-0.22, 0.22].forEach((x) => maille(new THREE.BoxGeometry(0.05, 5.6, 0.05), 0x5c5850, e, x, 2.8, 0));
+      for (let y = 0.3; y < 5.4; y += 0.32) maille(new THREE.BoxGeometry(0.44, 0.03, 0.03), 0x5c5850, e, 0, y, 0);
+      e.position.set(ECHELLE_X, hMur - 0.1, MUR_Z + cote * 0.55);
+      e.rotation.x = -cote * 0.12;
+      scene.add(e);
+    });
 
-    // Bouteilles abandonnées et objets le long du chemin
-    const mBout = mat(0x111111);
-    for (let i = 0; i < 40; i++) {
-      const u = alea() * 0.6, p = pointChemin(u);
+    // Objets abandonnés le long du chemin
+    for (let i = 0; i < 50; i++) {
+      const p = pointChemin(alea() * 0.8);
       const x = p.x + (alea() - 0.5) * 10, z = p.z + (alea() - 0.5) * 10;
-      const b = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.28, 8), mBout);
-      b.position.set(x, hauteur(x, z) + 0.05, z);
+      const b = maille(new THREE.CylinderGeometry(0.06, 0.06, 0.28, 8), 0x111111, scene, x, hauteur(x, z) + 0.05, z);
       b.rotation.z = Math.PI / 2; b.rotation.y = alea() * 6;
-      scene.add(b);
     }
+    // Un sac à dos abandonné, une petite chaussure
+    [[60, 0x2a2622, [0.3, 0.4, 0.15]], [118, 0x3a3a52, [0.1, 0.07, 0.18]]].forEach(([sAb, c, d]) => {
+      const p = pointS(sAb);
+      const m = maille(new THREE.BoxGeometry(...d), c, scene, p.x + 1.4, hauteur(p.x + 1.4, p.z) + d[1] / 2, p.z);
+      m.rotation.y = 0.7;
+    });
+
+    // La croix, avec des fleurs et une bougie
+    const pc = pointS(S_CROIX);
+    const cx = pc.x + 2.2, cz = pc.z;
+    croix = new THREE.Group();
+    maille(new THREE.BoxGeometry(0.07, 1.0, 0.05), 0x6b5236, croix, 0, 0.5, 0);
+    maille(new THREE.BoxGeometry(0.5, 0.07, 0.05), 0x6b5236, croix, 0, 0.75, 0);
+    [0xb04a5a, 0xd0a040, 0xe0e0d0, 0x8a3a8a].forEach((c, i) => maille(new THREE.SphereGeometry(0.06, 6, 5), c, croix, -0.25 + i * 0.16, 0.05, 0.15));
+    maille(new THREE.CylinderGeometry(0.04, 0.04, 0.12, 8), 0xddd4c0, croix, 0.18, 0.06, 0.25);
+    flamme = new THREE.Mesh(new THREE.SphereGeometry(0.025, 6, 6), new THREE.MeshBasicMaterial({ color: 0xffc060, fog: false }));
+    flamme.position.set(0.18, 0.15, 0.25); croix.add(flamme);
+    const lueur = new THREE.PointLight(0xff9a40, 1.2, 6, 1.5);
+    lueur.position.set(0.18, 0.3, 0.3); croix.add(lueur);
+    croix.userData.lueur = lueur;
+    croix.position.set(cx, hauteur(cx, cz), cz);
+    croix.rotation.y = -Math.PI / 2;
+    scene.add(croix);
+
+    // Voiture lointaine (fausse alerte) : deux phares sur une route invisible
+    voitureLoin = new THREE.Group();
+    [-0.7, 0.7].forEach((x) => {
+      const ph = new THREE.Mesh(new THREE.SphereGeometry(0.35, 8, 6), new THREE.MeshBasicMaterial({ color: 0xfff0c8, fog: false }));
+      ph.position.x = x; voitureLoin.add(ph);
+    });
+    voitureLoin.visible = false;
+    scene.add(voitureLoin);
   }
 
-  function pointChemin(u) {
-    return chemin.getPointAt(Math.min(0.999, Math.max(0, u)));
-  }
+  function pointChemin(u) { return chemin.getPointAt(Math.min(0.999, Math.max(0, u))); }
   function pointS(s) { return pointChemin(s / longueur); }
   function capS(s) {
     const t = chemin.getTangentAt(Math.min(0.999, Math.max(0, s / longueur)));
     return Math.atan2(t.x, t.z);
   }
 
-  // ---------- Hélicoptère, pick-up, faisceaux ----------
+  // =====================================================================
+  //  Hélicoptère, pick-up, faisceaux
+  // =====================================================================
   function creerFaisceau(couleur, opacite) {
     const g = new THREE.ConeGeometry(1, 1, 24, 1, true);
-    g.translate(0, -0.5, 0); // sommet à l'origine, cône vers -Y
+    g.translate(0, -0.5, 0);
     const m = new THREE.MeshBasicMaterial({
       color: couleur, transparent: true, opacity: opacite, side: THREE.DoubleSide,
       depthWrite: false, blending: THREE.AdditiveBlending, fog: false,
@@ -244,14 +431,11 @@ window.Desert = (function () {
   }
 
   function construireVehicules() {
-    // Hélicoptère
     helico = new THREE.Group();
-    const mH = mat(0x1a1c1e);
-    const corps = new THREE.Mesh(new THREE.SphereGeometry(1.6, 12, 8), mH); corps.scale.set(1, 0.8, 1.6); helico.add(corps);
-    const queue = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.35, 6, 6), mH);
-    queue.rotation.x = Math.PI / 2; queue.position.z = 4.5; helico.add(queue);
-    const rotor = new THREE.Mesh(new THREE.BoxGeometry(11, 0.05, 0.3), mH); rotor.position.y = 1.4; helico.add(rotor);
-    helico.userData.rotor = rotor;
+    const mH = 0x1a1c1e;
+    maille(new THREE.SphereGeometry(1.6, 12, 8), mH, helico).scale.set(1, 0.8, 1.6);
+    maille(new THREE.CylinderGeometry(0.2, 0.35, 6, 6), mH, helico, 0, 0, 4.5).rotation.x = Math.PI / 2;
+    helico.userData.rotor = maille(new THREE.BoxGeometry(11, 0.05, 0.3), mH, helico, 0, 1.4, 0);
     const feuRouge = new THREE.Mesh(new THREE.SphereGeometry(0.18, 6, 6), new THREE.MeshBasicMaterial({ color: 0xff2020, fog: false }));
     feuRouge.position.set(0, -1.1, 0); helico.add(feuRouge);
     helico.userData.feu = feuRouge;
@@ -262,12 +446,15 @@ window.Desert = (function () {
     scene.add(spotHelico, spotHelico.target);
     faisceauHelico = creerFaisceau(0xdfe6ff, 0.07);
 
-    // Pick-up de la patrouille
     pickup = new THREE.Group();
-    const mBlanc = mat(0xcfd0c8);
-    const caisse = new THREE.Mesh(new THREE.BoxGeometry(2.1, 1.0, 5.2), mBlanc); caisse.position.y = 0.9; pickup.add(caisse);
-    const cabine = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.9, 2.2), mBlanc); cabine.position.set(0, 1.8, 0.6); pickup.add(cabine);
-    const bande = new THREE.Mesh(new THREE.BoxGeometry(2.14, 0.18, 5.22), mat(0x23452e)); bande.position.y = 0.95; pickup.add(bande);
+    const mBlanc = 0xcfd0c8;
+    maille(new THREE.BoxGeometry(2.1, 1.0, 5.2), mBlanc, pickup, 0, 0.9, 0);
+    maille(new THREE.BoxGeometry(2.0, 0.9, 2.2), mBlanc, pickup, 0, 1.8, 0.6);
+    maille(new THREE.BoxGeometry(2.14, 0.18, 5.22), 0x23452e, pickup, 0, 0.95, 0);
+    [-0.9, 0.9].forEach((x) => [-1.6, 1.6].forEach((z) => {
+      const r = maille(new THREE.CylinderGeometry(0.42, 0.42, 0.3, 14), 0x0e0e0e, pickup, x, 0.42, z);
+      r.rotation.z = Math.PI / 2;
+    }));
     const rouge = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.15, 0.3), new THREE.MeshBasicMaterial({ color: 0xff1010, fog: false }));
     rouge.position.set(-0.4, 2.33, 0.6); pickup.add(rouge);
     const bleu = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.15, 0.3), new THREE.MeshBasicMaterial({ color: 0x1030ff, fog: false }));
@@ -286,9 +473,11 @@ window.Desert = (function () {
     pickup.visible = false;
     scene.add(pickup);
 
-    // Agents
     for (let i = 0; i < 3; i++) {
-      const p = creerPersonnage(0x3f4a38, 1.8 + i * 0.03, { casquette: true, sansSac: true });
+      const p = creerPersonnage({
+        taille: 1.8 + i * 0.03, haut: 0x3b4636, bas: 0x3b4636, gilet: 0x23291f, peau: [0x9c7a62, 0x6b4a36, 0xb08a70][i],
+        coiffe: "casquette", couleurCoiffe: 0x2b3326, chaussures: 0x0f0f0f, objet: "lampe",
+      });
       p.racine.visible = false;
       const lampe = new THREE.SpotLight(0xffffff, 0, 40, 0.22, 0.5, 0);
       scene.add(lampe, lampe.target);
@@ -297,6 +486,45 @@ window.Desert = (function () {
       agents.push(p);
     }
   }
+
+  // ---------- Les mains du joueur (vues à la première personne) ----------
+  const POS_MAINS = {
+    cache:  [[-0.3, -0.9, -0.4, 0], [0.3, -0.9, -0.4, 0]],
+    haut:   [[-0.34, -0.12, -0.5, 0.1], [0.34, -0.12, -0.5, 0.1]],
+    sol:    [[-0.22, -0.27, -0.42, -1.45], [0.22, -0.27, -0.42, -1.45]],
+    tendre: [[-0.3, -0.9, -0.4, 0], [0.14, -0.28, -0.36, -1.35]],
+    boire:  [[-0.3, -0.9, -0.4, 0], [0.05, -0.16, -0.26, -0.5]],
+    echelle:[[-0.2, -0.05, -0.35, 0.2], [0.2, -0.2, -0.35, 0.2]],
+  };
+  function construireMains() {
+    mains = [];
+    scene.add(camera);
+    [0, 1].forEach((i) => {
+      const g = new THREE.Group();
+      maille(new THREE.CapsuleGeometry(0.035, 0.24, 4, 8), 0x2a2724, g, 0, -0.1, 0);   // manche
+      maille(new THREE.BoxGeometry(0.07, 0.1, 0.035), 0x6b4a36, g, 0, 0.1, 0);          // main
+      [-0.024, -0.008, 0.008, 0.024].forEach((x) => maille(new THREE.BoxGeometry(0.013, 0.05, 0.015), 0x6b4a36, g, x, 0.17, 0));
+      maille(new THREE.BoxGeometry(0.014, 0.04, 0.016), 0x6b4a36, g, i ? -0.04 : 0.04, 0.11, 0.01).rotation.z = i ? 0.6 : -0.6;
+      g.position.set(0, -0.9, -0.4);
+      camera.add(g);
+      mains.push(g);
+    });
+    mains.etat = "cache";
+  }
+  function majMains(dt) {
+    const etat = gesteMain && tempsTotal() < gesteFin ? gesteMain : mains.etat;
+    const cibles = POS_MAINS[etat];
+    const k = Math.min(1, dt * 5);
+    mains.forEach((m, i) => {
+      const c = cibles[i];
+      m.position.x += (c[0] - m.position.x) * k;
+      m.position.y += (c[1] - m.position.y) * k;
+      m.position.z += (c[2] - m.position.z) * k;
+      m.rotation.x += (c[3] - m.rotation.x) * k;
+    });
+  }
+  function geste(nom, duree) { gesteMain = nom; gesteFin = tempsTotal() + duree; }
+  function tempsTotal() { return tm + tp + ta + tr; }
 
   // ---------- Texte flottant (rupture onirique) ----------
   function etiquette(texte) {
@@ -314,7 +542,9 @@ window.Desert = (function () {
     return sp;
   }
 
-  // ---------- Interface ----------
+  // =====================================================================
+  //  Interface
+  // =====================================================================
   let sousTitreTimer = null;
   function dire(cle, chuchote) {
     const r = C.repliques[cle];
@@ -324,29 +554,34 @@ window.Desert = (function () {
     sousTitre.textContent = r[langue] || r.texte;
     sousTitre.className = r.qui === "agent" ? "visible agent" : "visible";
     clearTimeout(sousTitreTimer);
-    sousTitreTimer = setTimeout(() => { sousTitre.className = ""; }, 3800);
+    sousTitreTimer = setTimeout(() => { sousTitre.className = ""; }, 3400 + r.texte.length * 35);
   }
   function unefois(cle, condition, action) {
     if (!evenements[cle] && condition) { evenements[cle] = true; action(); }
   }
-  function montrerInvite(t) { invite.textContent = t || ""; invite.classList.toggle("visible", !!t); }
+  function montrerInvite(t) {
+    if (invite.textContent !== (t || "")) invite.textContent = t || "";
+    invite.classList.toggle("visible", !!t);
+  }
 
-  // ---------- Entrées ----------
   function installerEntrees() {
     window.addEventListener("keydown", (e) => {
       touches[e.code] = true;
-      if (e.code === "KeyE" || e.code === "Space") actionAider();
+      if (e.code === "KeyE" || e.code === "Space") action();
     });
     window.addEventListener("keyup", (e) => { touches[e.code] = false; });
     renderer.domElement.addEventListener("click", () => {
       if (!verrouille && renderer.domElement.requestPointerLock) renderer.domElement.requestPointerLock();
     });
     document.addEventListener("pointerlockchange", () => {
+      const avant = verrouille;
       verrouille = document.pointerLockElement === renderer.domElement;
       aide.classList.toggle("visible", !verrouille && phase !== "fin");
+      // Échap libère la souris : on met en pause.
+      if (avant && !verrouille && phase !== "fin" && window.Pause) window.Pause.activer();
     });
     document.addEventListener("mousemove", (e) => {
-      if (!verrouille) return;
+      if (!verrouille || enPause()) return;
       lacet -= e.movementX * 0.0022;
       tangage -= e.movementY * 0.0022;
       tangage = Math.max(-1.2, Math.min(1.2, tangage));
@@ -357,11 +592,26 @@ window.Desert = (function () {
     });
   }
   function enfoncee(...codes) { return codes.some((c) => touches[c]); }
+  function enPause() { return window.Pause && window.Pause.actif; }
 
-  function actionAider() {
-    if (phase !== "marche" || ernestoEtat !== "tombe") return;
-    const d = Math.hypot(joueur.x - ernesto.x, joueur.z - ernesto.z);
-    if (d < 3) relever(true);
+  // Touche E : selon le moment, monter, aider, boire.
+  function action() {
+    if (enPause()) return;
+    if (phase === "mur" && joueur.etat === "attend" && distEchelle() < 3 && evenements.tousPasses) return franchirJoueur();
+    if (phase !== "marche") return;
+    if (ernestoEtat === "tombe" && Math.hypot(joueur.x - ernesto.x, joueur.z - ernesto.z) < 3) {
+      geste("tendre", 1.8);
+      relever(true);
+      return;
+    }
+    if (eauOfferte && !eauBue && Math.hypot(joueur.x - julio.x, joueur.z - julio.z) < 3.2) {
+      eauBue = true;
+      montrerInvite("");
+      geste("boire", 2.4);
+      A.gorgees();
+      joueur.fatigue = Math.max(0, joueur.fatigue - 0.15);
+      setTimeout(() => dire("eauMerci", true), 1800);
+    }
   }
   function relever(parJoueur) {
     ernestoEtat = "releve";
@@ -369,14 +619,37 @@ window.Desert = (function () {
     montrerInvite("");
     dire(parJoueur ? "aide" : "aideAutre", parJoueur);
   }
+  function distEchelle() { return Math.hypot(joueur.x - ECHELLE_X, joueur.z - (MUR_Z + 1.2)); }
 
-  // ---------- Joueur ----------
+  // =====================================================================
+  //  Joueur
+  // =====================================================================
   function majJoueur(dt) {
+    // Montée de l'échelle : trajectoire imposée.
+    if (joueur.etat === "grimpe") {
+      joueur.tGrimpe += dt;
+      const u = Math.min(1, joueur.tGrimpe / 6.5);
+      const hm = hauteur(ECHELLE_X, MUR_Z);
+      let y, z;
+      if (u < 0.45) { const k = u / 0.45; z = MUR_Z + 0.9 - k * 0.5; y = hm + 1.6 + k * 4.4; }
+      else if (u < 0.6) { const k = (u - 0.45) / 0.15; z = MUR_Z + 0.4 - k * 0.8; y = hm + 6.0 + Math.sin(k * Math.PI) * 0.3; }
+      else { const k = (u - 0.6) / 0.4; z = MUR_Z - 0.4 - k * 0.6; y = hm + 6.0 - k * 4.4; }
+      joueur.x = ECHELLE_X; joueur.z = z;
+      if (Math.floor(joueur.tGrimpe / 0.55) !== joueur.dernierEchelon) { joueur.dernierEchelon = Math.floor(joueur.tGrimpe / 0.55); if (u < 0.45 || u > 0.6) A.echelon(); }
+      tangage += ((u < 0.45 ? 0.5 : u < 0.6 ? -0.3 : -0.4) - tangage) * Math.min(1, dt * 2);
+      let diff = 0 - lacet; while (diff > Math.PI) diff -= 2 * Math.PI; while (diff < -Math.PI) diff += 2 * Math.PI;
+      lacet += diff * Math.min(1, dt * 2);
+      camera.position.set(joueur.x, y, joueur.z);
+      camera.rotation.set(tangage, lacet, 0, "YXZ");
+      if (u >= 1) { joueur.etat = "libre"; mains.etat = "cache"; debutMarche(); }
+      return;
+    }
+
     let vitesseMax = 1.9 * (1 - 0.45 * joueur.fatigue);
-    if (phase === "alerte") vitesseMax = ta > 30 ? 0 : 0.5;
+    if (phase === "marche" && arret && evenements.fausseAlerte && !evenements.fausseFin) vitesseMax = 0.3;
+    if (phase === "alerte") vitesseMax = ta > 6 ? 0 : 0.5;
     if (phase === "reve") vitesseMax = 0;
 
-    // Tourner au clavier (si la souris n'est pas capturée)
     if (enfoncee("ArrowLeft")) lacet += 1.6 * dt;
     if (enfoncee("ArrowRight")) lacet -= 1.6 * dt;
 
@@ -391,35 +664,40 @@ window.Desert = (function () {
     let dx = (fx * av + rx * lat) / n * vitesseMax * dt;
     let dz = (fz * av + rz * lat) / n * vitesseMax * dt;
 
-    // On ne peut pas s'éloigner du groupe : le désert retient.
-    const ref = groupe[3];
+    // Le désert retient : on ne peut pas s'éloigner du groupe.
+    const ref = phase === "mur" ? { x: ECHELLE_X, z: MUR_Z + 6 } : groupe[3];
+    const rayon = phase === "mur" ? 14 : 45;
     const nx = joueur.x + dx, nz = joueur.z + dz;
     const dRef = Math.hypot(nx - ref.x, nz - ref.z);
-    if (dRef > 45 && dRef > Math.hypot(joueur.x - ref.x, joueur.z - ref.z)) { dx *= 0.15; dz *= 0.15; }
-
+    if (dRef > rayon && dRef > Math.hypot(joueur.x - ref.x, joueur.z - ref.z)) { dx *= 0.15; dz *= 0.15; }
     joueur.x += dx; joueur.z += dz;
+    // Le mur : on ne le traverse pas, et on ne revient pas en arrière.
+    if (phase === "mur") joueur.z = Math.max(MUR_Z + 1.0, joueur.z);
+    else joueur.z = Math.min(MUR_Z - 1.0, joueur.z);
+
     const d = Math.hypot(dx, dz);
     joueur.distPas += d;
     if (joueur.distPas > 0.72) { joueur.distPas = 0; A.pas(0.3 + joueur.fatigue * 0.15); }
     joueur.balance += d * 5.5;
 
-    // Hauteur des yeux : debout, accroupi, à genoux
+    // Hauteur des yeux : debout, accroupi, à plat ventre, à genoux
     let yeuxCible = 1.62;
-    if (phase === "alerte" && ta > 4) yeuxCible = 1.0;
-    if (phase === "alerte" && ta > 33) yeuxCible = 0.82;
-    if (phase === "reve") yeuxCible = 0.82;
-    joueur.yeux += (yeuxCible - joueur.yeux) * Math.min(1, dt * 2.5);
+    if (phase === "marche" && arret && evenements.fausseAlerte && !evenements.fausseFin) yeuxCible = 0.95;
+    if (phase === "marche" && arret && evenements.halte && !evenements.repart) yeuxCible = 0.9;
+    if (phase === "alerte") yeuxCible = ta < 2 ? 1.62 : ta < 6 ? 1.0 : ta < 38 ? 0.32 : 0.82;
+    if (phase === "reve") yeuxCible = tr > 9 ? 1.62 : 0.82;
+    joueur.yeux += (yeuxCible - joueur.yeux) * Math.min(1, dt * (phase === "reve" ? 0.5 : 2.5));
 
+    if (phase === "alerte" && ta > 6 && ta < 38) tangage = Math.max(-0.25, Math.min(0.35, tangage));
     // Pendant l'arrestation, le regard est attiré vers l'agent.
-    if (phase === "alerte" && ta > 30) {
+    if (phase === "alerte" && ta > 31) {
       const ag = agents[0];
-      const vx = ag.x - joueur.x, vz = ag.z - joueur.z;
-      const lacetCible = Math.atan2(-vx, -vz);
+      const lacetCible = Math.atan2(-(ag.x - joueur.x), -(ag.z - joueur.z));
       let diff = lacetCible - lacet;
       while (diff > Math.PI) diff -= Math.PI * 2;
       while (diff < -Math.PI) diff += Math.PI * 2;
       lacet += diff * Math.min(1, dt * 2.2);
-      tangage += (0.12 - tangage) * Math.min(1, dt * 2);
+      tangage += ((ta > 38 ? 0.25 : 0.12) - tangage) * Math.min(1, dt * 2);
     }
 
     const y = hauteur(joueur.x, joueur.z) + joueur.yeux + Math.sin(joueur.balance) * 0.03;
@@ -427,20 +705,88 @@ window.Desert = (function () {
     camera.rotation.set(tangage, lacet, Math.sin(joueur.balance * 0.5) * 0.006, "YXZ");
   }
 
-  // ---------- Groupe ----------
+  // =====================================================================
+  //  Le mur
+  // =====================================================================
+  const POS_ATTENTE = [[-1.2, 25.0], [1.4, 25.6], [-2.6, 26.8], [-0.6, 27.6], [-1.6, 28.0], [2.8, 27.2]];
+  function franchir(p, duree) {
+    p.franchit = { t: 0, duree };
+    p.cible = "grimpe";
+  }
+  function franchirJoueur() {
+    joueur.etat = "grimpe"; joueur.tGrimpe = 0; joueur.dernierEchelon = -1;
+    mains.etat = "echelle";
+    montrerInvite("");
+  }
+  function majMur(dt) {
+    unefois("murAttente", tm > 4, () => dire("murAttente", true));
+    // Chacun passe à son tour, le guide d'abord.
+    const ordre = [0, 1, 4, 2, 3, 5]; // guide, Julio, Yesenia, Rosa, Mateo, Ernesto
+    ordre.forEach((i, rang) => unefois("passe" + i, tm > 8 + rang * 5.5, () => franchir(groupe[i], i === 5 ? 7 : 5)));
+    unefois("murMateo", tm > 8 + 4 * 5.5 - 1, () => dire("murMateo", true));
+    unefois("tousPasses", tm > 8 + 5 * 5.5 + 5, () => {});
+    if (evenements.tousPasses && joueur.etat === "attend") {
+      montrerInvite(distEchelle() < 3 ? "[E] Monter à l'échelle" : "Rejoignez l'échelle");
+      if (!evenements.murJoueur) { evenements.murJoueur = tm; dire("murJoueur"); }
+      else if (tm - evenements.murJoueur > 14) { evenements.murJoueur = tm; dire("murJoueur"); }
+      if (tm > 8 + 5 * 5.5 + 5 + 45) franchirJoueur(); // personne ne reste derrière
+    }
+
+    groupe.forEach((p, i) => {
+      if (p.franchit) {
+        const f = p.franchit;
+        f.t += dt;
+        const u = Math.min(1, f.t / f.duree);
+        const hm = hauteur(ECHELLE_X, MUR_Z);
+        if (u < 0.45) { const k = u / 0.45; p.x = ECHELLE_X; p.z = MUR_Z + 0.75 - k * 0.3; p.yExtra = k * 5.0; p.cap = Math.PI; }
+        else if (u < 0.6) { p.z = MUR_Z + 0.45 - (u - 0.45) / 0.15 * 0.9; p.yExtra = 5.0; }
+        else { const k = (u - 0.6) / 0.4; p.z = MUR_Z - 0.45 - k * 0.3; p.yExtra = 5.0 * (1 - k); p.cap = 0; }
+        p.vitesse = 0.8;
+        if (u >= 1) { p.franchit = null; p.passe = true; p.yExtra = 0; p.cible = "marche"; }
+      } else if (p.passe) {
+        const cible = pointS(S_DEPART - ESPACEMENT * i);
+        const vx = cible.x - p.x, vz = cible.z - p.z, d = Math.hypot(vx, vz);
+        const v = d > 0.3 ? 1.3 : 0;
+        if (d > 0.01) { p.x += vx / d * v * dt; p.z += vz / d * v * dt; }
+        p.cap = d > 0.3 ? Math.atan2(vx, vz) : capS(S_DEPART);
+        p.vitesse = v;
+        p.cible = d > 0.3 ? "marche" : (i === 3 ? "accroupi" : "debout");
+      } else {
+        const [x, z] = POS_ATTENTE[i];
+        p.x = x; p.z = z;
+        p.cap = Math.atan2(ECHELLE_X - x, MUR_Z - z) + Math.sin(tm * 0.3 + i) * 0.3;
+        p.vitesse = 0;
+        p.cible = i === 3 ? "accroupi" : "debout";
+      }
+      p.distPas += p.vitesse * dt;
+      if (p.distPas > 0.8 && !p.franchit) { p.distPas = 0; A.pasAutre(p.x, hauteur(p.x, p.z), p.z); }
+      animerPersonnage(p, dt);
+    });
+  }
+
+  function debutMarche() {
+    phase = "marche"; tp = 0;
+    dernierAppel = 6; // laisser le temps de rejoindre le groupe après le mur
+    groupe.forEach((p, i) => { p.abscisse = S_DEPART - ESPACEMENT * i; p.passe = false; p.cible = "marche"; });
+    dire("murApres", true);
+  }
+
+  // =====================================================================
+  //  La marche
+  // =====================================================================
   function dernierDuGroupe() { return groupe[groupe.length - 1]; }
 
   function majGroupe(dt) {
     const enMarche = phase === "marche";
     if (enMarche) {
-      // Le guide attend si le joueur traîne trop.
       const dernier = dernierDuGroupe();
       const retard = Math.hypot(joueur.x - dernier.x, joueur.z - dernier.z);
-      let v = 1.25;
+      let v = tp > 230 ? 1.1 : 1.25;
       if (retard > 13) v = 0;
       else if (retard > 9) v = 0.5;
+      if (arret) v = 0;
       sLeader = Math.min(longueur - 5, sLeader + v * dt);
-      if (retard > 13 && tp - dernierAppel > 16) {
+      if (retard > 13 && !arret && tp - dernierAppel > 16) {
         dernierAppel = tp;
         dire(retard > 30 ? "perdu" : (alea() > 0.5 ? "attendre" : "attendre2"));
       }
@@ -464,37 +810,100 @@ window.Desert = (function () {
         const decal = Math.sin(i * 1.7 + p.abscisse * 0.05) * 0.9;
         const c = capS(p.abscisse);
         p.x = pt.x + Math.cos(c) * decal; p.z = pt.z - Math.sin(c) * decal;
-        p.cap = c;
+        p.cap = c + (p.regard || 0);
         p.vitesse = (p.abscisse - avant) / Math.max(dt, 1e-4);
         p.distPas += p.abscisse - avant;
       } else {
         p.vitesse *= 0.9;
-        if (p.disperse) {
-          p.x += p.disperse.x * dt * Math.max(0, 1 - ta / 12);
-          p.z += p.disperse.z * dt * Math.max(0, 1 - ta / 12);
+        if (p.versSol) {
+          const vx = p.versSol.x - p.x, vz = p.versSol.z - p.z, d = Math.hypot(vx, vz);
+          if (d > 0.4) {
+            const v = Math.min(3.2, d * 2);
+            p.x += vx / d * v * dt; p.z += vz / d * v * dt;
+            p.cap = Math.atan2(vx, vz); p.vitesse = v;
+          } else {
+            p.cap = p.versSol.cap; p.versSol = null;
+            if (p.cible === "accroupi") p.cible = "couche";
+          }
         }
-        // Se tourner vers la menace
-        if (phase === "alerte" && ta > 30 && helico) {
-          p.cap += (Math.atan2(pickup.position.x - p.x, pickup.position.z - p.z) - p.cap) * Math.min(1, dt);
+        if (phase === "alerte" && ta > 38 && pickup.visible) {
+          const c = Math.atan2(pickup.position.x - p.x, pickup.position.z - p.z);
+          let diff = c - p.cap; while (diff > Math.PI) diff -= 2 * Math.PI; while (diff < -Math.PI) diff += 2 * Math.PI;
+          p.cap += diff * Math.min(1, dt);
         }
       }
       if (p.distPas > 0.8) {
         p.distPas = 0;
-        const dJ = Math.hypot(p.x - joueur.x, p.z - joueur.z);
-        if (dJ < 25) A.pasAutre(p.x, hauteur(p.x, p.z), p.z);
+        if (Math.hypot(p.x - joueur.x, p.z - joueur.z) < 25) A.pasAutre(p.x, hauteur(p.x, p.z), p.z);
       }
       animerPersonnage(p, dt);
     });
   }
 
-  // ---------- Déroulé de la marche ----------
+  // Le déroulé de la marche, seconde par seconde.
   function scenarioMarche() {
-    unefois("depart", tp > 3, () => dire("depart", true));
-    unefois("rythme", tp > 32, () => dire("rythme", true));
-    unefois("enfant", tp > 55, () => dire("enfant"));
-    unefois("mere", tp > 59, () => dire("mere", true));
-    unefois("soif", tp > 76, () => dire("soif"));
-    unefois("chute", tp > 90, () => {
+    const ev = (cle, t, f) => unefois(cle, tp > t, f);
+    // --- Première marche : calme, présentations ---
+    ev("depart", 7, () => dire("depart", true));
+    ev("enfant", 28, () => dire("enfant"));
+    ev("mere", 32, () => dire("mere", true));
+    ev("yesenia1", 52, () => dire("yesenia1", true));
+    ev("yesenia2", 60, () => dire("yesenia2", true));
+    ev("julio1", 84, () => dire("julio1", true));
+    ev("coyotes", 108, () => { const g = groupe[0]; A.coyotes(g.x - 120, g.z - 90); });
+    ev("coyoteEnfant", 113, () => dire("coyoteEnfant"));
+    ev("coyoteMere", 117, () => dire("coyoteMere", true));
+    ev("coyotes2", 135, () => { const g = groupe[0]; A.coyotes(g.x + 140, g.z - 40); });
+    // La croix : quand le guide passe à sa hauteur
+    unefois("cruz1", groupe[4].abscisse > S_CROIX - 4, () => { dire("cruz1", true); groupe[4].regard = 0.9; });
+    unefois("cruz2", evenements.cruz1 && groupe[2].abscisse > S_CROIX + 1, () => { dire("cruz2", true); groupe[4].regard = 0; });
+
+    // --- La halte ---
+    ev("halte", 160, () => {
+      arret = true; dire("halte", true);
+      groupe.forEach((p, i) => setTimeout(() => { if (phase === "marche") p.cible = "assis"; }, 600 + i * 450));
+    });
+    ev("eau", 170, () => { dire("eau", true); eauOfferte = true; });
+    if (eauOfferte && !eauBue && !evenements.repart) {
+      const d = Math.hypot(joueur.x - julio.x, joueur.z - julio.z);
+      montrerInvite(d < 3.2 ? "[E] Boire" : "");
+    }
+    ev("berceuse", 182, () => { dire("berceuse", true); groupe[3].cible = "dort"; });
+    ev("ernestoHalte", 196, () => dire("ernestoHalte", true));
+    ev("repart", 214, () => {
+      dire("repart", true); arret = false; eauOfferte = false; montrerInvite("");
+      groupe.forEach((p) => (p.cible = "marche"));
+      A.setVent(0.3); A.tension(0.05);
+    });
+
+    // --- Deuxième marche : froid, soif, peur ---
+    ev("rythme", 226, () => dire("rythme", true));
+    ev("froid", 240, () => dire("froid"));
+    ev("soif", 256, () => dire("soif"));
+    ev("soifReponse", 261, () => dire("soifReponse", true));
+    ev("fausseAlerte", 276, () => {
+      arret = true; dire("fausseAlerte");
+      groupe.forEach((p) => (p.cible = "accroupi"));
+      A.coeur(true); A.setPeur(0.8); A.tension(0.12);
+      const g = groupe[0];
+      voitureLoin.visible = true;
+      voitureLoin.userData = { x0: g.x - 260, x1: g.x + 260, z: g.z - 110, t0: tp };
+      A.voiture(voitureLoin.userData.x0, voitureLoin.userData.z);
+    });
+    if (voitureLoin.visible) {
+      const u = (tp - voitureLoin.userData.t0) / 16;
+      const x = voitureLoin.userData.x0 + (voitureLoin.userData.x1 - voitureLoin.userData.x0) * u;
+      const z = voitureLoin.userData.z;
+      voitureLoin.position.set(x, hauteur(x, z) + 0.9, z);
+      A.positionVoiture(x, z);
+      if (u > 1) { voitureLoin.visible = false; A.voitureFin(); }
+    }
+    ev("fausseFin", 292, () => {
+      dire("fausseFin", true); arret = false;
+      groupe.forEach((p) => (p.cible = "marche"));
+      A.setPeur(0); A.tension(0.07);
+    });
+    ev("chute", 316, () => {
       ernestoEtat = "tombe"; ernestoChuteT = tp;
       ernesto.cible = "chute";
       dire("chute");
@@ -502,43 +911,67 @@ window.Desert = (function () {
     if (ernestoEtat === "tombe") {
       const d = Math.hypot(joueur.x - ernesto.x, joueur.z - ernesto.z);
       montrerInvite(d < 3 ? "[E] Tendre la main" : "");
-      if (tp - ernestoChuteT > 14) relever(false);
+      if (tp - ernestoChuteT > 15) relever(false);
     }
-    if (tp < 12) aide.classList.add("controles");
+
+    // --- L'espoir ---
+    ev("espoir1", 352, () => {
+      dire("espoir1", true);
+      A.tension(0); A.setVent(0.18); A.espoir(); A.setFatigue(joueur.fatigue * 0.6);
+      groupe[0].regard = 0;
+    });
+    ev("espoir2", 359, () => dire("espoir2", true));
+    ev("espoir3", 364, () => dire("espoir3"));
+    ev("espoir4", 368, () => dire("espoir4", true));
+    if (evenements.espoir1) lumieresVille.material.opacity = Math.min(1, lumieresVille.material.opacity + 0.004);
+
+    if (tp < 14) aide.classList.add("controles");
     else aide.classList.remove("controles");
 
-    const pret = tp > 150 && ernestoEtat !== "tombe";
+    const pret = tp > 384 && ernestoEtat !== "tombe";
     if (pret || sLeader >= longueur - 6) debutAlerte();
   }
 
   function debutAlerte() {
     phase = "alerte"; ta = 0;
+    arret = true;
     montrerInvite("");
+    A.espoirCouper();
     const g = groupe[3];
     centreAlerte = new THREE.Vector3(g.x, 0, g.z);
     A.helicoptere();
   }
 
-  // ---------- Déroulé de l'arrestation ----------
+  // =====================================================================
+  //  L'arrestation
+  // =====================================================================
   const _v = new THREE.Vector3(), _w = new THREE.Vector3();
-  let helicoDepart, helicoArrivee;
-  let pickupDepart, pickupArrivee;
+  let helicoDepart, helicoArrivee, pickupDepart, pickupArrivee;
 
   function scenarioAlerte(dt) {
     const G = centreAlerte;
-    A.setPeur(Math.min(1, ta / 15));
-    unefois("cri", ta > 4, () => {
-      dire("alerte");
-      groupe.forEach((p, i) => {
-        p.cible = "accroupi";
-        const a = i * 2.1 + 0.5;
-        p.disperse = { x: Math.cos(a) * 0.5, z: Math.sin(a) * 0.5 };
-      });
-      A.coeur(true);
+    A.setPeur(Math.min(1, ta / 12));
+    unefois("chut", ta > 0.8, () => {
+      dire("chut", true);
+      groupe.forEach((p) => { p.cible = "accroupi"; p.vitesse = 0; });
+      groupe[0].cible = "debout";
     });
-    unefois("priere", ta > 8, () => dire("priere", true));
+    unefois("cri", ta > 5, () => {
+      dire("alerte");
+      // Chacun se jette au sol, tout près du joueur.
+      const fx = -Math.sin(lacet), fz = -Math.cos(lacet), rx = Math.cos(lacet), rz = -Math.sin(lacet);
+      const places = [null, [2.6, 1.2], [3.4, -1.0], [2.2, -2.3], [4.6, 0.3], [1.3, 2.4]]; // [devant, côté]
+      groupe.forEach((p, i) => {
+        if (!places[i]) return;
+        const [av, co] = places[i];
+        p.versSol = { x: joueur.x + fx * av + rx * co, z: joueur.z + fz * av + rz * co, cap: lacet + Math.PI + (i % 2 ? 0.3 : -0.25) };
+        p.cible = "accroupi";
+      });
+      mains.etat = "sol";
+      A.coeur(true); A.tension(0.16);
+    });
+    unefois("priere", ta > 10, () => dire("priere", true));
 
-    // L'hélicoptère approche puis se met en vol stationnaire
     unefois("helicoVisible", ta > 0.01, () => {
       helicoDepart = new THREE.Vector3(G.x - 60, 80, G.z - 380);
       helicoArrivee = new THREE.Vector3(G.x + 4, 30, G.z + 6);
@@ -560,7 +993,6 @@ window.Desert = (function () {
     if (ta > 12) {
       spotHelico.intensity = 3.5;
       faisceauHelico.visible = true;
-      // Balayage, puis le faisceau se fixe sur le groupe et le joueur
       const fixe = Math.min(1, Math.max(0, (ta - 18) / 6));
       const bx = helico.position.x + Math.sin(ta * 0.9) * 25, bz = helico.position.z - 20 + Math.cos(ta * 0.6) * 15;
       const cx = (joueur.x + G.x) / 2, cz = (joueur.z + G.z) / 2;
@@ -579,7 +1011,6 @@ window.Desert = (function () {
       guide.cap = a; guide.cible = "marche";
     });
 
-    // Le pick-up arrive par le côté
     unefois("pickup", ta > 24, () => {
       pickupDepart = new THREE.Vector3(G.x + 90, 0, G.z + 30);
       pickupArrivee = new THREE.Vector3(G.x + 16, 0, G.z + 5);
@@ -599,7 +1030,6 @@ window.Desert = (function () {
       A.positionMoteur(pickup.position.x, pickup.position.z);
     }
 
-    // Les agents descendent et s'approchent
     unefois("agents", ta > 30, () => {
       const cibles = [joueur, groupe[2], groupe[4]];
       agents.forEach((ag, i) => {
@@ -608,54 +1038,57 @@ window.Desert = (function () {
         ag.vers = cibles[i];
         ag.lampe.intensity = 2.5;
         ag.faisceau.visible = true;
-        ag.bras[1].userData.cote = 0.4;
       });
       dire("agent1");
-      groupe.forEach((p) => { if (!p.fuit) { p.cible = "genoux"; p.disperse = null; } });
     });
     unefois("agent2", ta > 34, () => dire("agent2"));
-    unefois("agent3", ta > 38, () => dire("agent3"));
+    unefois("agent3", ta > 38, () => {
+      dire("agent3");
+      groupe.forEach((p) => { if (!p.fuit) { p.cible = "genoux"; p.versSol = null; } });
+      mains.etat = "haut";
+    });
 
     agents.forEach((ag) => {
       if (!ag.racine.visible) return;
       const vx = ag.vers.x - ag.x, vz = ag.vers.z - ag.z;
       const d = Math.hypot(vx, vz);
-      const arret = 2.0;
-      const v = d > arret ? 1.7 : 0;
+      const v = d > 2.0 ? 1.7 : 0;
       ag.x += (vx / d) * v * dt; ag.z += (vz / d) * v * dt;
       ag.cap = Math.atan2(vx, vz);
       ag.vitesse = v;
       ag.cible = "marche";
       animerPersonnage(ag, dt);
-      ag.bras.forEach((b) => (b.rotation.x = -1.2));
-      // Lampe torche à hauteur d'épaule, braquée vers le visage
-      _v.set(ag.x + Math.sin(ag.cap) * 0.3, hauteur(ag.x, ag.z) + 1.45, ag.z + Math.cos(ag.cap) * 0.3);
-      const tete = ag.vers === joueur ? camera.position : _w.set(ag.vers.x, hauteur(ag.vers.x, ag.vers.z) + 0.9, ag.vers.z);
+      // Bras droit tendu, lampe braquée
+      ag.bras[1].epaule.rotation.x = -1.35; ag.bras[1].coude.rotation.x = -0.1;
+      ag.bras[0].epaule.rotation.x = -0.9; ag.bras[0].coude.rotation.x = -0.9;
+      _v.set(ag.x + Math.sin(ag.cap) * 0.5 + Math.cos(ag.cap) * 0.2, hauteur(ag.x, ag.z) + 1.4, ag.z + Math.cos(ag.cap) * 0.5 - Math.sin(ag.cap) * 0.2);
+      const tete = ag.vers === joueur ? camera.position : _w.set(ag.vers.x, hauteur(ag.vers.x, ag.vers.z) + 0.6, ag.vers.z);
       ag.lampe.position.copy(_v);
       ag.lampe.target.position.copy(tete);
       orienterFaisceau(ag.faisceau, _v, tete, 0.12);
       if (ag.vers === joueur) joueur.dAgent = d;
     });
 
-    // La lampe dans les yeux : éblouissement, puis rupture
     if (agents[0].racine.visible) {
       const d = joueur.dAgent || 99;
-      const ebloui = Math.max(0, Math.min(1, (6 - d) / 4));
+      const ebloui = ta > 38 ? Math.max(0, Math.min(1, (6 - d) / 4)) : Math.max(0, Math.min(0.4, (6 - d) / 8));
       voile.style.transition = "none";
       voile.style.background = "#fff";
       voile.style.opacity = (ebloui * 0.85).toFixed(3);
-      if ((d < 2.3 && ta > 40) || ta > 46) debutReve();
+      if ((d < 2.3 && ta > 43) || ta > 48) debutReve();
     }
   }
 
-  // ---------- Rupture onirique ----------
+  // =====================================================================
+  //  La rupture onirique
+  // =====================================================================
   const etiquettes = [];
   function debutReve() {
     phase = "reve"; tr = 0;
     voile.style.opacity = "1";
+    clearTimeout(sousTitreTimer); sousTitre.className = ""; montrerInvite("");
     A.silence();
     setTimeout(() => A.nappe(), 1800);
-    // Le monde se fige et change de couleur
     scene.fog.color.set(0x140c26);
     scene.fog.density = 0.028;
     scene.background.set(0x140c26);
@@ -666,10 +1099,10 @@ window.Desert = (function () {
     faisceauHelico.material.color.set(0xffc88a);
     faisceauHelico.material.opacity = 0.12;
     helico.visible = false;
+    mains.etat = "cache";
     groupe.forEach((p, i) => {
       if (p.fuit) return;
-      const perso = C.personnages[i];
-      const sp = etiquette(perso.nom);
+      const sp = etiquette(C.personnages[i].nom);
       sp.position.set(p.x, hauteur(p.x, p.z) + 1.4, p.z);
       sp.userData.p = p;
       sp.userData.retard = 4 + i * 2.5;
@@ -684,9 +1117,15 @@ window.Desert = (function () {
   }
 
   function scenarioReve(dt) {
-    // Les personnes se relèvent lentement ; leurs noms montent dans la lumière.
     unefois("releve", tr > 7, () => groupe.forEach((p) => { if (!p.fuit) p.cible = "debout"; }));
-    groupe.forEach((p) => { if (!p.fuit) { p.vitesse = 0; animerPersonnage(p, dt); } });
+    groupe.forEach((p) => {
+      if (p.fuit) return;
+      p.vitesse = 0;
+      // Ils se tournent vers le joueur.
+      const c = Math.atan2(joueur.x - p.x, joueur.z - p.z);
+      if (tr > 9) { let diff = c - p.cap; while (diff > Math.PI) diff -= 2 * Math.PI; while (diff < -Math.PI) diff += 2 * Math.PI; p.cap += diff * Math.min(1, dt * 0.4); }
+      animerPersonnage(p, dt);
+    });
     etiquettes.forEach((sp) => {
       const k = Math.max(0, tr - sp.userData.retard);
       sp.material.opacity = Math.min(1, k / 3) * (tr > 40 ? Math.max(0, 1 - (tr - 40) / 4) : 1);
@@ -719,23 +1158,40 @@ window.Desert = (function () {
     if (onFin) onFin();
   }
 
-  // ---------- Boucle ----------
+  // =====================================================================
+  //  Boucle
+  // =====================================================================
   function boucle() {
-    const dt = Math.min(0.05, horloge.getDelta()) * acceleration;
-    if (phase === "marche") { tp += dt; joueur.fatigue = Math.min(1, tp / 170); A.setFatigue(joueur.fatigue); scenarioMarche(); }
+    let dt = Math.min(0.05, horloge.getDelta()) * acceleration;
+    if (enPause()) { renderer.render(scene, camera); return; }
+    if (phase === "mur") { tm += dt; majMur(dt); }
+    else if (phase === "marche") {
+      tp += dt;
+      const fCible = Math.min(1, tp / 330) * (evenements.espoir1 ? 0.6 : 1);
+      joueur.fatigue += (fCible - joueur.fatigue) * Math.min(1, dt * 0.2);
+      A.setFatigue(joueur.fatigue);
+      scenarioMarche();
+    }
     else if (phase === "alerte") { ta += dt; scenarioAlerte(dt); }
     else if (phase === "reve") { tr += dt; scenarioReve(dt); }
     if (phase === "fin") return;
 
-    majGroupe(dt);
+    if (phase !== "mur") majGroupe(dt);
     majJoueur(dt);
+    majMains(dt);
+    if (flamme) {
+      const f = 0.8 + Math.sin(tempsTotal() * 13) * 0.1 + Math.sin(tempsTotal() * 7.3) * 0.1;
+      flamme.scale.setScalar(f); croix.userData.lueur.intensity = 1.1 * f;
+    }
     ciel.position.copy(camera.position);
     const avant = _v.set(0, 0, -1).applyQuaternion(camera.quaternion);
     A.auditeur(camera.position, avant);
     renderer.render(scene, camera);
   }
 
-  // ---------- Lancement ----------
+  // =====================================================================
+  //  Lancement
+  // =====================================================================
   function lancer(options) {
     onFin = options.fin;
     acceleration = options.acceleration || 1;
@@ -753,29 +1209,34 @@ window.Desert = (function () {
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x070a14);
     scene.fog = new THREE.FogExp2(0x070a14, 0.02);
-    camera = new THREE.PerspectiveCamera(68, innerWidth / innerHeight, 0.1, 1500);
+    camera = new THREE.PerspectiveCamera(68, innerWidth / innerHeight, 0.05, 1500);
 
-    // Lumière de lune, froide et basse
-    const luneLum = new THREE.DirectionalLight(0x9db0e0, 1.1);
+    const luneLum = new THREE.DirectionalLight(0x9db0e0, 1.5);
     luneLum.position.set(520, 300, -560);
-    scene.add(luneLum, new THREE.HemisphereLight(0x22304f, 0x0b0907, 0.9));
+    scene.add(luneLum, new THREE.HemisphereLight(0x2c3b5e, 0x15110d, 1.5));
+    // Lumière d'appoint : le ciel du sud éclaire doucement le dos des marcheurs.
+    const appoint = new THREE.DirectionalLight(0x6a7aa8, 0.9);
+    appoint.position.set(-300, 220, 420);
+    scene.add(appoint);
 
     chemin = new THREE.CatmullRomCurve3([
       new THREE.Vector3(0, 0, 8), new THREE.Vector3(8, 0, -60), new THREE.Vector3(-6, 0, -130),
       new THREE.Vector3(15, 0, -200), new THREE.Vector3(5, 0, -280), new THREE.Vector3(25, 0, -360),
-      new THREE.Vector3(10, 0, -440),
+      new THREE.Vector3(10, 0, -440), new THREE.Vector3(-12, 0, -520), new THREE.Vector3(0, 0, -610),
     ]);
     longueur = chemin.getLength();
 
     construireDecor();
     construireVehicules();
+    construireMains();
 
     C.personnages.forEach((perso, i) => {
-      const p = creerPersonnage(perso.couleur, perso.taille, { casquette: perso.id === "guia" });
+      const p = creerPersonnage(perso.corps);
       p.id = perso.id;
-      p.abscisse = sLeader - ESPACEMENT * i;
+      p.abscisse = S_DEPART - ESPACEMENT * i;
       groupe.push(p);
       if (perso.id === "ernesto") ernesto = p;
+      if (perso.id === "julio") julio = p;
     });
 
     // Particules de sable pour la rupture
@@ -798,20 +1259,25 @@ window.Desert = (function () {
     particules.visible = false;
     scene.add(particules);
 
-    const depart = pointS(2);
-    joueur = { x: depart.x, z: depart.z, yeux: 1.62, fatigue: 0, distPas: 0, balance: 0 };
-    lacet = capS(2) + Math.PI;
+    joueur = { x: 1.6, z: 33, yeux: 1.62, fatigue: 0, distPas: 0, balance: 0, etat: "attend" };
+    lacet = 0.05;
 
     // Saut direct dans le déroulé (tests, ou reprise par l'enseignant)
-    if (options.temps) {
+    if (options.temps !== undefined && options.temps !== null) {
       const t0 = options.temps;
-      sLeader = Math.min(longueur - 10, 16 + t0 * 1.2);
+      phase = "marche"; joueur.etat = "libre";
+      sLeader = Math.min(longueur - 10, S_DEPART + t0 * 1.05);
       groupe.forEach((p, i) => (p.abscisse = sLeader - ESPACEMENT * i));
       const pj = pointS(sLeader - ESPACEMENT * 6 - 3);
       joueur.x = pj.x; joueur.z = pj.z; lacet = capS(sLeader) + Math.PI;
       tp = t0;
-      ["depart", "rythme", "enfant", "mere", "soif", "chute"].forEach((k) => { if (t0 > 95) evenements[k] = true; });
-      if (t0 > 95) ernestoEtat = "releve";
+      joueur.fatigue = Math.min(1, t0 / 330);
+      // Les événements déjà passés sont marqués comme faits.
+      const passes = { depart: 7, enfant: 28, mere: 32, yesenia1: 52, yesenia2: 60, julio1: 84, coyotes: 108, coyoteEnfant: 113, coyoteMere: 117, coyotes2: 135,
+        halte: 160, eau: 170, berceuse: 182, ernestoHalte: 196, repart: 214, rythme: 226, froid: 240, soif: 256, soifReponse: 261, fausseAlerte: 276, fausseFin: 292, chute: 316 };
+      for (const k in passes) if (t0 > passes[k]) evenements[k] = true;
+      if (sLeader > S_CROIX + 6) evenements.cruz1 = evenements.cruz2 = true;
+      if (t0 > 160 && t0 < 214) { arret = true; groupe.forEach((p) => (p.cible = "assis")); eauOfferte = t0 > 170; }
     }
 
     installerEntrees();
@@ -824,8 +1290,20 @@ window.Desert = (function () {
     voile.style.background = "#000";
     requestAnimationFrame(() => (voile.style.opacity = "0"));
 
-    if (options.reve) { phase = "alerte"; ta = 0; debutAlerte(); ta = 47; scenarioAlerte(0.016); }
+    if (options.reve) {
+      phase = "marche"; joueur.etat = "libre";
+      const pj = pointS(sLeader - ESPACEMENT * 6 - 3);
+      joueur.x = pj.x; joueur.z = pj.z; lacet = capS(sLeader) + Math.PI;
+      groupe.forEach((p, i) => { const pt = pointS(p.abscisse); p.x = pt.x; p.z = pt.z; });
+      debutAlerte(); ta = 47; scenarioAlerte(0.016);
+    }
   }
 
-  return { lancer, _etat: () => ({ phase, tp, ta, tr, joueur, sLeader, groupe: groupe.map((p) => [p.x, p.racine.position.y, p.z, p.cible, p.racine.visible]) }) };
+  return {
+    lancer,
+    _etat: () => joueur && ({ phase, tm, tp, ta, tr, joueur: { x: joueur.x, z: joueur.z, yeux: joueur.yeux, etat: joueur.etat }, sLeader,
+      groupe: groupe.map((p) => [Math.round(p.x), Math.round(p.racine.position.y * 10) / 10, Math.round(p.z), p.cible]) }),
+    _action: action,
+    _placer: (x, z, l, t) => { joueur.x = x; joueur.z = z; lacet = l; tangage = t || 0; }, // tests
+  };
 })();
