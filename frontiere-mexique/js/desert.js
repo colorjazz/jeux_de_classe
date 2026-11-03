@@ -197,7 +197,8 @@ window.Desert = (function () {
     }
     let baton = null;
     if (o.objet === "baton") baton = maille(new THREE.CylinderGeometry(0.014, 0.018, 1.05, 6), 0x5a4630, mainD, 0, -0.4, 0.02);
-    if (o.objet === "sac") maille(new THREE.BoxGeometry(0.2, 0.22, 0.08), 0x3a3128, mainD, 0, -0.14, 0);
+    let sacMain = null;
+    if (o.objet === "sac") sacMain = maille(new THREE.BoxGeometry(0.2, 0.22, 0.08), 0x3a3128, mainD, 0, -0.14, 0);
     if (o.objet === "lampe") {
       const l = maille(new THREE.CylinderGeometry(0.025, 0.03, 0.22, 8), 0x111111, mainD, 0, -0.06, 0.06);
       l.rotation.x = Math.PI / 2;
@@ -205,7 +206,7 @@ window.Desert = (function () {
 
     scene.add(racine);
     return {
-      racine, corps, bassin, haut, tete, bras, jambes, s, baton, bidon,
+      racine, corps, bassin, haut, tete, bras, jambes, s, baton, bidon, sacMain,
       pose: Object.assign({}, POSES.marche),
       cible: "marche", cycle: alea() * 6, vitesse: 0, distPas: 0, yExtra: 0,
       x: 0, z: 0, cap: 0,
@@ -224,8 +225,8 @@ window.Desert = (function () {
     couche:   { bas: 0,    couche: 1, penche: 0,    hanche: 0,    genou: 0.15, bAvant: 2.6,  bCote: 0.35, coude: 1.9,  cZ: 0, tete: -0.6 },
     genoux:   { bas: 0.44, couche: 0, penche: -0.04,hanche: 0,    genou: 1.55, bAvant: 0,    bCote: 1.45, coude: 0,    cZ: 1.5, tete: 0.05 },
     chute:    { bas: 0.44, couche: 0, penche: 0.8,  hanche: 0.3,  genou: 1.55, bAvant: 1.1,  bCote: 0.1,  coude: 0.2,  cZ: 0, tete: 0.4 },
-    assis:    { bas: 0.66, couche: 0, penche: 0.25, hanche: 1.75, genou: 2.0,  bAvant: 0.9,  bCote: 0.12, coude: 1.0,  cZ: 0, tete: 0.1 },
-    dort:     { bas: 0.66, couche: 0, penche: 0.55, hanche: 1.75, genou: 2.0,  bAvant: 0.6,  bCote: 0.1,  coude: 1.2,  cZ: 0, tete: 0.6 },
+    assis:    { bas: 0.78, couche: 0, penche: 0.38, hanche: 2.18, genou: 1.57, bAvant: 1.0,  bCote: 0.12, coude: 0.9,  cZ: 0, tete: 0.05 },
+    dort:     { bas: 0.78, couche: 0, penche: 0.62, hanche: 2.18, genou: 1.57, bAvant: 0.8,  bCote: 0.1,  coude: 1.1,  cZ: 0, tete: 0.55 },
     grimpe:   { bas: 0,    couche: 0, penche: 0.1,  hanche: 0.6,  genou: 0.9,  bAvant: 2.7,  bCote: 0.1,  coude: 0.3,  cZ: 0, tete: -0.4 },
   };
 
@@ -239,6 +240,7 @@ window.Desert = (function () {
     const P = p.pose;
     // Le bâton n'apparaît que debout (assis ou couché, il pourrait passer pour une arme).
     if (p.baton) p.baton.visible = p.cible === "marche" || p.cible === "debout" || p.cible === "chute";
+    if (p.sacMain) p.sacMain.visible = p.cible === "marche" || p.cible === "debout";
     // Vitesse lissée : pas d'à-coups entre l'arrêt et la marche.
     p.vLisse = (p.vLisse || 0) + (p.vitesse - (p.vLisse || 0)) * (1 - Math.exp(-dt * 5));
     const v = Math.max(0, p.vLisse);
@@ -246,7 +248,8 @@ window.Desert = (function () {
     const grimpe = p.cible === "grimpe";
     // Cadence liée à la distance parcourue et à la taille (un enfant fait des pas plus courts).
     const foulee = 0.62 * p.s;
-    p.cycle += grimpe ? 4 * dt : (v * dt / foulee) * Math.PI;
+    if (grimpe && p.barreau !== undefined) p.cycle = p.barreau * Math.PI; // un demi-cycle par barreau
+    else p.cycle += grimpe ? 4 * dt : (v * dt / foulee) * Math.PI;
     const cy = p.cycle;
     const t = horlogeAnim;
     const ph0 = p.phaseRepos || (p.phaseRepos = alea() * 10);
@@ -282,17 +285,17 @@ window.Desert = (function () {
       const ph = i ? Math.PI : 0;
       const s1 = Math.sin(cy + ph);
       // Cuisse : balancier ; genou : se plie pendant la phase d'élan ; cheville : attaque du talon.
-      j.hanche.rotation.x = -P.hanche + s1 * 0.4 * amp + (grimpe ? s1 * 0.4 : 0);
+      j.hanche.rotation.x = -P.hanche + s1 * 0.4 * amp + (grimpe ? s1 * 0.55 : 0);
       const elan = Math.max(0, Math.sin(cy + ph + 1.2));
-      j.genou.rotation.x = P.genou + (elan * elan * 0.9 + 0.08) * amp;
+      j.genou.rotation.x = P.genou + (elan * elan * 0.9 + 0.08) * amp + (grimpe ? Math.max(0, -s1) * 0.7 : 0);
       j.cheville.rotation.x = -P.genou * 0.25 - P.couche * 0.9 + (Math.cos(cy + ph) * 0.18 - elan * 0.25) * amp;
     });
     p.bras.forEach((b, i) => {
       const ph = i ? 0 : Math.PI;
       const s1 = Math.sin(cy + ph);
-      b.epaule.rotation.x = -P.bAvant + s1 * 0.3 * amp + (grimpe ? s1 * 0.25 : 0);
+      b.epaule.rotation.x = -P.bAvant + s1 * 0.3 * amp + (grimpe ? s1 * 0.4 : 0);
       b.epaule.rotation.z = b.cote * (P.bCote + 0.04 * amp);
-      b.coude.rotation.x = -P.coude - (0.15 + Math.max(0, s1) * 0.3) * amp;
+      b.coude.rotation.x = -P.coude - (0.15 + Math.max(0, s1) * 0.3) * amp - (grimpe ? Math.max(0, -s1) * 0.9 : 0);
       b.coude.rotation.z = b.cote * P.cZ;
     });
   }
@@ -823,6 +826,17 @@ window.Desert = (function () {
     // Montée de l'échelle : trajectoire imposée.
     if (joueur.etat === "grimpe") {
       joueur.tGrimpe += dt;
+      // Fondu au noir : on entend les barreaux et son souffle, on se retrouve de l'autre côté.
+      if (!joueur.fonduNoir) {
+        joueur.fonduNoir = true;
+        voile.style.transition = "opacity 0.9s ease"; voile.style.background = "#000"; voile.style.opacity = "1";
+        A.setPeur(0.6);
+      }
+      if (joueur.tGrimpe > 5.4 && !joueur.fonduRetour) {
+        joueur.fonduRetour = true;
+        voile.style.transition = "opacity 1.4s ease"; voile.style.opacity = "0";
+        A.setPeur(0);
+      }
       const u = Math.min(1, joueur.tGrimpe / 6.5);
       const hm = hauteur(ECHELLE_X, MUR_Z);
       let y, z;
@@ -924,7 +938,7 @@ window.Desert = (function () {
     unefois("murAttente", tm > 4, () => dire("murAttente", true));
     // Chacun passe à son tour, le guide d'abord.
     const ordre = [0, 1, 4, 2, 3, 5]; // guide, Julio, Yesenia, Rosa, Mateo, Ernesto
-    ordre.forEach((i, rang) => unefois("passe" + i, tm > 8 + rang * 5.5, () => franchir(groupe[i], i === 5 ? 7 : 5)));
+    ordre.forEach((i, rang) => unefois("passe" + i, tm > 8 + rang * 5.5, () => franchir(groupe[i], i === 5 ? 8.5 : i === 3 ? 7 : 6)));
     unefois("murMateo", tm > 8 + 4 * 5.5 - 1, () => dire("murMateo", true));
     unefois("tousPasses", tm > 8 + 5 * 5.5 + 5, () => {});
     if (evenements.tousPasses && joueur.etat === "attend") {
@@ -940,11 +954,16 @@ window.Desert = (function () {
         f.t += dt;
         const u = Math.min(1, f.t / f.duree);
         const hm = hauteur(ECHELLE_X, MUR_Z);
-        if (u < 0.45) { const k = u / 0.45; p.x = ECHELLE_X; p.z = MUR_Z + 0.75 - k * 0.3; p.yExtra = k * 5.0; p.cap = Math.PI; }
-        else if (u < 0.6) { p.z = MUR_Z + 0.45 - (u - 0.45) / 0.15 * 0.9; p.yExtra = 5.0; }
-        else { const k = (u - 0.6) / 0.4; p.z = MUR_Z - 0.45 - k * 0.3; p.yExtra = 5.0 * (1 - k); p.cap = 0; }
+        // Montée barreau par barreau (pas en glissant), passage du sommet, descente.
+        const H = 5.0, NB = 15;
+        const parBarreau = (k) => { const x = k * NB, n = Math.floor(x), f = x - n; const e = Math.min(1, f / 0.6); return (n + e * e * (3 - 2 * e)) / NB; };
+        p.x = ECHELLE_X;
+        if (u < 0.42) { const k = parBarreau(u / 0.42); p.z = MUR_Z + 0.72 - k * 0.22; p.yExtra = k * H; p.cap = Math.PI; p.barreau = (u / 0.42) * NB; }
+        else if (u < 0.6) { const k = (u - 0.42) / 0.18; const e = k * k * (3 - 2 * k); p.z = MUR_Z + 0.5 - e; p.yExtra = H + Math.sin(k * Math.PI) * 0.25; p.cap = k < 0.5 ? Math.PI : 0; p.barreau = NB; }
+        else { const k = parBarreau((u - 0.6) / 0.4); p.z = MUR_Z - 0.5 - k * 0.2; p.yExtra = H * (1 - k); p.cap = 0; p.barreau = NB + ((u - 0.6) / 0.4) * NB; }
+        if (u >= 0.42 && u < 0.6) p.cible = "grimpe";
         p.vitesse = 0.8;
-        if (u >= 1) { p.franchit = null; p.passe = true; p.yExtra = 0; p.cible = "marche"; }
+        if (u >= 1) { p.franchit = null; p.passe = true; p.yExtra = 0; p.barreau = undefined; p.cible = "marche"; }
       } else if (p.passe) {
         const cible = pointS(S_DEPART - ESPACEMENT * rangDe(i));
         if (i === 3) { const c3 = capS(S_DEPART - ESPACEMENT * 2); cible.x -= Math.cos(c3) * MATEO_COTE; cible.z += Math.sin(c3) * MATEO_COTE; }

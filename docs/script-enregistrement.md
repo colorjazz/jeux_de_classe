@@ -62,7 +62,7 @@ Les répliques enregistrées sont jouées en son 3D, depuis l'endroit où se tro
 | `eau.mp3` | Julio | tendre, doux | Toma. Poquito, ¿eh? Hay que guardar. | Tiens. Juste un peu, hein ? Il faut en garder. |
 | `eauMerci.mp3` | Julio | tendre, doux | Así. Despacito. | Voilà. Doucement. |
 | `berceuse.mp3` | Rosa | chanté tout bas | Duérmete, mi niño, duérmete ya… | Dors, mon petit, dors maintenant… |
-| `ernestoHalte.mp3` | Don Ernesto (61 ans) | triste, retenu | Mi hijo me espera en Phoenix. Hace nueve años que no lo veo. | Mon fils m'attend à Phoenix. Ça fait neuf ans que je ne l'ai pas vu. |
+| `ernestoHalte.mp3` | Don Ernesto (61 ans) | triste, retenu | Mi hijo vive en Arizona. Hace nueve años que no lo veo. | Mon fils vit en Arizona. Ça fait neuf ans que je ne l'ai pas vu. |
 | `repart.mp3` | Le guide | chuchoté, pressé | Vámonos. Arriba, arriba. | On y va. Debout, debout. |
 | `rythme.mp3` | Le guide | chuchoté, pressé | Rápido. Antes de que salga el sol. | Plus vite. Avant que le soleil se lève. |
 | `froid.mp3` | Mateo (9 ans) | épuisé | Mami, tengo frío. | Maman, j'ai froid. |
