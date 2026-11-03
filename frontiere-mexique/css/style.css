@@ -51,13 +51,26 @@ kbd { font-family: ui-monospace, monospace; font-size: 13px; border: 1px solid #
 
 /* Désert */
 #scene3d { position: fixed; inset: 0; display: block; cursor: crosshair; }
+/* Bords de l'écran assombris (effet cinéma) */
+#vignette { position: fixed; inset: 0; z-index: 4; pointer-events: none; display: none;
+  background: radial-gradient(ellipse at center, transparent 52%, rgba(2, 3, 6, 0.78) 100%); }
+body.en-scene #vignette { display: block; }
+
+/* Sous-titres : nom de qui parle, réplique originale, traduction */
 #sous-titre {
-  position: fixed; left: 0; right: 0; bottom: 9vh; text-align: center; z-index: 5;
-  font-style: italic; font-size: clamp(16px, 2.2vw, 21px); color: rgba(233, 227, 214, 0.75);
-  opacity: 0; transition: opacity 0.6s; padding: 0 16px; text-shadow: 0 0 8px #000;
+  position: fixed; left: 50%; bottom: 7vh; transform: translate(-50%, 6px); z-index: 5;
+  width: min(640px, calc(100% - 32px)); text-align: center; padding: 12px 20px 14px;
+  background: rgba(4, 5, 8, 0.62); border: 1px solid rgba(200, 180, 140, 0.18); border-radius: 3px;
+  opacity: 0; transition: opacity 0.5s, transform 0.5s; pointer-events: none;
 }
-#sous-titre.visible { opacity: 1; }
-#sous-titre.agent { font-style: normal; font-family: system-ui, sans-serif; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--agent); }
+#sous-titre.visible { opacity: 1; transform: translate(-50%, 0); }
+#sous-titre .st-nom { font-family: system-ui, sans-serif; font-size: 11px; letter-spacing: 0.24em; text-transform: uppercase; color: var(--sable); margin-bottom: 4px; }
+#sous-titre .st-original { font-style: italic; font-size: clamp(17px, 2.2vw, 21px); color: rgba(233, 227, 214, 0.92); line-height: 1.35; }
+#sous-titre .st-trad { font-family: system-ui, sans-serif; font-size: clamp(13px, 1.6vw, 15px); color: rgba(233, 227, 214, 0.62); margin-top: 4px; line-height: 1.4; }
+#sous-titre .st-trad:empty { display: none; }
+#sous-titre.agent { border-color: rgba(220, 70, 60, 0.5); background: rgba(22, 5, 5, 0.7); }
+#sous-titre.agent .st-nom { color: #e08070; }
+#sous-titre.agent .st-original { font-style: normal; font-family: system-ui, sans-serif; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--agent); }
 #invite {
   position: fixed; left: 50%; top: 58%; transform: translateX(-50%); z-index: 5;
   font-family: system-ui, sans-serif; font-size: 14px; letter-spacing: 0.08em; color: rgba(255, 255, 255, 0.7);

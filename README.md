@@ -29,6 +29,7 @@ frontiere-mexique/
   js/main.js        enchaînement des séquences, pause
   voix/             enregistrements des répliques (facultatif, voir liste.json)
 outils/generer-voix.mjs  génère les voix expressives (Gemini TTS) en MP3
+vendor/three-postprocess.min.js  halo lumineux (bloom) de Three.js r160, assemblé en script classique
 vendor/three.min.js Three.js r160 (licence MIT, voir vendor/THREE_LICENSE)
 docs/guide-enseignant.md
 ```

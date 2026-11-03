@@ -65,6 +65,7 @@ Ajoutez ces paramètres à l'adresse dans le navigateur :
 - `index.html?scene=desert&t=345` : l'espoir, puis le choc.
 - `index.html?scene=reve` : la rupture onirique.
 - `index.html?scene=temoignages` : les témoignages seuls.
+- Ajouter `&qualite=legere` (ou `?qualite=legere`) : graphismes allégés, sans ombres ni halos, pour les ordinateurs lents. Par défaut, la qualité est choisie automatiquement : complète sur ordinateur, allégée sur téléphone, et elle se réduit d'elle-même si l'image devient saccadée.
 - Ajouter `&st=en` (ou `?st=en`) : sous-titres en anglais. Sinon, c'est le choix fait sur l'écran d'accueil qui s'applique.
 
 ## Avant la séance

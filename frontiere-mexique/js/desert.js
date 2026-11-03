@@ -58,6 +58,9 @@ window.Desert = (function () {
   let eauOfferte = false, eauBue = false;
   let gesteMain = null, gesteFin = 0, gesteDebut = 0;
   let horlogeAnim = 0;   // temps d'animation (s'arrête pendant la pause)
+  // Qualité graphique : « haute » (matériaux réalistes, ombres, halos) ou « legere ».
+  let HAUTE = true;
+  let composer = null, luneLum = null, qualiteForcee = false;
   // Actions différées, calées sur l'horloge du jeu (donc suspendues pendant la pause).
   const aFaire = [];
   function plus_tard(secondes, f) { aFaire.push({ t: horlogeAnim + secondes, f }); }
@@ -74,12 +77,15 @@ window.Desert = (function () {
   // =====================================================================
   const materiaux = {};
   function mat(c) {
-    if (!materiaux[c]) materiaux[c] = new THREE.MeshLambertMaterial({ color: c });
+    if (!materiaux[c]) materiaux[c] = HAUTE
+      ? new THREE.MeshStandardMaterial({ color: c, roughness: 0.9, metalness: 0 })
+      : new THREE.MeshLambertMaterial({ color: c });
     return materiaux[c];
   }
   function maille(geo, couleur, parent, x, y, z) {
     const m = new THREE.Mesh(geo, mat(couleur));
     m.position.set(x || 0, y || 0, z || 0);
+    if (HAUTE) { m.castShadow = true; m.receiveShadow = true; }
     parent.add(m);
     return m;
   }
@@ -140,6 +146,7 @@ window.Desert = (function () {
     const crane = maille(new THREE.SphereGeometry(0.1, 16, 12), peau, tete);
     crane.scale.set(0.92, 1.1, 1);
     maille(new THREE.BoxGeometry(0.025, 0.04, 0.03), peau, tete, 0, -0.005, 0.1);  // nez
+    [-0.033, 0.033].forEach((ex) => maille(new THREE.SphereGeometry(0.011, 8, 6), 0x0d0a08, tete, ex, 0.018, 0.088)); // yeux
     const coulCheveux = o.couleurCheveux || 0x0d0b0a;
     if (o.cheveux !== "chauve") {
       const ch = maille(new THREE.SphereGeometry(0.104, 16, 10, 0, Math.PI * 2, 0, Math.PI * 0.55), coulCheveux, tete, 0, 0.012, -0.008);
@@ -339,7 +346,11 @@ window.Desert = (function () {
     const pos = geo.attributes.position;
     for (let i = 0; i < pos.count; i++) pos.setY(i, hauteur(pos.getX(i), pos.getZ(i) - 300));
     geo.computeVertexNormals();
-    const sol = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ color: 0x8c8272 }));
+    const texSable = textureSable();
+    const sol = new THREE.Mesh(geo, HAUTE
+      ? new THREE.MeshStandardMaterial({ color: 0xa39785, map: texSable, bumpMap: texSable, bumpScale: 0.22, roughness: 0.95, metalness: 0 })
+      : new THREE.MeshLambertMaterial({ color: 0xa39785, map: texSable }));
+    sol.receiveShadow = HAUTE;
     sol.position.z = -300;
     scene.add(sol);
 
@@ -355,7 +366,7 @@ window.Desert = (function () {
     const gEt = new THREE.BufferGeometry();
     gEt.setAttribute("position", new THREE.BufferAttribute(etoiles, 3));
     ciel.add(new THREE.Points(gEt, new THREE.PointsMaterial({ color: 0xc8d2ff, size: 1.6, sizeAttenuation: false, fog: false })));
-    lune = new THREE.Mesh(new THREE.SphereGeometry(22, 24, 16), new THREE.MeshBasicMaterial({ color: 0xe8e4d4, fog: false }));
+    lune = new THREE.Mesh(new THREE.SphereGeometry(22, 24, 16), new THREE.MeshBasicMaterial({ color: new THREE.Color(0xe8e4d4).multiplyScalar(1.6), fog: false }));
     lune.position.set(520, 300, -560);
     ciel.add(lune);
     scene.add(ciel);
@@ -368,7 +379,7 @@ window.Desert = (function () {
     }
     const gL = new THREE.BufferGeometry();
     gL.setAttribute("position", new THREE.BufferAttribute(pl, 3));
-    lumieresVille = new THREE.Points(gL, new THREE.PointsMaterial({ color: 0xffb36b, size: 2.2, sizeAttenuation: false, fog: false, transparent: true, opacity: 0 }));
+    lumieresVille = new THREE.Points(gL, new THREE.PointsMaterial({ color: new THREE.Color(0xffb36b).multiplyScalar(2), size: 2.2, sizeAttenuation: false, fog: false, transparent: true, opacity: 0 }));
     scene.add(lumieresVille);
 
     // Végétation
@@ -391,6 +402,8 @@ window.Desert = (function () {
       o.rotation.set(alea(), alea() * 6, alea());
       o.updateMatrix(); rocher.setMatrixAt(i, o.matrix);
     }
+    buisson.castShadow = rocher.castShadow = HAUTE;
+    buisson.receiveShadow = rocher.receiveShadow = HAUTE;
     scene.add(buisson, rocher);
 
     const mSag = 0x26302a;
@@ -421,6 +434,7 @@ window.Desert = (function () {
       o.scale.set(1, 1, 1); o.rotation.set(0, 0, 0);
       o.updateMatrix(); barreaux.setMatrixAt(i, o.matrix);
     }
+    barreaux.castShadow = barreaux.receiveShadow = HAUTE;
     scene.add(barreaux);
     // Les échelles, de chaque côté
     const hMur = hauteur(ECHELLE_X, MUR_Z);
@@ -455,7 +469,7 @@ window.Desert = (function () {
     maille(new THREE.BoxGeometry(0.5, 0.07, 0.05), 0x6b5236, croix, 0, 0.75, 0);
     [0xb04a5a, 0xd0a040, 0xe0e0d0, 0x8a3a8a].forEach((c, i) => maille(new THREE.SphereGeometry(0.06, 6, 5), c, croix, -0.25 + i * 0.16, 0.05, 0.15));
     maille(new THREE.CylinderGeometry(0.04, 0.04, 0.12, 8), 0xddd4c0, croix, 0.18, 0.06, 0.25);
-    flamme = new THREE.Mesh(new THREE.SphereGeometry(0.025, 6, 6), new THREE.MeshBasicMaterial({ color: 0xffc060, fog: false }));
+    flamme = new THREE.Mesh(new THREE.SphereGeometry(0.025, 6, 6), new THREE.MeshBasicMaterial({ color: new THREE.Color(0xffc060).multiplyScalar(4), fog: false }));
     flamme.position.set(0.18, 0.15, 0.25); croix.add(flamme);
     const lueur = new THREE.PointLight(0xff9a40, 1.2, 6, 1.5);
     lueur.position.set(0.18, 0.3, 0.3); croix.add(lueur);
@@ -467,11 +481,41 @@ window.Desert = (function () {
     // Voiture lointaine (fausse alerte) : deux phares sur une route invisible
     voitureLoin = new THREE.Group();
     [-0.7, 0.7].forEach((x) => {
-      const ph = new THREE.Mesh(new THREE.SphereGeometry(0.35, 8, 6), new THREE.MeshBasicMaterial({ color: 0xfff0c8, fog: false }));
+      const ph = new THREE.Mesh(new THREE.SphereGeometry(0.35, 8, 6), new THREE.MeshBasicMaterial({ color: new THREE.Color(0xfff0c8).multiplyScalar(3), fog: false }));
       ph.position.x = x; voitureLoin.add(ph);
     });
     voitureLoin.visible = false;
     scene.add(voitureLoin);
+  }
+
+  // Texture de sable : rides creusées par le vent, grains, petites pierres.
+  function textureSable() {
+    const T = 512, cv = document.createElement("canvas"); cv.width = cv.height = T;
+    const c = cv.getContext("2d");
+    const img = c.createImageData(T, T), d = img.data;
+    for (let y = 0; y < T; y++) for (let x = 0; x < T; x++) {
+      // Rides ondulées (motif périodique pour que la texture se répète sans couture)
+      const u = x / T * Math.PI * 2, v = y / T * Math.PI * 2;
+      // Rides douces et irrégulières : leur force varie d'un endroit à l'autre.
+      const ride = Math.sin(v * 9 + Math.sin(u * 2) * 2.4 + Math.sin(u * 3 + v * 2) * 0.9);
+      const force = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(u * 3 + Math.cos(v * 2) * 1.5));
+      const grain = Math.random();
+      const val = Math.max(0, Math.min(255, 178 + ride * 16 * force + (grain - 0.5) * 34));
+      const i = (y * T + x) * 4;
+      d[i] = val; d[i + 1] = val * 0.97; d[i + 2] = val * 0.9; d[i + 3] = 255;
+    }
+    c.putImageData(img, 0, 0);
+    for (let i = 0; i < 260; i++) { // cailloux
+      const g = 70 + Math.random() * 60;
+      c.fillStyle = `rgb(${g},${g * 0.95},${g * 0.88})`;
+      c.beginPath(); c.arc(Math.random() * T, Math.random() * T, 0.8 + Math.random() * 1.8, 0, 7); c.fill();
+    }
+    const t = new THREE.CanvasTexture(cv);
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    t.repeat.set(130, 140);
+    t.anisotropy = 4;
+    t.colorSpace = THREE.SRGBColorSpace;
+    return t;
   }
 
   function pointChemin(u) { return chemin.getPointAt(Math.min(0.999, Math.max(0, u))); }
@@ -512,7 +556,7 @@ window.Desert = (function () {
     maille(new THREE.SphereGeometry(1.6, 12, 8), mH, helico).scale.set(1, 0.8, 1.6);
     maille(new THREE.CylinderGeometry(0.2, 0.35, 6, 6), mH, helico, 0, 0, 4.5).rotation.x = Math.PI / 2;
     helico.userData.rotor = maille(new THREE.BoxGeometry(11, 0.05, 0.3), mH, helico, 0, 1.4, 0);
-    const feuRouge = new THREE.Mesh(new THREE.SphereGeometry(0.18, 6, 6), new THREE.MeshBasicMaterial({ color: 0xff2020, fog: false }));
+    const feuRouge = new THREE.Mesh(new THREE.SphereGeometry(0.18, 6, 6), new THREE.MeshBasicMaterial({ color: new THREE.Color(0xff2020).multiplyScalar(4), fog: false }));
     feuRouge.position.set(0, -1.1, 0); helico.add(feuRouge);
     helico.userData.feu = feuRouge;
     helico.visible = false;
@@ -520,7 +564,7 @@ window.Desert = (function () {
 
     spotHelico = new THREE.SpotLight(0xeef2ff, 0, 140, 0.2, 0.45, 0);
     scene.add(spotHelico, spotHelico.target);
-    faisceauHelico = creerFaisceau(0xdfe6ff, 0.07);
+    faisceauHelico = creerFaisceau(0xdfe6ff, HAUTE ? 0.055 : 0.07);
 
     pickup = new THREE.Group();
     const mBlanc = 0xcfd0c8;
@@ -531,14 +575,14 @@ window.Desert = (function () {
       const r = maille(new THREE.CylinderGeometry(0.42, 0.42, 0.3, 14), 0x0e0e0e, pickup, x, 0.42, z);
       r.rotation.z = Math.PI / 2;
     }));
-    const rouge = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.15, 0.3), new THREE.MeshBasicMaterial({ color: 0xff1010, fog: false }));
+    const rouge = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.15, 0.3), new THREE.MeshBasicMaterial({ color: new THREE.Color(0xff1010).multiplyScalar(4), fog: false }));
     rouge.position.set(-0.4, 2.33, 0.6); pickup.add(rouge);
-    const bleu = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.15, 0.3), new THREE.MeshBasicMaterial({ color: 0x1030ff, fog: false }));
+    const bleu = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.15, 0.3), new THREE.MeshBasicMaterial({ color: new THREE.Color(0x1030ff).multiplyScalar(5), fog: false }));
     bleu.position.set(0.4, 2.33, 0.6); pickup.add(bleu);
     pickup.userData.gyro = [rouge, bleu];
     pickup.userData.phares = [];
     [-0.7, 0.7].forEach((x) => {
-      const ph = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.2, 0.05), new THREE.MeshBasicMaterial({ color: 0xfff6dd, fog: false }));
+      const ph = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.2, 0.05), new THREE.MeshBasicMaterial({ color: new THREE.Color(0xfff6dd).multiplyScalar(4), fog: false }));
       ph.position.set(x, 0.95, 2.62); pickup.add(ph);
       const sp = new THREE.SpotLight(0xfff1d0, 0, 70, 0.45, 0.6, 0);
       sp.position.set(x, 1.0, 2.7);
@@ -558,7 +602,7 @@ window.Desert = (function () {
       const lampe = new THREE.SpotLight(0xffffff, 0, 40, 0.22, 0.5, 0);
       scene.add(lampe, lampe.target);
       p.lampe = lampe;
-      p.faisceau = creerFaisceau(0xffffff, 0.05);
+      p.faisceau = creerFaisceau(0xffffff, HAUTE ? 0.035 : 0.05); // le halo renforce déjà les faisceaux
       agents.push(p);
     }
   }
@@ -694,7 +738,12 @@ window.Desert = (function () {
       p.regardeJoueur = !["cri", "presse"].includes(ton) && Math.hypot(p.x - joueur.x, p.z - joueur.z) < 14;
     }
     const langue = window.LANGUE_SOUS_TITRES || "fr";
-    sousTitre.textContent = r[langue] || r.texte;
+    const perso = C.personnages.find((x) => x.id === r.qui);
+    const nom = r.qui === "agent" ? (langue === "en" ? "Border Patrol" : "Police des frontières") : perso ? perso.nom : "";
+    const trad = r[langue] && r[langue] !== r.texte ? r[langue] : "";
+    sousTitre.querySelector(".st-nom").textContent = nom;
+    sousTitre.querySelector(".st-original").textContent = r.texte;
+    sousTitre.querySelector(".st-trad").textContent = trad;
     sousTitre.className = r.qui === "agent" ? "visible agent" : "visible";
     clearTimeout(sousTitreTimer);
     sousTitreTimer = setTimeout(() => { sousTitre.className = ""; }, Math.max(3400, duree * 1000 + 1200));
@@ -787,6 +836,7 @@ window.Desert = (function () {
     window.addEventListener("resize", () => {
       camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
       renderer.setSize(innerWidth, innerHeight);
+      if (composer) composer.setSize(innerWidth, innerHeight);
     });
   }
   function enfoncee(...codes) { return codes.some((c) => touches[c]); }
@@ -1387,15 +1437,59 @@ window.Desert = (function () {
     aide.classList.remove("visible");
     renderer.setAnimationLoop(null);
     renderer.domElement.style.display = "none";
+    document.body.classList.remove("en-scene");
     if (onFin) onFin();
   }
+
+  // =====================================================================
+  //  Qualité graphique et rendu
+  // =====================================================================
+  function choisirQualite(demande) {
+    if (demande === "haute") return true;
+    if (demande === "legere") return false;
+    // Automatique : allégé sur téléphone/tablette et sur les petites machines.
+    const tactileSeul = window.matchMedia("(pointer: coarse)").matches;
+    const faible = (navigator.hardwareConcurrency || 8) <= 4 || (navigator.deviceMemory || 8) <= 4;
+    return !tactileSeul && !faible;
+  }
+  function installerHalo() {
+    if (!HAUTE || !THREE.EffectComposer) return;
+    composer = new THREE.EffectComposer(renderer);
+    composer.setPixelRatio(renderer.getPixelRatio());
+    composer.setSize(innerWidth, innerHeight);
+    composer.addPass(new THREE.RenderPass(scene, camera));
+    // Seules les vraies sources de lumière dépassent le seuil : lune, bougie, phares, lampes.
+    composer.addPass(new THREE.UnrealBloomPass(new THREE.Vector2(innerWidth / 2, innerHeight / 2), 0.7, 0.5, 0.85));
+    composer.addPass(new THREE.OutputPass());
+  }
+  function rendre() {
+    if (composer) composer.render(); else renderer.render(scene, camera);
+  }
+  // Si l'ordinateur peine (moins de 22 images/s), on retire d'abord les halos, puis les ombres.
+  const fluidite = { t: 0, n: 0, etape: 0 };
+  function surveillerFluidite(dtReel) {
+    if (!HAUTE || qualiteForcee || fluidite.etape >= 2) return;
+    fluidite.t += dtReel; fluidite.n++;
+    if (fluidite.t < 5) return;
+    const ips = fluidite.n / fluidite.t;
+    fluidite.t = 0; fluidite.n = 0;
+    if (ips >= 22) return;
+    if (fluidite.etape === 0 && composer) { composer = null; fluidite.etape = 1; console.info("Qualité : halos désactivés (" + ips.toFixed(0) + " images/s)"); return; }
+    renderer.shadowMap.enabled = false; luneLum.castShadow = false;
+    scene.traverse((o) => { if (o.material) [].concat(o.material).forEach((m) => (m.needsUpdate = true)); });
+    fluidite.etape = 2;
+    console.info("Qualité : ombres désactivées (" + ips.toFixed(0) + " images/s)");
+  }
+  const _dirLune = new THREE.Vector3(520, 300, -560).normalize();
 
   // =====================================================================
   //  Boucle
   // =====================================================================
   function boucle() {
-    let dt = Math.min(0.05, horloge.getDelta()) * acceleration;
-    if (enPause()) { renderer.render(scene, camera); return; }
+    const dtReel = horloge.getDelta();
+    let dt = Math.min(0.05, dtReel) * acceleration;
+    if (enPause()) { rendre(); return; }
+    surveillerFluidite(dtReel);
     horlogeAnim += dt;
     executerAFaire();
     if (phase === "mur") { tm += dt; majMur(dt); }
@@ -1422,7 +1516,12 @@ window.Desert = (function () {
     ciel.position.copy(camera.position);
     const avant = _v.set(0, 0, -1).applyQuaternion(camera.quaternion);
     A.auditeur(camera.position, avant);
-    renderer.render(scene, camera);
+    if (HAUTE) {
+      // La lumière de lune suit le joueur pour que ses ombres restent nettes autour de lui.
+      luneLum.target.position.set(joueur.x, hauteur(joueur.x, joueur.z), joueur.z);
+      luneLum.position.copy(luneLum.target.position).addScaledVector(_dirLune, 300);
+    }
+    rendre();
   }
 
   // =====================================================================
@@ -1436,10 +1535,17 @@ window.Desert = (function () {
     invite = document.getElementById("invite");
     aide = document.getElementById("aide");
 
-    renderer = new THREE.WebGLRenderer({ antialias: true });
+    HAUTE = choisirQualite(options.qualite);
+    qualiteForcee = options.qualite === "haute" || options.qualite === "legere";
+    renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
     renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+    // Rendu « cinéma » : courbe de type film, en gardant une vraie nuit.
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.8;
+    if (HAUTE) { renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap; }
     renderer.setSize(innerWidth, innerHeight);
     renderer.domElement.id = "scene3d";
+    document.body.classList.add("en-scene");
     document.body.appendChild(renderer.domElement);
 
     scene = new THREE.Scene();
@@ -1447,7 +1553,15 @@ window.Desert = (function () {
     scene.fog = new THREE.FogExp2(0x070a14, 0.02);
     camera = new THREE.PerspectiveCamera(68, innerWidth / innerHeight, 0.05, 1500);
 
-    const luneLum = new THREE.DirectionalLight(0x9db0e0, 1.5);
+    luneLum = new THREE.DirectionalLight(0x9db0e0, 1.5);
+    if (HAUTE) {
+      // Ombres douces de lune, dans un rayon de 40 m autour du joueur (la lumière le suit).
+      luneLum.castShadow = true;
+      luneLum.shadow.mapSize.set(2048, 2048);
+      const o = luneLum.shadow.camera; o.left = o.bottom = -40; o.right = o.top = 40; o.near = 10; o.far = 600;
+      luneLum.shadow.bias = -0.0008; luneLum.shadow.normalBias = 0.04;
+      scene.add(luneLum.target);
+    }
     luneLum.position.set(520, 300, -560);
     scene.add(luneLum, new THREE.HemisphereLight(0x2c3b5e, 0x15110d, 1.5));
     // Lumière d'appoint : le ciel du sud éclaire doucement le dos des marcheurs.
@@ -1516,9 +1630,10 @@ window.Desert = (function () {
       if (t0 > 160 && t0 < 214) { arret = true; groupe.forEach((p) => (p.cible = "assis")); eauOfferte = t0 > 170; }
     }
 
+    installerHalo();
     installerEntrees();
     installerTactile();
-    if (tactile) renderer.setPixelRatio(Math.min(devicePixelRatio, 1.25)); // téléphones : alléger le rendu
+    if (tactile) { renderer.setPixelRatio(Math.min(devicePixelRatio, 1.25)); if (composer) composer.setPixelRatio(renderer.getPixelRatio()); } // téléphones : alléger le rendu
     aide.classList.toggle("visible", true);
     horloge = new THREE.Clock();
     renderer.setAnimationLoop(boucle);
@@ -1543,6 +1658,7 @@ window.Desert = (function () {
     _etat: () => joueur && ({ phase, tm, tp, ta, tr, joueur: { x: joueur.x, z: joueur.z, yeux: joueur.yeux, etat: joueur.etat }, sLeader,
       groupe: groupe.map((p) => [Math.round(p.x), Math.round(p.racine.position.y * 10) / 10, Math.round(p.z), p.cible]) }),
     _action: action,
+    _qualite: () => ({ haute: HAUTE, halo: !!composer, ombres: renderer && renderer.shadowMap.enabled }),
     _placer: (x, z, l, t) => { joueur.x = x; joueur.z = z; lacet = l; tangage = t || 0; }, // tests
   };
 })();

@@ -82,7 +82,7 @@
 
   function desert(options) {
     const acc = parseFloat(params.get("acc")) || 1;
-    window.Desert.lancer(Object.assign({ fin: temoignages, acceleration: acc }, options || {}));
+    window.Desert.lancer(Object.assign({ fin: temoignages, acceleration: acc, qualite: params.get("qualite") }, options || {}));
   }
 
   async function temoignages() {
