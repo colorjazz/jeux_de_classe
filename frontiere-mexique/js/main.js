@@ -144,12 +144,20 @@
     });
   });
 
+  // Écran tactile (téléphone, tablette) : commandes à l'écran.
+  if (window.matchMedia("(pointer: coarse)").matches || "ontouchstart" in window) document.body.classList.add("tactile");
+
   const scene = params.get("scene");
   if (scene) $("btn-entrer").textContent = "Commencer (" + scene + ")";
 
   $("btn-entrer").addEventListener("click", () => {
     A.demarrer();
-    if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {});
+    if (document.documentElement.requestFullscreen) {
+      document.documentElement.requestFullscreen().then(() => {
+        // Sur téléphone, on bascule à l'horizontale quand c'est possible.
+        if (screen.orientation && screen.orientation.lock) screen.orientation.lock("landscape").catch(() => {});
+      }).catch(() => {});
+    }
     if (!scene) return sas();
     // Accès direct à une séquence
     cacher("accueil");

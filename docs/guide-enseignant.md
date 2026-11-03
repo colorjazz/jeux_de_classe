@@ -1,4 +1,6 @@
-# Sable · Frontière Mexique : guide pour l'enseignant
+# Chapitre 1 : Le sable · Guide pour l'enseignant
+
+*Frontière Mexique – États-Unis. Premier des quatre chapitres de* Traversées.
 
 Public : élèves de 16 à 17 ans. Durée de l'expérience : environ 12 minutes par élève (15 avec les témoignages). Prévoir 55 minutes de séance avec le débrief.
 
@@ -39,13 +41,18 @@ L'expérience est construite comme une montée : appréhension, calme, intimité
 - Une salle sombre si possible.
 - Aucune installation ni connexion internet : il suffit d'ouvrir `frontiere-mexique/index.html` en double-cliquant dessus.
 
-**Les voix** : en attendant de vrais enregistrements, elles utilisent la synthèse vocale de l'ordinateur. Les voix espagnoles et anglaises doivent être installées dans le système. Sous Windows : Paramètres → Heure et langue → Voix. Si elles manquent, les répliques s'affichent quand même à l'écran.
+**Les voix**
+- **Avec Microsoft Edge, les voix sont nettement plus humaines.** Edge propose des voix neuronales « Natural » en espagnol et en anglais, et l'expérience les choisit automatiquement : une voix différente par personnage, avec un ton par réplique (chuchotée, criée, épuisée, tendre…).
+- Avec Chrome ou Firefox, ce sont les voix du système, plus mécaniques. Sous Windows, on peut en ajouter dans Paramètres → Heure et langue → Voix.
+- **Pour des voix vraiment humaines, on peut enregistrer de vrais comédiens.** Le fichier [`script-enregistrement.md`](script-enregistrement.md) liste les 43 répliques, avec le personnage, le ton et le nom de fichier. Chaque enregistrement ajouté remplace la voix de synthèse, et il est joué en son 3D depuis la position du personnage. Cela fonctionne sur le site en ligne, pas en ouvrant le fichier en double-cliquant.
+- Si aucune voix n'est disponible, les répliques s'affichent quand même en sous-titres.
 
 ## Commandes
 
 - **Z Q S D** (ou W A S D, ou les flèches) : marcher.
 - **Souris** : regarder autour de soi. Il faut d'abord cliquer dans l'image.
 - **E** : agir (monter à l'échelle, boire, tendre la main).
+- **Sur téléphone ou tablette**, tenus à l'horizontale : joystick en bas à gauche pour marcher, glisser le doigt ailleurs pour regarder, bouton **Agir** quand une action est possible. Un ordinateur reste préférable : l'écran est plus grand et la 3D plus fluide.
 - **Pause** : bouton en haut à droite, touche **P** ou **Échap**. Le temps, le son et les voix s'arrêtent. Depuis la pause, on peut aussi recommencer depuis le début.
 
 ## Accès direct à une séquence (préparation, reprise)
@@ -98,6 +105,6 @@ Les chiffres évoluent chaque année. Vérifiez-les dans ces sources avant de le
 
 ## Limites du prototype
 
-- Voix synthétiques : à remplacer par des enregistrements de comédiens hispanophones.
+- Voix synthétiques : à remplacer par des enregistrements (voir le script d'enregistrement).
 - Personnages stylisés, sans expressions faciales : la nuit et la distance laissent l'imagination faire le reste.
 - Les témoignages sont des **récits composites fictifs**. Ils sont écrits pour être plausibles, mais ce ne sont pas des citations de personnes réelles.

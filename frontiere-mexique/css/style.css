@@ -12,15 +12,18 @@ button { font: inherit; cursor: pointer; }
 
 .ecran {
   position: fixed; inset: 0; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; padding: 24px 16px;
+  align-items: center; justify-content: safe center; padding: 24px 16px; overflow-y: auto;
   opacity: 0; pointer-events: none; transition: opacity 2s ease; z-index: 10;
 }
 .ecran.visible { opacity: 1; pointer-events: auto; }
 
 /* Accueil */
 .carte { max-width: 620px; width: 100%; }
-h1 { font-weight: 400; font-size: clamp(48px, 9vw, 84px); letter-spacing: 0.12em; margin: 0; color: var(--sable); }
-.sous { color: var(--doux); margin: 4px 0 32px; letter-spacing: 0.04em; }
+h1 { font-weight: 400; font-size: clamp(44px, 8vw, 76px); letter-spacing: 0.08em; margin: 0; color: var(--sable); }
+.chapitre { margin: 0 0 6px; color: var(--doux); font-family: system-ui, sans-serif; font-size: 13px; letter-spacing: 0.22em; text-transform: uppercase; }
+.sous { color: var(--doux); margin: 4px 0 6px; letter-spacing: 0.04em; }
+.inspiration { color: #7d766a; margin: 0 0 32px; font-size: 14px; font-style: italic; }
+.inspiration em { font-style: normal; color: var(--doux); }
 .avertissement { border-left: 2px solid var(--sable); padding: 4px 0 4px 18px; margin-bottom: 28px; }
 .avertissement p { margin: 0 0 8px; }
 .avertissement ul { margin: 0; padding-left: 18px; color: #cfc8b9; line-height: 1.6; font-size: 15px; }
@@ -113,3 +116,28 @@ kbd { font-family: ui-monospace, monospace; font-size: 13px; border: 1px solid #
 #pause h2 { font-weight: 400; font-size: 44px; letter-spacing: 0.12em; color: var(--sable); margin: 0 0 8px; }
 #pause p { color: var(--doux); margin: 0 0 32px; }
 #pause .discret { display: block; margin: 28px auto 0; }
+
+/* Commandes tactiles */
+#tactile { display: none; }
+body.tactile #tactile.actif { display: block; }
+#joystick {
+  position: fixed; left: 28px; bottom: 28px; width: 128px; height: 128px; border-radius: 50%; z-index: 6;
+  border: 1px solid rgba(233, 227, 214, 0.25); background: rgba(5, 6, 8, 0.25); touch-action: none;
+}
+#joystick-bouton {
+  position: absolute; left: 50%; top: 50%; width: 54px; height: 54px; margin: -27px 0 0 -27px; border-radius: 50%;
+  background: rgba(233, 227, 214, 0.28); border: 1px solid rgba(233, 227, 214, 0.4);
+}
+#btn-action {
+  position: fixed; right: 28px; bottom: 40px; z-index: 6; width: 92px; height: 92px; border-radius: 50%;
+  background: rgba(200, 180, 140, 0.18); color: var(--texte); border: 1px solid var(--sable);
+  font-family: system-ui, sans-serif; font-size: 15px; letter-spacing: 0.06em; touch-action: none;
+  opacity: 0; pointer-events: none; transition: opacity 0.3s;
+}
+#btn-action.visible { opacity: 1; pointer-events: auto; }
+#aide .doigt, .si-tactile { display: none; }
+body.tactile .si-tactile { display: list-item; }
+body.tactile #aide.visible .souris, body.tactile #aide.controles .clavier { display: none; }
+body.tactile #aide.controles .doigt { display: inline; }
+body.tactile #aide.visible.controles .souris::after { content: none; }
+body.tactile #scene3d { touch-action: none; }

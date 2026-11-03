@@ -361,34 +361,130 @@ window.Audio3D = (function () {
     }
   }
 
-  // --- Voix (synthèse vocale, provisoire) ---
-  let voixES = null, voixEN = null;
+  // =====================================================================
+  //  Voix
+  //  1) Si un enregistrement existe (voix/<cle>.mp3, listé dans voix/liste.json),
+  //     il est joué et spatialisé à la position du personnage.
+  //  2) Sinon, synthèse vocale du navigateur, avec la meilleure voix disponible
+  //     (voix neuronales « Natural » d'Edge, puis Google, puis système),
+  //     une voix distincte par personnage et un ton par réplique.
+  // =====================================================================
+  const enregistrements = {}; // cle -> AudioBuffer
+  let listeChargee = false;
+  function prechargerVoix() {
+    if (listeChargee || !/^https?:/.test(location.protocol)) return; // file:// : pas de fetch possible
+    listeChargee = true;
+    fetch("voix/liste.json").then((r) => (r.ok ? r.json() : [])).then((cles) => {
+      cles.forEach((cle) => {
+        fetch("voix/" + cle + ".mp3").then((r) => r.arrayBuffer())
+          .then((buf) => ctx.decodeAudioData(buf)).then((ab) => { enregistrements[cle] = ab; })
+          .catch(() => {});
+      });
+    }).catch(() => {});
+  }
+
+  // Noms de voix courants, pour deviner le genre (les navigateurs ne le donnent pas).
+  const FEMININ = /dalia|paloma|elvira|sabina|helena|laura|m[oó]nica|paulina|marisol|larissa|elena|ximena|renata|beatriz|candela|nuria|abril|valentina|camila|marta|belkys|karla|lupe|pilar|elsa|irene|lucia|luc[ií]a|carlota|esperanza|triana|vera|estrella|teresa|catalina|ana\b|zira|aria|jenny|michelle|samantha|ava|allison|susan|emma|female|mujer/i;
+  const MASCULIN = /jorge|ra[uú]l|pablo|[aá]lvaro|gerardo|juan|diego|tom[aá]s|alonso|lorenzo|liberto|cecilio|yago|emilio|andr[eé]s|carlos|luciano|gonzalo|federico|arnau|dario|jos[eé]|manuel|antonio|sa[uú]l|elias|nil|guy|davis|eric|christopher|roger|steffan|andrew|brian|tony|jason|ryan|aaron|fred|alex|daniel|david|mark|tom\b|male|hombre/i;
+  function qualite(v) {
+    let q = 0;
+    if (/natural|neural|online/i.test(v.name)) q += 20;
+    if (/premium|enhanced|mejorad/i.test(v.name)) q += 12;
+    if (/google/i.test(v.name)) q += 8;
+    if (!v.localService) q += 2;
+    return q;
+  }
+  function genre(v) { return FEMININ.test(v.name) ? "f" : MASCULIN.test(v.name) ? "m" : "?"; }
+
+  // Caractère de chaque personnage : genre voulu, hauteur et débit de base.
+  const PERSONNAGES = {
+    guia:    { genre: "m", rang: 0, pitch: 0.85, rate: 1.0 },
+    julio:   { genre: "m", rang: 1, pitch: 1.0,  rate: 1.0 },
+    ernesto: { genre: "m", rang: 2, pitch: 0.72, rate: 0.88 },
+    rosa:    { genre: "f", rang: 0, pitch: 1.05, rate: 1.0 },
+    yesenia: { genre: "f", rang: 1, pitch: 1.15, rate: 0.95 },
+    mateo:   { genre: "f", rang: 3, pitch: 1.6,  rate: 1.08 }, // une voix aiguë pour l'enfant
+    agent:   { genre: "m", rang: 0, pitch: 0.9,  rate: 1.15, anglais: true },
+  };
+  // Le ton modifie débit, hauteur et volume.
+  const TONS = {
+    normal:   { rate: 1,    pitch: 1,    volume: 0.85 },
+    chuchote: { rate: 0.92, pitch: 0.95, volume: 0.45 },
+    presse:   { rate: 1.18, pitch: 1.04, volume: 0.65 },
+    cri:      { rate: 1.15, pitch: 1.12, volume: 1 },
+    peur:     { rate: 1.2,  pitch: 1.12, volume: 0.8 },
+    fatigue:  { rate: 0.82, pitch: 0.93, volume: 0.6 },
+    douleur:  { rate: 0.78, pitch: 0.9,  volume: 0.75 },
+    tendre:   { rate: 0.88, pitch: 1.02, volume: 0.6 },
+    triste:   { rate: 0.84, pitch: 0.94, volume: 0.55 },
+    joie:     { rate: 1.06, pitch: 1.1,  volume: 0.85 },
+    berceuse: { rate: 0.7,  pitch: 1.08, volume: 0.45 },
+  };
+  let voixParPersonnage = {};
   function chargerVoix() {
-    const v = speechSynthesis.getVoices();
-    voixES = v.find((x) => /es[-_]MX/i.test(x.lang)) || v.find((x) => /^es/i.test(x.lang)) || null;
-    voixEN = v.find((x) => /en[-_]US/i.test(x.lang)) || v.find((x) => /^en/i.test(x.lang)) || null;
+    const toutes = speechSynthesis.getVoices();
+    const choisir = (filtreLangue) => {
+      const v = toutes.filter((x) => filtreLangue.test(x.lang));
+      // Préférence pour le Mexique / les États-Unis hispanophones, puis la qualité.
+      return v.sort((a, b) => (qualite(b) + (/MX|US|419/i.test(b.lang) ? 3 : 0)) - (qualite(a) + (/MX|US|419/i.test(a.lang) ? 3 : 0)));
+    };
+    const es = choisir(/^es/i), en = choisir(/^en[-_]US/i).concat(choisir(/^en/i));
+    voixParPersonnage = {};
+    for (const qui in PERSONNAGES) {
+      const c = PERSONNAGES[qui];
+      const liste = c.anglais ? en : es;
+      if (!liste.length) continue;
+      const memeGenre = liste.filter((v) => genre(v) === c.genre);
+      const neutres = liste.filter((v) => genre(v) === "?");
+      const pool = memeGenre.length ? memeGenre : neutres.length ? neutres : liste;
+      // Des voix différentes pour des personnages du même genre, si possible,
+      // mais jamais une voix nettement moins bonne que la meilleure disponible.
+      const meilleurs = pool.filter((v) => qualite(v) >= qualite(pool[0]) - 5);
+      voixParPersonnage[qui] = meilleurs[c.rang % meilleurs.length];
+    }
   }
   if (window.speechSynthesis) {
     chargerVoix();
     speechSynthesis.onvoiceschanged = chargerVoix;
   }
-  const hauteurs = { guia: 0.8, julio: 0.95, rosa: 1.25, mateo: 1.7, yesenia: 1.35, ernesto: 0.7, agent: 0.85 };
-  function parler(qui, texte, chuchote) {
-    if (!window.speechSynthesis || sons.silence) return;
+
+  // Joue une réplique. pos = position du personnage (pour l'enregistrement spatialisé).
+  // Renvoie la durée estimée en secondes (pour l'animation de la parole).
+  function parler(qui, texte, ton, cle, pos) {
+    if (sons.silence) return 0;
+    const t0 = TONS[ton] || TONS.normal;
+    if (cle && enregistrements[cle] && ctx) {
+      const src = ctx.createBufferSource(); src.buffer = enregistrements[cle];
+      const g = ctx.createGain(); g.gain.value = qui === "agent" ? 1.2 : 1;
+      if (pos) { const p = panner(pos.x, pos.y + 1.5, pos.z); p.refDistance = 3; src.connect(g).connect(p).connect(master); }
+      else src.connect(g).connect(master);
+      src.start();
+      (sons.voixActives = sons.voixActives || []).push(src);
+      src.onended = () => { sons.voixActives = sons.voixActives.filter((x) => x !== src); };
+      return src.buffer.duration;
+    }
+    if (!window.speechSynthesis) return 0;
+    const c = PERSONNAGES[qui] || PERSONNAGES.julio;
     const u = new SpeechSynthesisUtterance(texte);
-    const anglais = qui === "agent";
-    u.lang = anglais ? "en-US" : "es-MX";
-    const v = anglais ? voixEN : voixES;
-    if (v) u.voice = v;
-    u.pitch = hauteurs[qui] || 1;
-    u.rate = anglais ? 1.15 : chuchote ? 0.9 : 1.05;
-    u.volume = anglais ? 1 : chuchote ? 0.45 : 0.8;
+    u.lang = c.anglais ? "en-US" : "es-MX";
+    const v = voixParPersonnage[qui];
+    if (v) { u.voice = v; u.lang = v.lang; }
+    u.pitch = Math.min(2, c.pitch * t0.pitch);
+    u.rate = c.rate * t0.rate;
+    u.volume = t0.volume;
     speechSynthesis.speak(u);
+    return texte.length * 0.065 / u.rate + 0.4;
+  }
+  function voixUtilisees() {
+    const r = {};
+    for (const k in voixParPersonnage) r[k] = voixParPersonnage[k] && voixParPersonnage[k].name;
+    return r;
   }
 
   // --- Rupture : tout se tait, puis une nappe suspendue ---
   function silence() {
     sons.silence = true;
+    (sons.voixActives || []).forEach((x) => { try { x.stop(); } catch (e) {} });
     if (window.speechSynthesis) speechSynthesis.cancel();
     rampe(master.gain, 0, 0.15);
     setTimeout(() => {
@@ -423,7 +519,7 @@ window.Audio3D = (function () {
     demarrer, sasDebut, sasFin, vent, insectes, pas, pasAutre, respiration,
     setFatigue, setPeur, coeur, helicoptere, positionHelico, moteur, positionMoteur,
     voiture, positionVoiture, voitureFin, coyotes, echelon, gorgees, espoir, espoirCouper,
-    tension, setVent, pause, reprise,
+    tension, setVent, pause, reprise, prechargerVoix, voixUtilisees,
     auditeur, parler, silence, nappe, toutCouper,
   };
 })();

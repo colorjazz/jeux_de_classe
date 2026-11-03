@@ -3,15 +3,17 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Sable · Frontière Mexique</title>
+  <title>Chapitre 1 : Le sable</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
   <!-- 0. Avertissement -->
   <section id="accueil" class="ecran visible">
     <div class="carte">
-      <h1>Sable</h1>
-      <p class="sous">Une traversée · Frontière Mexique – États-Unis</p>
+      <p class="chapitre">Chapitre 1</p>
+      <h1>Le sable</h1>
+      <p class="sous">Frontière Mexique – États-Unis · Désert de Sonora</p>
+      <p class="inspiration">Inspiré de <em>Carne y Arena</em> (2017)</p>
       <div class="avertissement">
         <p><strong>Avant de commencer</strong></p>
         <ul>
@@ -19,6 +21,7 @@
           <li>Cette expérience montre une arrestation à la frontière : cris, lumières violentes, armes suggérées.</li>
           <li>Les personnages parlent espagnol et anglais. Leurs paroles sont sous-titrées.</li>
           <li>Vous pouvez faire une pause à tout moment : bouton <strong>Pause</strong> en haut à droite, touche <kbd>P</kbd> ou <kbd>Échap</kbd>.</li>
+          <li class="si-tactile">Sur téléphone : tenez-le à l'horizontale.</li>
         </ul>
       </div>
       <div class="casque">
@@ -44,7 +47,13 @@
   <div id="invite"></div>
   <div id="aide">
     <span class="souris">Cliquez pour regarder autour de vous</span>
+    <span class="doigt">Joystick à gauche pour marcher · glissez le doigt pour regarder</span>
     <span class="clavier">Z Q S D ou flèches pour marcher · souris pour regarder · E pour agir · P pour la pause</span>
+  </div>
+  <!-- Commandes tactiles (téléphone, tablette) -->
+  <div id="tactile" aria-hidden="true">
+    <div id="joystick"><div id="joystick-bouton"></div></div>
+    <button id="btn-action" tabindex="-1">Agir</button>
   </div>
   <div id="voile"></div>
 
