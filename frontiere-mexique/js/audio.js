@@ -100,15 +100,21 @@ window.Audio3D = (function () {
       if (sons.silence) return;
       const a = Math.random() * Math.PI * 2, r = 8 + Math.random() * 25;
       const p = panner(Math.cos(a) * r + (sons.lx || 0), 0, Math.sin(a) * r + (sons.lz || 0));
+      // Un grillon : 2 à 4 impulsions brèves et douces, très bas volume.
+      // (Pas d'oscillateur carré : c'était la source du son « modem ».)
       const g = ctx.createGain(); g.gain.value = 0;
-      const o = ctx.createOscillator(); o.frequency.value = 4200 + Math.random() * 1500;
-      const am = ctx.createOscillator(); am.frequency.value = 30 + Math.random() * 20; am.type = "square";
-      const amG = ctx.createGain(); amG.gain.value = 0.5;
-      am.connect(amG).connect(g.gain);
-      o.connect(g).connect(p).connect(master);
-      const d = 0.4 + Math.random() * 1.2;
-      o.start(); am.start(); o.stop(t() + d); am.stop(t() + d);
-      sons.insectesTimer = setTimeout(chant, 600 + Math.random() * 2500);
+      const o = ctx.createOscillator(); o.frequency.value = 3600 + Math.random() * 600;
+      const f = ctx.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 4500;
+      o.connect(g).connect(f).connect(p).connect(master);
+      const debut = t() + 0.02, nb = 2 + Math.floor(Math.random() * 3), pic = 0.006 + Math.random() * 0.006;
+      for (let k = 0; k < nb; k++) {
+        const t0 = debut + k * 0.07;
+        g.gain.setValueAtTime(0, t0);
+        g.gain.linearRampToValueAtTime(pic, t0 + 0.012);
+        g.gain.linearRampToValueAtTime(0, t0 + 0.035);
+      }
+      o.start(debut); o.stop(debut + nb * 0.07 + 0.05);
+      sons.insectesTimer = setTimeout(chant, 1500 + Math.random() * 3500);
     };
     chant();
   }
@@ -199,8 +205,8 @@ window.Audio3D = (function () {
     const rotor = ctx.createOscillator(); rotor.frequency.value = 17; rotor.type = "sawtooth";
     const rotorG = ctx.createGain(); rotorG.gain.value = 0.5;
     rotor.connect(rotorG).connect(am.gain);
-    const turbine = ctx.createOscillator(); turbine.frequency.value = 2400; turbine.type = "sine";
-    const turbG = ctx.createGain(); turbG.gain.value = 0.015;
+    const turbine = ctx.createOscillator(); turbine.frequency.value = 1150; turbine.type = "sine";
+    const turbG = ctx.createGain(); turbG.gain.value = 0.004;
     const grave = ctx.createOscillator(); grave.frequency.value = 34; grave.type = "triangle";
     const graveG = ctx.createGain(); graveG.gain.value = 0.5;
     n.connect(f).connect(am).connect(g);
