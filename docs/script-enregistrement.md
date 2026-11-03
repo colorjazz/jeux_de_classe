@@ -1,6 +1,26 @@
 # Chapitre 1 : Le sable · Script d'enregistrement des voix
 
-Pour remplacer les voix de synthèse par de vraies voix, enregistrez chaque réplique dans un fichier **MP3**, nommé exactement comme dans la colonne « Fichier ».
+Deux façons de remplacer les voix de synthèse.
+
+## A. Générer des voix expressives avec Gemini (rapide)
+
+L'outil `outils/generer-voix.mjs` envoie chaque réplique au modèle **Gemini TTS** avec une indication de jeu d'acteur (colonne « direction » dans `frontiere-mexique/js/contenu.js`) et un timbre propre au personnage (`voixGemini`). Il produit les 43 fichiers MP3 et la liste. Il faut Node 18 ou plus récent ; ffmpeg est conseillé.
+
+```bash
+GEMINI_API_KEY=votre_cle node outils/generer-voix.mjs
+```
+
+Écoutez ensuite les fichiers dans `frontiere-mexique/voix/`. Pour refaire une prise, modifiez sa « direction » dans `contenu.js` si besoin, puis relancez seulement celle-là :
+
+```bash
+GEMINI_API_KEY=votre_cle node outils/generer-voix.mjs --seulement chute,berceuse
+```
+
+On génère une seule fois, puis on publie les fichiers avec le site. **On n'appelle jamais l'API depuis la page** : la clé serait visible par tous les visiteurs.
+
+## B. Enregistrer de vrais comédiens
+
+Enregistrez chaque réplique dans un fichier **MP3**, nommé exactement comme dans la colonne « Fichier ».
 
 Déposez les fichiers dans `frontiere-mexique/voix/`, puis ajoutez leurs noms (sans `.mp3`) dans `frontiere-mexique/voix/liste.json`, par exemple :
 

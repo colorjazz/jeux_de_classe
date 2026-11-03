@@ -28,6 +28,7 @@ frontiere-mexique/
   js/desert.js      scène 3D : marche, arrestation, rupture onirique
   js/main.js        enchaînement des séquences, pause
   voix/             enregistrements des répliques (facultatif, voir liste.json)
+outils/generer-voix.mjs  génère les voix expressives (Gemini TTS) en MP3
 vendor/three.min.js Three.js r160 (licence MIT, voir vendor/THREE_LICENSE)
 docs/guide-enseignant.md
 ```

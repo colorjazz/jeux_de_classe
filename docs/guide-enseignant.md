@@ -44,7 +44,7 @@ L'expérience est construite comme une montée : appréhension, calme, intimité
 **Les voix**
 - **Avec Microsoft Edge, les voix sont nettement plus humaines.** Edge propose des voix neuronales « Natural » en espagnol et en anglais, et l'expérience les choisit automatiquement : une voix différente par personnage, avec un ton par réplique (chuchotée, criée, épuisée, tendre…).
 - Avec Chrome ou Firefox, ce sont les voix du système, plus mécaniques. Sous Windows, on peut en ajouter dans Paramètres → Heure et langue → Voix.
-- **Pour des voix vraiment humaines, on peut enregistrer de vrais comédiens.** Le fichier [`script-enregistrement.md`](script-enregistrement.md) liste les 43 répliques, avec le personnage, le ton et le nom de fichier. Chaque enregistrement ajouté remplace la voix de synthèse, et il est joué en son 3D depuis la position du personnage. Cela fonctionne sur le site en ligne, pas en ouvrant le fichier en double-cliquant.
+- **Pour des voix vraiment expressives, on peut les générer avec Gemini** (outil fourni, une clé d'API Google suffit) **ou enregistrer de vrais comédiens.** Le fichier [`script-enregistrement.md`](script-enregistrement.md) liste les 43 répliques, avec le personnage, le ton et le nom de fichier. Chaque enregistrement ajouté remplace la voix de synthèse, et il est joué en son 3D depuis la position du personnage. Cela fonctionne sur le site en ligne, pas en ouvrant le fichier en double-cliquant.
 - Si aucune voix n'est disponible, les répliques s'affichent quand même en sous-titres.
 
 ## Commandes

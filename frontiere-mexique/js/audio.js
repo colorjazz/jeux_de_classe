@@ -363,7 +363,8 @@ window.Audio3D = (function () {
 
   // =====================================================================
   //  Voix
-  //  1) Si un enregistrement existe (voix/<cle>.mp3, listé dans voix/liste.json),
+  //  1) Si un enregistrement existe (voix/<cle>.mp3, listé dans voix/liste.json ;
+  //     généré par outils/generer-voix.mjs ou enregistré par de vrais comédiens),
   //     il est joué et spatialisé à la position du personnage.
   //  2) Sinon, synthèse vocale du navigateur, avec la meilleure voix disponible
   //     (voix neuronales « Natural » d'Edge, puis Google, puis système),
@@ -375,11 +376,14 @@ window.Audio3D = (function () {
     if (listeChargee || !/^https?:/.test(location.protocol)) return; // file:// : pas de fetch possible
     listeChargee = true;
     fetch("voix/liste.json").then((r) => (r.ok ? r.json() : [])).then((cles) => {
-      cles.forEach((cle) => {
-        fetch("voix/" + cle + ".mp3").then((r) => r.arrayBuffer())
+      // Chargement échelonné pour ne pas tout demander d'un coup.
+      cles.forEach((nom, i) => setTimeout(() => {
+        const fichier = /\.\w+$/.test(nom) ? nom : nom + ".mp3";
+        const cle = nom.replace(/\.\w+$/, "");
+        fetch("voix/" + fichier).then((r) => (r.ok ? r.arrayBuffer() : Promise.reject()))
           .then((buf) => ctx.decodeAudioData(buf)).then((ab) => { enregistrements[cle] = ab; })
           .catch(() => {});
-      });
+      }, i * 120));
     }).catch(() => {});
   }
 
@@ -520,6 +524,7 @@ window.Audio3D = (function () {
     setFatigue, setPeur, coeur, helicoptere, positionHelico, moteur, positionMoteur,
     voiture, positionVoiture, voitureFin, coyotes, echelon, gorgees, espoir, espoirCouper,
     tension, setVent, pause, reprise, prechargerVoix, voixUtilisees,
+    enregistrementsCharges: () => Object.keys(enregistrements),
     auditeur, parler, silence, nappe, toutCouper,
   };
 })();
