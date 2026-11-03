@@ -31,8 +31,8 @@ const modele = option("--modele") || "gemini-2.5-flash-preview-tts";
 const cle = process.env.GEMINI_API_KEY;
 
 if (!cle) {
-  console.error("Il manque la clé : GEMINI_API_KEY=votre_cle node outils/generer-voix.mjs");
-  process.exit(1);
+  // Pas de variable : la clé peut être ajoutée par le proxy (secret réseau, en-tête x-goog-api-key).
+  console.warn("GEMINI_API_KEY absente : on suppose que la clé est fournie comme secret réseau (en-tête x-goog-api-key).");
 }
 
 // Charger contenu.js (écrit pour le navigateur) dans un faux « window ».
@@ -58,7 +58,9 @@ function pcmVersWav(pcm, frequence) {
 async function generer(id, r) {
   const voix = voixGemini[r.qui] || "Aoede";
   const texte = (r.direction || "Say in Spanish: ") + "\"" + r.texte + "\"";
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${modele}:generateContent?key=${cle}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${modele}:generateContent`;
+  const entetes = { "Content-Type": "application/json" };
+  if (cle) entetes["x-goog-api-key"] = cle; // la clé en en-tête, jamais dans l'adresse
   const corps = {
     contents: [{ parts: [{ text: texte }] }],
     generationConfig: {
@@ -67,7 +69,7 @@ async function generer(id, r) {
     },
   };
   for (let essai = 1; essai <= 5; essai++) {
-    const rep = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(corps) });
+    const rep = await fetch(url, { method: "POST", headers: entetes, body: JSON.stringify(corps) });
     if (rep.status === 429 || rep.status >= 500) {
       const attente = 15000 * essai;
       console.log(`  ${id} : serveur occupé (${rep.status}), nouvel essai dans ${attente / 1000} s`);
