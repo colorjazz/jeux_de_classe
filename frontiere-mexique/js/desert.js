@@ -320,7 +320,8 @@ window.Desert = (function () {
     const r = C.repliques[cle];
     if (!r) return;
     A.parler(r.qui, r.texte, chuchote);
-    sousTitre.textContent = r.texte;
+    const langue = window.LANGUE_SOUS_TITRES || "fr";
+    sousTitre.textContent = r[langue] || r.texte;
     sousTitre.className = r.qui === "agent" ? "visible agent" : "visible";
     clearTimeout(sousTitreTimer);
     sousTitreTimer = setTimeout(() => { sousTitre.className = ""; }, 3800);

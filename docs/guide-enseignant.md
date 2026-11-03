@@ -10,7 +10,7 @@ Trois principes guident la conception :
 
 - **Ce n'est pas un jeu à gagner.** Il n'y a ni score, ni échec, ni moyen d'échapper à la patrouille. Quoi que fasse l'élève, l'issue est la même, et c'est le propos.
 - **L'élève n'est pas un héros.** Il marche avec le groupe. Il peut aider ou non un homme âgé qui tombe, mais ce geste ne change pas l'issue.
-- **On ne comprend pas tout.** Les migrants parlent espagnol et les agents anglais, sans traduction.
+- **On entend leur langue.** Les migrants parlent espagnol et les agents anglais. Les paroles sont sous-titrées en français, ou en anglais si on le choisit sur l'écran d'accueil.
 
 ## Déroulé de l'expérience
 
@@ -50,6 +50,7 @@ Ajoutez ces paramètres à l'adresse dans le navigateur :
 - `index.html?scene=desert&t=145` : juste avant l'arrivée de l'hélicoptère.
 - `index.html?scene=reve` : la rupture onirique.
 - `index.html?scene=temoignages` : les témoignages seuls.
+- Ajouter `&st=en` (ou `?st=en`) : sous-titres en anglais. Sinon, c'est le choix fait sur l'écran d'accueil qui s'applique.
 
 ## Avant la séance
 
@@ -69,7 +70,7 @@ Laissez d'abord **une minute de silence** après l'expérience. Ensuite :
 **Comprendre**
 4. Pourquoi chacune de ces personnes est-elle partie ? Classez les raisons : violence, économie, climat, famille.
 5. Pourquoi l'expérience ne permet-elle pas d'échapper à la patrouille ?
-6. Pourquoi les migrants parlent-ils espagnol sans traduction ?
+6. Les personnages parlent espagnol et anglais : quel effet cela produit-il, même avec les sous-titres ?
 7. Que devient chaque personne après l'arrestation ? Ces issues sont-elles les mêmes pour tous ?
 
 **Prendre du recul**

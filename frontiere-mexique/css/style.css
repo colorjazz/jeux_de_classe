@@ -28,6 +28,10 @@ kbd { font-family: ui-monospace, monospace; font-size: 13px; border: 1px solid #
 .casque { display: flex; gap: 16px; align-items: center; margin-bottom: 36px; color: #cfc8b9; font-size: 15px; line-height: 1.55; }
 .casque svg { width: 44px; height: 44px; flex: none; color: var(--sable); }
 .casque p { margin: 0; }
+.langue { border: none; padding: 0; margin: 0 0 28px; display: flex; gap: 22px; align-items: center; flex-wrap: wrap; font-size: 15px; color: #cfc8b9; }
+.langue legend { float: left; margin-right: 6px; color: var(--doux); font-family: system-ui, sans-serif; font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase; }
+.langue label { cursor: pointer; display: inline-flex; gap: 8px; align-items: center; }
+.langue input { accent-color: var(--sable); margin: 0; }
 #btn-entrer {
   background: transparent; color: var(--texte); border: 1px solid var(--sable);
   padding: 14px 34px; letter-spacing: 0.08em; transition: background 0.3s, color 0.3s;

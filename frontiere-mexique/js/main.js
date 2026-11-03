@@ -84,6 +84,19 @@
 
   $("btn-recommencer").addEventListener("click", () => { location.href = location.pathname; });
 
+  // Langue des sous-titres : ?st=en, sinon le dernier choix, sinon le français.
+  let langue = params.get("st");
+  try { langue = langue || localStorage.getItem("sable-sous-titres"); } catch (e) {}
+  if (langue !== "en") langue = "fr";
+  window.LANGUE_SOUS_TITRES = langue;
+  document.querySelectorAll('input[name="st"]').forEach((r) => {
+    r.checked = r.value === langue;
+    r.addEventListener("change", () => {
+      window.LANGUE_SOUS_TITRES = r.value;
+      try { localStorage.setItem("sable-sous-titres", r.value); } catch (e) {}
+    });
+  });
+
   const scene = params.get("scene");
   if (scene) $("btn-entrer").textContent = "Commencer (" + scene + ")";
 

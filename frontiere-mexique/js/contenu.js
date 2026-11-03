@@ -1,7 +1,8 @@
 // Contenu textuel de l'expérience : répliques, sas, témoignages.
 // Tous les personnages sont FICTIFS : ce sont des personnages composites inspirés
 // de récits de migrants documentés (presse, recherche, associations).
-// Les répliques du désert restent en espagnol, volontairement non traduites.
+// Les voix parlent espagnol (migrants) et anglais (agents). Les sous-titres sont
+// en français (fr) ou en anglais (en) ; sans « en », le texte original est déjà anglais.
 
 window.CONTENU = {
   // Fragments affichés dans le sas d'entrée (la « hielera », la cellule froide).
@@ -12,26 +13,26 @@ window.CONTENU = {
     "Vous ne jouez pas un rôle.<br>Vous marchez avec eux.",
   ],
 
-  // Répliques en espagnol. "qui" = identifiant du personnage qui parle.
+  // "qui" = personnage qui parle ; "texte" = ce qui est dit ; "fr" / "en" = sous-titres.
   repliques: {
-    depart:      { qui: "guia",    texte: "Sin luces. Sin hablar. Caminen detrás de mí." },
-    rythme:      { qui: "guia",    texte: "Rápido. Antes de que salga el sol." },
-    enfant:      { qui: "mateo",   texte: "Mami… ¿falta mucho?" },
-    mere:        { qui: "rosa",    texte: "Ya casi, mijo. Ya casi." },
-    attendre:    { qui: "julio",   texte: "¡Oye! ¡Apúrate!" },
-    attendre2:   { qui: "rosa",    texte: "No te quedes atrás…" },
-    perdu:       { qui: "yesenia", texte: "¿Dónde estás? Por aquí…" },
-    soif:        { qui: "ernesto", texte: "Agua… ¿queda agua?" },
-    chute:       { qui: "ernesto", texte: "Ay… no puedo… mis piernas…" },
-    aide:        { qui: "ernesto", texte: "Gracias, hijo. Dios te lo pague." },
-    aideAutre:   { qui: "julio",   texte: "Arriba, don Ernesto. Arriba." },
-    alerte:      { qui: "guia",    texte: "¡Escóndanse! ¡Al suelo! ¡Ya!" },
-    panique:     { qui: "rosa",    texte: "¡Mateo! ¡Mateo, ven aquí!" },
-    priere:      { qui: "yesenia", texte: "Dios mío, Dios mío…" },
+    depart:      { qui: "guia",    texte: "Sin luces. Sin hablar. Caminen detrás de mí.", fr: "Pas de lumière. Pas un mot. Marchez derrière moi.", en: "No lights. No talking. Walk behind me." },
+    rythme:      { qui: "guia",    texte: "Rápido. Antes de que salga el sol.", fr: "Plus vite. Avant que le soleil se lève.", en: "Faster. Before the sun comes up." },
+    enfant:      { qui: "mateo",   texte: "Mami… ¿falta mucho?", fr: "Maman… c'est encore loin ?", en: "Mom… is it much farther?" },
+    mere:        { qui: "rosa",    texte: "Ya casi, mijo. Ya casi.", fr: "Presque, mon chéri. Presque.", en: "Almost there, sweetie. Almost." },
+    attendre:    { qui: "julio",   texte: "¡Oye! ¡Apúrate!", fr: "Hé ! Dépêche-toi !", en: "Hey! Hurry up!" },
+    attendre2:   { qui: "rosa",    texte: "No te quedes atrás…", fr: "Ne reste pas derrière…", en: "Don't fall behind…" },
+    perdu:       { qui: "yesenia", texte: "¿Dónde estás? Por aquí…", fr: "Où es-tu ? Par ici…", en: "Where are you? Over here…" },
+    soif:        { qui: "ernesto", texte: "Agua… ¿queda agua?", fr: "De l'eau… il reste de l'eau ?", en: "Water… is there any water left?" },
+    chute:       { qui: "ernesto", texte: "Ay… no puedo… mis piernas…", fr: "Aïe… je ne peux plus… mes jambes…", en: "Oh… I can't… my legs…" },
+    aide:        { qui: "ernesto", texte: "Gracias, hijo. Dios te lo pague.", fr: "Merci, mon fils. Que Dieu te le rende.", en: "Thank you, son. God bless you." },
+    aideAutre:   { qui: "julio",   texte: "Arriba, don Ernesto. Arriba.", fr: "Debout, don Ernesto. Debout.", en: "Up you get, Don Ernesto. Up." },
+    alerte:      { qui: "guia",    texte: "¡Escóndanse! ¡Al suelo! ¡Ya!", fr: "Cachez-vous ! À terre ! Vite !", en: "Hide! Get down! Now!" },
+    panique:     { qui: "rosa",    texte: "¡Mateo! ¡Mateo, ven aquí!", fr: "Mateo ! Mateo, viens ici !", en: "Mateo! Mateo, come here!" },
+    priere:      { qui: "yesenia", texte: "Dios mío, Dios mío…", fr: "Mon Dieu, mon Dieu…", en: "Dear God, dear God…" },
     // Les agents parlent anglais.
-    agent1:      { qui: "agent",   texte: "Border Patrol! Get down! Get down!" },
-    agent2:      { qui: "agent",   texte: "Hands up! Show me your hands!" },
-    agent3:      { qui: "agent",   texte: "Don't move! On your knees!" },
+    agent1:      { qui: "agent",   texte: "Border Patrol! Get down! Get down!", fr: "Police des frontières ! À terre ! À terre !" },
+    agent2:      { qui: "agent",   texte: "Hands up! Show me your hands!", fr: "Les mains en l'air ! Montrez vos mains !" },
+    agent3:      { qui: "agent",   texte: "Don't move! On your knees!", fr: "Ne bougez pas ! À genoux !" },
   },
 
   // Personnages du groupe (ordre de marche) et leur témoignage final.
