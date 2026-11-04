@@ -15,18 +15,16 @@
  *   - « links » peut contenir autant de boutons { label, url } que voulu.
  */
 window.SITE = {
-  name: "Votre Nom",
-  role: "Conceptrice de jeux éducatifs",
+  name: "Christopher Plante",
+  role: "Créateur Ed\u2011Tech",
   tagline:
     "Je crée des expériences d’apprentissage ludiques — des jeux de classe qui transforment les leçons en moments dont les élèves se souviennent.",
   location: "Montréal, QC",
   available: true, // affiche le badge « Disponible pour des projets »
-  email: "bonjour@exemple.com",
+  email: "Christopher.plante@gmail.com",
 
   socials: [
     { label: "GitHub", url: "https://github.com/colorjazz" },
-    { label: "LinkedIn", url: "https://www.linkedin.com/" },
-    { label: "itch.io", url: "https://itch.io/" },
   ],
 
   about: [

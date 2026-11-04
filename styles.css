@@ -190,3 +190,12 @@ h1, h2, h3 { font-family: var(--serif); font-weight: 700; line-height: 1.1; marg
 @media (max-width: 520px) {
   .nav__links a { padding: 8px; font-size: 0.88rem; }
 }
+
+.nav__brand, .nav__links a { white-space: nowrap; }
+@media (max-width: 420px) {
+  .nav__brand { font-size: 1rem; }
+  .nav__links { gap: 0; }
+  .nav__links a { padding: 6px 7px; font-size: 0.82rem; }
+  .theme-toggle { width: 32px; height: 32px; }
+  .nav__links a[href="#contact"] { display: none; }
+}
