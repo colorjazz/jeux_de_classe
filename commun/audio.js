@@ -579,6 +579,19 @@ window.Audio3D = (function () {
       n.connect(f).connect(g).connect(p); n.start(d, Math.random() * 3, 0.1);
     }
   }
+  // Gâche électrique d'une porte de sécurité : bourdonnement bref puis déclic.
+  function gache(x, y, z) {
+    if (!ctx) return;
+    const p = panner(x, y, z); p.connect(master); const t0 = t();
+    const o = ctx.createOscillator(); o.type = "sawtooth"; o.frequency.value = 118;
+    const f = ctx.createBiquadFilter(); f.type = "bandpass"; f.frequency.value = 520; f.Q.value = 1.2;
+    const g = ctx.createGain(); g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(0.16, t0 + 0.03); g.gain.setValueAtTime(0.16, t0 + 0.55); g.gain.linearRampToValueAtTime(0, t0 + 0.6);
+    o.connect(f).connect(g).connect(p); o.start(t0); o.stop(t0 + 0.65);
+    const n = ctx.createBufferSource(); n.buffer = bruitBuffer;
+    const fn = ctx.createBiquadFilter(); fn.type = "bandpass"; fn.frequency.value = 1500; fn.Q.value = 3;
+    const gn = ctx.createGain(); gn.gain.setValueAtTime(0.4, t0 + 0.58); gn.gain.exponentialRampToValueAtTime(0.001, t0 + 0.7);
+    n.connect(fn).connect(gn).connect(p); n.start(t0 + 0.58, 0, 0.15);
+  }
   // Bip d'un lecteur (bracelet, scanner).
   function bip(x, y, z) {
     if (!ctx) return;
@@ -808,7 +821,7 @@ window.Audio3D = (function () {
     setFatigue, setPeur, coeur, helicoptere, positionHelico, moteur, positionMoteur,
     voiture, positionVoiture, voitureFin, coyotes, echelon, gorgees, espoir, espoirCouper,
     tension, setVent, pause, reprise, prechargerVoix, voixUtilisees,
-    clim, claquement, froissement, bip, comal, rue, moto, ventSec, neon, sonnerie, volumeGeneral, reinitialiser, chargerSon, sonPret, jouerSon, coupure, pluie, riviere, tonnerre,
+    clim, claquement, froissement, bip, gache, comal, rue, moto, ventSec, neon, sonnerie, volumeGeneral, reinitialiser, chargerSon, sonPret, jouerSon, coupure, pluie, riviere, tonnerre,
     enregistrementsCharges: () => Object.keys(enregistrements),
     auditeur, parler, silence, nappe, toutCouper,
   };

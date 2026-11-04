@@ -2,7 +2,9 @@
 
 *Les heures qui suivent l'arrestation du chapitre 1, dans un centre de traitement de la Patrouille frontalière, secteur de Tucson (Arizona). C'est le dernier chapitre de* Traversées.
 
-Public : 16-17 ans. Durée : environ 9 minutes. À faire après les chapitres 1, 2 et 3.
+Public : 16-17 ans. Durée : environ 12 minutes. À faire après les chapitres 1, 2 et 3.
+
+**L'élève fait partie du groupe arrêté**, comme au chapitre 1. Une consigne en haut de l'écran lui dit quoi faire ; s'il ne fait rien, la scène continue au bout d'un moment (personne ne reste bloqué). Il peut marcher dans toute la pièce ou la cellule, regarder les objets (E) et faire quelques gestes : déposer ses lacets, poser ses doigts sur le lecteur, prendre une couverture, aller écouter Don Ernesto ou Valeria, **choisir de signer ou non le formulaire**, donner sa couverture à Rosa. La fin du chapitre rappelle ce qu'il a choisi.
 
 **Attention :** la séparation de Rosa et de son fils Mateo (séquence 3) est le moment le plus dur de toute la série. Aucune violence physique n'est montrée, mais il est utile de prévenir les élèves et de laisser un temps de silence après le chapitre.
 
@@ -11,16 +13,16 @@ Public : 16-17 ans. Durée : environ 9 minutes. À faire après les chapitres 1,
 | Séquence | Ce qui se passe |
 |---|---|
 | Sas | Bourdonnement de climatisation. Le centre de Tucson, la « hielera » (la glacière), les néons allumés jour et nuit, les noms qui deviennent des numéros. |
-| 1. L'enregistrement | Le groupe du désert sur la ligne jaune, devant un comptoir. Ceintures, lacets, téléphones, sacs : tout part dans des sacs plastiques. L'agent jette le sac à dos de Mateo, avec son cahier de dessin. Les empreintes de Julio sont déjà dans le système : il a déjà été expulsé. |
-| 2. La glacière | Deux cellules séparées par un grillage : femmes et enfants d'un côté, hommes de l'autre. Tout le monde est enveloppé dans des couvertures de survie qui crépitent. Don Ernesto : « Il fait plus froid ici que dans le désert. » Valeria réchauffe Mateo sous sa couverture. |
-| 3. La séparation | Un agent lit une liste : « Femmes adultes vers l'aile C. Mineurs séparés vers le secteur 4. » Une agente emmène Mateo. La porte se referme devant Rosa, qui lui crie de se souvenir du numéro de sa tante, écrit sur son bras. |
-| 4. Les papiers | Au comptoir, un formulaire en anglais. Yesenia, qui parle mam mieux qu'espagnol, ne comprend pas et finit par signer. Joseph demande un interprète en créole ; personne ne répond. Valeria refuse de signer et demande l'asile. |
-| 5. Le départ | « Les ressortissants mexicains, en rang. Bus pour Nogales. » Don Ernesto plie sa couverture et dit au revoir à Rosa à travers le grillage. Puis le froid, la lumière blanche, le bourdonnement. |
-| Fin | Un texte, sans voix : les causes du départ et les lois des États ; les personnages n'existent pas, mais ce qu'ils vivent, des milliers de personnes le vivent chaque année. |
+| 1. L'enregistrement | On entre par la porte de sécurité. L'élève se place sur la ligne jaune avec le groupe. L'agent jette le sac à dos de Mateo, avec son cahier de dessin. Puis c'est le tour de l'élève : ceinture et lacets dans le sac, empreintes, photo contre la toise. Les empreintes de Julio sont déjà dans le système : une agente l'emmène par la porte « Holding ». |
+| 2. La glacière | La porte de la cellule se referme. L'élève prend une couverture de survie (on la voit en bas de l'écran, elle crépite quand on marche) et peut explorer : graffitis gravés au mur, fontaine d'eau, repas, toilettes à la vue de tous. En s'approchant, il entend Don Ernesto à travers le grillage (« Il fait plus froid ici que dans le désert ») et voit Valeria réchauffer Mateo. |
+| 3. La séparation | Un agent lit une liste : « Femmes adultes vers l'aile C. Mineurs séparés vers le secteur 4. » Une agente emmène Mateo par la porte du secteur 4. Si l'élève s'approche de la porte ouverte, l'agent lui crie de reculer. La porte se referme devant Rosa, qui lui crie de se souvenir du numéro de sa tante, écrit sur son bras. |
+| 4. Les papiers | Au comptoir, un formulaire en anglais. Yesenia, qui parle mam mieux qu'espagnol, ne comprend pas et finit par signer. Joseph demande un interprète en créole ; personne ne répond. Valeria refuse de signer et demande l'asile. Puis c'est le tour de l'élève : **signer ou ne pas signer** un papier qu'il ne peut pas lire. |
+| 5. Le départ | Rosa grelotte : elle n'a plus de couverture. L'élève peut lui donner la sienne. « Les ressortissants mexicains, en rang. Bus pour Nogales. » Don Ernesto dit au revoir à Rosa à travers le grillage et part avec l'agent. Puis le froid, la lumière blanche, le bourdonnement. |
+| Fin | Un texte, sans voix : les causes du départ et les lois des États ; ce que l'élève a choisi (signer ou non, la couverture) ; les personnages n'existent pas, mais ce qu'ils vivent, des milliers de personnes le vivent chaque année. |
 
 **Cohérence avec le chapitre 1 :** ce qui arrive ici prépare les témoignages de la fin du chapitre 1. Julio sera poursuivi puis expulsé ; Rosa sera séparée de Mateo pendant plusieurs semaines ; Yesenia sera expulsée onze jours plus tard ; Don Ernesto est renvoyé à Nogales le lendemain ; Valeria attend son audience d'asile ; Joseph sera expulsé vers Port-au-Prince.
 
-**Objets à regarder (touche E) :** le sac des effets personnels et le cahier de Mateo (séquence 1), une couverture de survie (séquence 2), la liste des dossiers accrochée aux barreaux (séquence 3), le formulaire (séquence 4). Chacun, sauf le cahier, a un encadré de contexte pour le cours.
+**Objets à regarder (touche E) :** le sac des effets personnels, le cahier de Mateo et le bac à lacets (séquence 1) ; la couverture de survie, les graffitis, la fontaine, le repas et les toilettes (séquence 2) ; la liste des dossiers accrochée aux barreaux (séquence 3) ; le formulaire (séquence 4). La couverture, les graffitis (durée de détention), la liste et le formulaire ont un encadré de contexte pour le cours.
 
 ## Ce que le chapitre a changé par rapport au texte d'origine
 
@@ -39,11 +41,12 @@ Public : 16-17 ans. Durée : environ 9 minutes. À faire après les chapitres 1,
 
 ## Débrief : quelques questions
 
-1. Dans ce chapitre, qu'est-ce qui enlève aux personnes leur identité ? Faites la liste : les objets, les noms, la langue…
-2. Pourquoi l'absence d'interprète est-elle grave pour Yesenia et Joseph ? Qu'aurait-il fallu ?
-3. Valeria refuse de signer et demande l'asile. Qu'est-ce que le droit d'asile ? Que dit le principe de non-refoulement ?
-4. Quatre chapitres plus tard : qu'est-ce qui a fait partir chacun des personnages ? Lesquelles de ces causes sont politiques, économiques, climatiques ?
-5. Un État a-t-il le droit de contrôler ses frontières ? Les personnes qui migrent ont-elles des droits ? Comment concilier les deux ?
+1. Dans ce chapitre, qu'est-ce qui enlève aux personnes leur identité ? Faites la liste : les objets, les lacets, les noms, la langue…
+2. Avez-vous signé le formulaire ? Pourquoi ? Qu'est-ce qui vous aurait aidé à décider ?
+3. Pourquoi l'absence d'interprète est-elle grave pour Yesenia et Joseph ? Qu'aurait-il fallu ?
+4. Valeria refuse de signer et demande l'asile. Qu'est-ce que le droit d'asile ? Que dit le principe de non-refoulement ?
+5. Quatre chapitres plus tard : qu'est-ce qui a fait partir chacun des personnages ? Lesquelles de ces causes sont politiques, économiques, climatiques ?
+6. Un État a-t-il le droit de contrôler ses frontières ? Les personnes qui migrent ont-elles des droits ? Comment concilier les deux ?
 
 ## Accès direct
 
@@ -52,4 +55,4 @@ Public : 16-17 ans. Durée : environ 9 minutes. À faire après les chapitres 1,
 
 ## Les voix
 
-Les 19 répliques sont générées avec Gemini TTS par `outils/generer-voix.mjs --chapitre chapitre-4` et rangées dans `chapitre-4/voix/`. Sans ces fichiers, la page utilise la voix de synthèse du navigateur.
+Les 25 répliques sont générées avec Gemini TTS par `outils/generer-voix.mjs --chapitre chapitre-4` et rangées dans `chapitre-4/voix/`. Sans ces fichiers, la page utilise la voix de synthèse du navigateur.

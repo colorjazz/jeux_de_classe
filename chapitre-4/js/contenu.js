@@ -5,7 +5,8 @@
 //   - hommes et femmes sont dans deux cellules voisines, séparées par un grillage (Don Ernesto parle à travers) ;
 //   - Julio, Valeria et Joseph, qui étaient dans le groupe du désert, ont aussi quelques répliques
 //     (marquées « ajout ») qui rejoignent ce que disent leurs témoignages du chapitre 1 ;
-//   - l'épilogue n'est pas dit par une voix : il s'écrit à l'écran, comme la fin des autres chapitres.
+//   - l'épilogue n'est pas dit par une voix : il s'écrit à l'écran, comme la fin des autres chapitres ;
+//   - l'élève fait partie du groupe arrêté : il dépose ses lacets, donne ses empreintes, choisit de signer ou non.
 // Tous les personnages sont FICTIFS.
 
 window.CONTENU_CH4 = {
@@ -25,6 +26,11 @@ window.CONTENU_CH4 = {
     agentJulio:    { qui: "agent_bureau", ton: "froid", direction: "Say in American English, flat and cold, reading a computer screen after a fingerprint scan: ", texte: "Your fingerprints are already in the system. Removed in twenty nineteen. Step aside.", fr: "Vos empreintes sont déjà dans le système. Expulsé en 2019. Mettez-vous sur le côté." },
     julioEmpreintes: { qui: "julio", ton: "triste", direction: "Say quietly in Salvadoran Spanish, a man who knows exactly what this means, tired and ashamed, almost to himself: ", texte: "Ya está. Ahora me van a encerrar. Mi hija me va a esperar otra vez.", fr: "Voilà. Maintenant, ils vont m'enfermer. Ma fille va encore m'attendre.", en: "That's it. Now they'll lock me up. My daughter will wait for me again." },
 
+    // ajout : le tour de l'élève, qui fait partie du groupe
+    agentToi:      { qui: "agent_bureau", ton: "froid", direction: "Say in American English, impatient and cold, pointing at a detainee: ", texte: "You. Belt and shoelaces in the bag. Now.", fr: "Vous. Ceinture et lacets dans le sac. Tout de suite." },
+    agentDoigts:   { qui: "agent_bureau", ton: "froid", direction: "Say in American English, flat routine instruction at a fingerprint scanner: ", texte: "Right hand. Four fingers on the glass. Press. Don't move.", fr: "Main droite. Quatre doigts sur la vitre. Appuyez. Ne bougez pas." },
+    agentPhoto:    { qui: "agent_bureau", ton: "froid", direction: "Say in American English, bored, routine, for a booking photo: ", texte: "Stand on the mark. Back to the wall. Look at the camera.", fr: "Sur la marque. Dos au mur. Regardez l'objectif." },
+
     // SÉQUENCE 2 : LA HIELERA
     ernestoFroid:  { qui: "ernesto", ton: "fatigue", direction: "Say in Mexican Spanish with an exhausted, shivering 61-year-old man's voice, through a wire fence: ", texte: "Hace más frío aquí adentro que en el desierto… este plástico brillante no calienta nada.", fr: "Il fait plus froid ici que dans le désert… ce plastique brillant ne réchauffe rien du tout.", en: "It's colder in here than in the desert… this shiny plastic doesn't warm you at all." },
     // ajout : Joseph
@@ -39,6 +45,9 @@ window.CONTENU_CH4 = {
     mateoPleurs:   { qui: "mateo", ton: "cri", direction: "Cry out desperately in Spanish, a 9-year-old boy reaching for his mother as he is led away: ", texte: "¡Mami! ¡No me sueltes, mami!", fr: "Maman ! Ne me lâche pas, maman !", en: "Mommy! Don't let go of me, mommy!" },
     rosaCriCell:   { qui: "rosa", ton: "cri", direction: "Shout in Honduran Spanish with a broken, agonizing mother's cry through the bars as her son disappears: ", texte: "¡Mateo! ¡Acuérdate del número de tu tía! ¡Lo tienes escrito en el brazo! ¡Te amo!", fr: "Mateo ! Souviens-toi du numéro de ta tante ! Il est écrit sur ton bras ! Je t'aime !", en: "Mateo! Remember your aunt's number! It's written on your arm! I love you!" },
 
+    // ajout : si l'élève s'approche de la porte ouverte
+    agentRecule:   { qui: "agent_bureau", ton: "cri", direction: "Shout in American English, a sharp warning to a detainee approaching an open cell door: ", texte: "Step back! Back from the door!", fr: "Reculez ! Éloignez-vous de la porte !" },
+
     // SÉQUENCE 4 : LES PAPIERS
     agentSigne:    { qui: "agent_bureau", ton: "froid", direction: "Say in American English, quick and dismissive, pushing a form across a counter: ", texte: "Sign here. And here. It's just to process your file.", fr: "Signez ici. Et ici. C'est juste pour traiter votre dossier." },
     yeseniaConfuse: { qui: "yesenia", ton: "peur", direction: "Say slowly in Spanish with a strong indigenous Guatemalan accent, confused and frightened, a 19-year-old who speaks Mam better than Spanish: ", texte: "No entiendo… ¿qué dice el papel? No hablo bien español, necesito hablar en mi idioma…", fr: "Je ne comprends pas… qu'est-ce qui est écrit sur le papier ? Je ne parle pas bien espagnol, j'ai besoin de parler dans ma langue…", en: "I don't understand… what does the paper say? I don't speak Spanish well, I need to speak in my language…" },
@@ -46,6 +55,10 @@ window.CONTENU_CH4 = {
     josephInterprete: { qui: "joseph", ton: "triste", direction: "Say in Spanish with a strong Haitian Creole accent, calm and dignified, ending with Haitian Creole words: ", texte: "Yo no entiendo inglés. ¿Hay alguien que hable kreyòl? Mwen bezwen yon entèprèt.", fr: "Je ne comprends pas l'anglais. Il y a quelqu'un qui parle créole ? [En créole] J'ai besoin d'un interprète.", en: "I don't understand English. Is there anyone who speaks Creole? [In Creole] I need an interpreter." },
     // ajout : Valeria (elle attend son audience d'asile, chapitre 1)
     valeriaAsile:  { qui: "valeria", ton: "triste", direction: "Say in Venezuelan Spanish, steady and determined despite fear, refusing to sign a paper: ", texte: "No voy a firmar. Tengo miedo de volver a mi país. Quiero pedir asilo.", fr: "Je ne signerai pas. J'ai peur de retourner dans mon pays. Je veux demander l'asile.", en: "I won't sign. I'm afraid to go back to my country. I want to ask for asylum." },
+
+    // ajout : le choix de l'élève
+    agentSuivant:  { qui: "agent_bureau", ton: "froid", direction: "Say in American English, one bored word, without looking up: ", texte: "Next.", fr: "Suivant." },
+    agentRefus:    { qui: "agent_bureau", ton: "froid", direction: "Say in American English, tired and indifferent, to someone who refused to sign: ", texte: "Fine. Then you wait for an asylum officer. Could be days. Could be weeks.", fr: "Très bien. Alors vous attendrez un agent de l'asile. Ça peut prendre des jours. Des semaines." },
 
     // SÉQUENCE 5 : LE DÉPART DE DON ERNESTO
     agentAube:     { qui: "agent_bureau", ton: "froid", direction: "Call out in American English, loud and routine, at the door of a holding cell: ", texte: "Mexican nationals, line up by the door. Bus to Nogales.", fr: "Les ressortissants mexicains, en rang près de la porte. Bus pour Nogales." },
@@ -65,6 +78,21 @@ window.CONTENU_CH4 = {
     { id: "liste_dossiers", nom: "La liste des dossiers",
       texte: "Une feuille sur une planchette : des numéros, des cases cochées, des flèches vers « Wing C » et « Sector 4 ». Aucun prénom.",
       contexte: "SÉPARATION DES FAMILLES : En 2018, la politique dite de « tolérance zéro » a conduit à séparer plus de 5 000 enfants de leurs parents à la frontière. Des années plus tard, certaines familles n'avaient toujours pas été réunies." },
+    { id: "lacets_bac", nom: "Le bac à lacets",
+      texte: "Un bac en plastique rempli de lacets de toutes les couleurs, emmêlés. On les retire à l'entrée, « pour la sécurité ». Après, les chaussures ne tiennent plus aux pieds.",
+      contexte: "" },
+    { id: "graffiti_mur", nom: "Les murs de la cellule",
+      texte: "Gravés dans la peinture avec une agrafe ou un ongle : des prénoms, des dates, « Dios me ama », « Mami te amo », des bâtons pour compter les jours.",
+      contexte: "DURÉE DE DÉTENTION : Selon les normes de la Patrouille frontalière, ces cellules sont prévues pour de courts séjours : en général pas plus de 72 heures. Des inspections officielles ont pourtant constaté des séjours bien plus longs lors des périodes d'affluence." },
+    { id: "fontaine", nom: "La fontaine d'eau",
+      texte: "Une grande fontaine orange et une pile de gobelets en carton. L'eau a un goût de chlore. Il fait si froid que personne n'a vraiment envie de boire.",
+      contexte: "" },
+    { id: "repas", nom: "Le repas",
+      texte: "Un sandwich froid dans du plastique, une brique de jus de pomme, un sachet de biscuits. Le même repas revient, encore et encore. Il n'y a pas d'horloge : c'est à ça qu'on devine l'heure.",
+      contexte: "" },
+    { id: "toilettes", nom: "Les toilettes",
+      texte: "Une cuvette en inox derrière un muret qui arrive à la taille, au milieu de tout le monde. La caméra du plafond voit la cellule entière.",
+      contexte: "" },
     { id: "formulaire_expulsion", nom: "Formulaire de départ volontaire",
       texte: "Un document officiel en anglais, tendu à des personnes qui parlent espagnol, mam ou créole. En le signant, on peut renoncer à voir un juge et accepter d'être renvoyé très vite.",
       contexte: "DROIT D'ASILE : La Convention de 1951 relative au statut des réfugiés et son Protocole de 1967, auquel les États-Unis ont adhéré, interdisent de renvoyer une personne vers un pays où sa vie ou sa liberté serait menacée (principe de non-refoulement)." },

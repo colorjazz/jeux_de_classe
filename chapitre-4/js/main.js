@@ -80,7 +80,9 @@
     $("voile").style.transition = "opacity 2s"; $("voile").style.opacity = "0";
     montrer("fin");
     const zone = $("fin-texte"); zone.innerHTML = "";
-    for (const ligne of C.fin) {
+    // Ce que l'élève a fait (signer ou non, donner sa couverture), avant la dernière phrase.
+    const lignes = C.fin.slice(0, -1).concat(window.Chapitre4.lignesRecit ? window.Chapitre4.lignesRecit() : [], C.fin.slice(-1));
+    for (const ligne of lignes) {
       const p = document.createElement("p"); p.textContent = ligne; zone.appendChild(p);
       await attendre(100); p.classList.add("visible");
       await attendre(3000 + ligne.length * 30);

@@ -15,6 +15,7 @@ window.Chapitre4 = (function () {
   let objets = [];             // objets examinables du tableau courant
   let majTableau = null;       // mise à jour propre au tableau
   let limite = { x: 0, z: 0, r: 4 };
+  let zone = null;               // rectangle où l'élève peut marcher (x0, x1, z0, z1)
   let solY = () => 0;
   let ilotCourant = "", debutIlot = 0;
   const attentes = [];
@@ -126,7 +127,8 @@ window.Chapitre4 = (function () {
     if (p.suivre) {
       // Marcher à côté de quelqu'un (Mateo à côté de sa mère).
       const l = p.suivre.leader;
-      p.x = l.x - Math.cos(l.cap) * p.suivre.cote; p.z = l.z + Math.sin(l.cap) * p.suivre.cote;
+      const recul = p.suivre.recul || 0; // derrière lui (pour passer une porte)
+      p.x = l.x - Math.cos(l.cap) * p.suivre.cote - Math.sin(l.cap) * recul; p.z = l.z + Math.sin(l.cap) * p.suivre.cote - Math.cos(l.cap) * recul;
       p.cap = l.cap; p.vitesse = l.vitesse; p.cible = l.vitesse > 0.05 ? "marche" : "debout";
       return;
     }
@@ -160,6 +162,7 @@ window.Chapitre4 = (function () {
     }
     groupe = new THREE.Group(); scene.add(groupe);
     persos = []; objets = []; majTableau = null;
+    zone = null; passages.length = 0; retirerMylarJoueur(); objectif("");
     // Les matériaux partagés des personnages ont été libérés : on repart d'une fabrique neuve.
     P = Personnages(env);
   }
@@ -389,56 +392,6 @@ window.Chapitre4 = (function () {
     return p;
   }
 
-  // ---------- Le comptoir de l'enregistrement (séquences 1 et 4) ----------
-  function salleComptoir() {
-    ambiance();
-    piece(-4.5, 4.5, -5.5, 3.5);
-    neons([[-2.2, -1.5], [2.2, -1.5], [0, 1.5]]);
-    // Le comptoir, sa vitre, l'écran, le lecteur d'empreintes
-    boite(5.4, 1.05, 0.7, 0x7a7e7a, 0, 0.525, -3.1);
-    boite(5.6, 0.05, 0.8, 0xb0b4b0, 0, 1.075, -3.1);
-    const vitre = new THREE.Mesh(new THREE.PlaneGeometry(5.4, 0.9), new THREE.MeshStandardMaterial({ color: 0xcfe0e8, transparent: true, opacity: 0.12, roughness: 0.05, metalness: 0.2 }));
-    vitre.position.set(0, 1.55, -3.3); groupe.add(vitre);
-    boite(0.5, 0.34, 0.04, 0x1a1c1e, 0.9, 1.35, -3.32);
-    const ecran = emissif(new THREE.PlaneGeometry(0.44, 0.28), 0x8ab0e8, 1.3, groupe, 0.9, 1.35, -3.298); ecran.rotation.y = Math.PI;
-    boite(0.22, 0.08, 0.18, 0x2a2c2e, -0.7, 1.14, -2.95);
-    const vertLecteur = emissif(new THREE.PlaneGeometry(0.14, 0.1), 0x40ff80, 1.4, groupe, -0.7, 1.185, -2.95); vertLecteur.rotation.x = -Math.PI / 2;
-    // Bacs de sacs, derrière le comptoir ; caméra au mur
-    boite(1.2, 0.5, 0.6, 0x3a5a8a, -2.6, 0.25, -4.6); boite(1.2, 0.5, 0.6, 0x3a5a8a, -1.2, 0.25, -4.6);
-    boite(0.16, 0.12, 0.24, 0x2a2a2a, 3.6, 2.6, -5.35);
-    emissif(new THREE.SphereGeometry(0.015, 6, 6), 0xff2020, 3, groupe, 3.6, 2.6, -5.22);
-    // Panneau
-    const panneau = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.4), new THREE.MeshBasicMaterial({ map: texte2D(["U.S. BORDER PATROL · PROCESSING"], { l: 1024, h: 128, couleur: "#1a2a4a", fond: "#e8e8e0", police: "bold 54px system-ui, sans-serif" }) }));
-    panneau.position.set(-1.6, 2.4, -5.46); groupe.add(panneau);
-    // La ligne jaune
-    const ligne = new THREE.Mesh(new THREE.PlaneGeometry(6, 0.1), new THREE.MeshBasicMaterial({ color: Rendu.lumineux(0xe0b020, 0.9) }));
-    ligne.rotation.x = -Math.PI / 2; ligne.position.set(0, 0.004, -1.55); groupe.add(ligne);
-    return { vertLecteur, ecran };
-  }
-
-  // ---------- La hielera (séquences 2, 3 et 5) ----------
-  // Cellule des femmes et des enfants (x -3.6 → 1.6) ; à droite, derrière le grillage, celle des hommes (1.6 → 5.2).
-  function salleCellule() {
-    ambiance();
-    piece(-3.6, 5.2, -3.6, 2.4, ["avant"]);
-    // Le couloir derrière les barreaux
-    piece(-3.6, 5.2, 2.4, 5.6, ["fond"]);
-    neons([[-1.0, -1.0, Math.PI / 2], [3.4, -1.0, Math.PI / 2], [0.8, 4.0, Math.PI / 2]]);
-    const porteF = barreaux(-3.6, 1.6, 2.4, [-1.3, 0.9]);
-    const porteH = barreaux(1.6, 5.2, 2.4, [3.3, 0.9]);
-    grillage(1.6, -3.6, 2.4);
-    banc(-1.0, -3.3, 5.0); banc(-3.35, -0.8, 3.4, Math.PI / 2);
-    banc(3.4, -3.3, 3.4);
-    toilette(-3.1, -3.0); toilette(4.7, -3.05);
-    // Les autres détenus
-    dormeur(-2.0, -1.2, 0.3); dormeur(-0.9, 0.2, -1.4, 0x8a6448); dormeur(0.4, -1.6, 1.2, 0x6e4a33);
-    dormeur(3.1, 0.6, 1.6); dormeur(4.3, -1.4, 0.2, 0x5a3a26); dormeur(3.6, 1.5, -1.6, 0x8a6448);
-    [[-3.5, -2.4], [0.9, 1.2], [4.9, 0.4], [-2.6, 1.6], [2.1, -2.9]].forEach(([x, z]) => mylarPlie(x, 0.03, z));
-    // Une caméra au plafond, et l'horloge… qu'on ne voit pas : il n'y en a pas.
-    boite(0.16, 0.12, 0.24, 0x2a2a2a, -3.4, 2.7, 2.2);
-    emissif(new THREE.SphereGeometry(0.015, 6, 6), 0xff2020, 3, groupe, -3.33, 2.7, 2.08);
-    return { porteF, porteH };
-  }
   // Ouvrir / fermer une porte de barreaux (rotation sur ses gonds, en douceur).
   function bougerPorte(porte, angle, duree) {
     const a0 = porte.rotation.y, t0 = temps;
@@ -472,31 +425,329 @@ window.Chapitre4 = (function () {
     setTimeout(un, 1500);
   }
 
+  // ---------- Portes métalliques (avec gâche électrique) ----------
+  // Posée contre un mur : (x, z) au milieu du seuil, ry tourne la face vers l'intérieur de la pièce.
+  // Ouverte, elle laisse voir un passage sombre ; un personnage qui le franchit disparaît.
+  function porteMetal(x, z, ry, etiquette) {
+    const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = ry; groupe.add(g);
+    const fond = new THREE.Mesh(new THREE.PlaneGeometry(0.96, 2.12), new THREE.MeshBasicMaterial({ color: 0x17191b }));
+    fond.position.set(0, 1.06, 0.006); g.add(fond);
+    const cadre = 0x5e666c;
+    boite(0.08, 2.2, 0.08, cadre, -0.52, 1.1, 0.03, g); boite(0.08, 2.2, 0.08, cadre, 0.52, 1.1, 0.03, g); boite(1.12, 0.08, 0.08, cadre, 0, 2.18, 0.03, g);
+    const gond = new THREE.Group(); gond.position.set(-0.48, 0, 0.03); g.add(gond);
+    const vantail = new THREE.Group(); gond.add(vantail);
+    boite(0.95, 2.1, 0.05, 0x7c858b, 0.475, 1.06, 0, vantail);
+    boite(0.95, 0.25, 0.052, 0x6a7278, 0.475, 0.14, 0, vantail); // plaque de propreté
+    const hublot = new THREE.Mesh(new THREE.PlaneGeometry(0.18, 0.3), new THREE.MeshStandardMaterial({ color: 0x9fb0b8, roughness: 0.1, metalness: 0.3 }));
+    hublot.position.set(0.475, 1.55, 0.028); vantail.add(hublot);
+    boite(0.04, 0.16, 0.06, 0x2a2c2e, 0.84, 1.02, 0.05, vantail); // poignée
+    const voyant = emissif(new THREE.BoxGeometry(0.06, 0.04, 0.02), 0xff2a1a, 3, g, 0.7, 2.32, 0.04);
+    if (etiquette) {
+      const t = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.2), new THREE.MeshBasicMaterial({ map: texte2D([etiquette], { l: 512, h: 112, couleur: "#e8e8e0", fond: "#1e3a5a", police: "bold 50px system-ui, sans-serif" }) }));
+      t.position.set(0, 2.5, 0.01); g.add(t);
+    }
+    const p = {
+      g, ouverte: false,
+      ouvrir() { if (!p._ouv) p._ouv = p._ouvrir().then(() => { p._ouv = null; }); return p._ouv; },
+      async _ouvrir() {
+        const w = g.localToWorld(new THREE.Vector3(0, 1.2, 0));
+        A.gache(w.x, w.y, w.z); voyant.material.color.copy(Rendu.lumineux(0x30ff60, 3));
+        await attendre(0.5);
+        p.ouverte = true; await bougerPorte(gond, -1.7, 1.1);
+      },
+      async fermer() {
+        if (!p.ouverte) return;
+        await bougerPorte(gond, 0, 0.8);
+        const w = g.localToWorld(new THREE.Vector3(0, 1.2, 0));
+        A.claquement(w.x, w.y, w.z); voyant.material.color.copy(Rendu.lumineux(0xff2a1a, 3)); p.ouverte = false;
+      },
+      // Points devant et derrière la porte (coordonnées du monde)
+      devant: (d) => g.localToWorld(new THREE.Vector3(0, 0, d || 0.8)),
+      derriere: () => g.localToWorld(new THREE.Vector3(0, 0, -0.9)),
+    };
+    return p;
+  }
+  // Faire sortir quelqu'un (ou plusieurs) par une porte, puis la refermer.
+  const passages = [];
+  function majPassages() {
+    for (const s of passages) {
+      s.p.racine.visible = s.porte.g.worldToLocal(_m.set(s.p.x, 0, s.p.z)).z > -0.05;
+    }
+  }
+  async function sortirPar(porte, qui, suiveurs, v) {
+    suiveurs = suiveurs || [];
+    [qui, ...suiveurs].forEach((p) => passages.push({ p, porte }));
+    suiveurs.forEach((p, k) => { p.suivre = { leader: qui, cote: 0, recul: 0.7 * (k + 1) }; });
+    if (!porte.ouverte) await porte.ouvrir();
+    const a = porte.devant(), b = porte.derriere();
+    await allerVers(qui, a.x, a.z, v || 1);
+    await allerVers(qui, b.x, b.z, v || 1);
+    await attendre(0.8);
+    qui.but = null; qui.vitesse = 0;
+    porte.fermer();
+  }
+  async function entrerPar(porte, qui, x, z, v, garderOuverte) {
+    passages.push({ p: qui, porte });
+    const b = porte.derriere(), a = porte.devant();
+    qui.x = b.x; qui.z = b.z;
+    if (!porte.ouverte) await porte.ouvrir();
+    await allerVers(qui, a.x, a.z, v || 1);
+    passages.splice(passages.findIndex((s) => s.p === qui), 1); qui.racine.visible = true;
+    if (!garderOuverte) porte.fermer();
+    await allerVers(qui, x, z, v || 1);
+  }
+
+  // ---------- Affiches, graffitis, petits objets ----------
+  function affiche(lignes, x, y, z, ry, opts) {
+    opts = opts || {};
+    const w = opts.w || 1.2, h = opts.h || 0.6;
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: texte2D(lignes, Object.assign({ l: 1024, h: Math.round(1024 * h / w), couleur: "#1a2a3a", fond: "#efede4", police: "bold 46px system-ui, sans-serif" }, opts)) }));
+    m.position.set(x, y, z); m.rotation.y = ry || 0; groupe.add(m);
+    return m;
+  }
+  function textureGraffitis() {
+    const cv = document.createElement("canvas"); cv.width = 1024; cv.height = 512;
+    const c = cv.getContext("2d");
+    const ecrire = (t, x, y, taille, rot) => {
+      c.save(); c.translate(x, y); c.rotate(rot || 0);
+      c.font = `italic ${taille}px Georgia, serif`; c.lineWidth = 1.6;
+      c.strokeStyle = "rgba(70,72,70,0.75)"; c.strokeText(t, 0, 0);
+      c.fillStyle = "rgba(250,250,245,0.25)"; c.fillText(t, 1.5, 1.5);
+      c.restore();
+    };
+    ecrire("DIOS ME AMA", 60, 90, 54, -0.05); ecrire("Mami te amo", 520, 70, 44, 0.04);
+    ecrire("Yuli  14 / 3", 90, 200, 40, 0.02); ecrire("HONDURAS", 620, 190, 50, -0.03);
+    ecrire("3 días sin ver el sol", 260, 300, 36, 0.01); ecrire("San Pedro Sula", 80, 420, 38, -0.04);
+    ecrire("Fe", 840, 330, 70, 0.1); ecrire("Kenbe fèm", 600, 450, 40, -0.02);
+    // Des bâtons pour compter les jours
+    c.strokeStyle = "rgba(60,62,60,0.8)"; c.lineWidth = 3;
+    for (let k = 0; k < 13; k++) { const x = 470 + k * 14 + Math.floor(k / 5) * 18; c.beginPath(); c.moveTo(x, 370); c.lineTo(x + 3, 410); c.stroke(); }
+    [0, 1].forEach((b) => { c.beginPath(); c.moveTo(462 + b * 88, 395); c.lineTo(540 + b * 88, 380); c.stroke(); });
+    const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; return t;
+  }
+  function graffitis(x, y, z, ry) {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.8), new THREE.MeshBasicMaterial({ map: textureGraffitis(), transparent: true }));
+    m.position.set(x, y, z); m.rotation.y = ry; groupe.add(m); return m;
+  }
+  function fontaine(x, z) {
+    const g = new THREE.Group(); g.position.set(x, 0, z); groupe.add(g);
+    boite(0.36, 0.78, 0.36, 0xb8bcc0, 0, 0.39, 0, g);
+    P.maille(new THREE.CylinderGeometry(0.17, 0.17, 0.42, 16), 0xd8701a, g, 0, 1.0, 0);
+    P.maille(new THREE.CylinderGeometry(0.175, 0.175, 0.05, 16), 0xf2f2ee, g, 0, 1.23, 0);
+    boite(0.05, 0.05, 0.06, 0x2a2a2a, 0, 0.9, 0.19, g);
+    for (let i = 0; i < 6; i++) P.maille(new THREE.CylinderGeometry(0.035, 0.028, 0.08, 10), 0xf0ece0, g, 0.24, 0.82 + i * 0.012, 0.05);
+    return g;
+  }
+  function repas(x, y, z) {
+    const g = new THREE.Group(); g.position.set(x, y, z); groupe.add(g);
+    const sand = new THREE.Mesh(froisser(new THREE.BoxGeometry(0.14, 0.04, 0.12, 2, 1, 2), 0.01), new THREE.MeshStandardMaterial({ color: 0xe6dcc0, transparent: true, opacity: 0.85, roughness: 0.3 }));
+    sand.position.set(0, 0.02, 0); g.add(sand);
+    boite(0.05, 0.09, 0.035, 0xd8b030, 0.12, 0.045, 0.02, g); // brique de jus
+    boite(0.07, 0.015, 0.05, 0xa04a2a, -0.12, 0.008, 0.03, g); // biscuits
+    return g;
+  }
+  function lacetsBac(x, z) {
+    const g = new THREE.Group(); g.position.set(x, 0, z); groupe.add(g);
+    boite(0.6, 0.35, 0.4, 0x3a5a8a, 0, 0.175, 0, g);
+    const couleurs = [0xf2f2ee, 0x1a1a1a, 0xc02020, 0x2a5aa8, 0xd8b030, 0x7a5a3a, 0x3a8a4a];
+    for (let i = 0; i < 46; i++) {
+      const l = P.maille(new THREE.CylinderGeometry(0.004, 0.004, 0.35 + alea() * 0.3, 4), couleurs[i % couleurs.length], g, (alea() - 0.5) * 0.5, 0.33 + alea() * 0.05, (alea() - 0.5) * 0.3);
+      l.rotation.set(Math.PI / 2 + (alea() - 0.5) * 0.8, alea() * 3, (alea() - 0.5) * 0.6);
+    }
+    return g;
+  }
+
+  // ---------- Actions de l'élève ----------
+  // Une interaction : quand on vise le point et qu'on appuie sur E, « agir » est appelé (une seule fois).
+  function interaction(x, y, z, invite, agir) {
+    const o = { id: "action", def: { nom: invite }, x, y, z, agir };
+    objets.push(o);
+    return o;
+  }
+  function retirerInteraction(o) { const i = objets.indexOf(o); if (i >= 0) objets.splice(i, 1); }
+  let objectifEl = null;
+  function objectif(texte) {
+    if (!objectifEl) return;
+    objectifEl.textContent = texte || "";
+    objectifEl.classList.toggle("visible", !!texte);
+  }
+  // Attendre qu'une condition soit vraie (ou un délai maximal, pour que la classe n'attende jamais).
+  function attendreQue(cond, max) {
+    const t0 = temps;
+    return new Promise((r) => { const tic = () => { if (cond() || temps - t0 > max) r(cond()); else attendre(0.15).then(tic); }; tic(); });
+  }
+  function zoneJoueur(x0, x1, z0, z1) { zone = { x0, x1, z0, z1 }; limite.r = 999; }
+  const pres = (x, z, r) => Math.hypot(joueur.x - x, joueur.z - z) < r;
+
+  // La couverture de l'élève : on la voit en bas du champ de vision, elle crépite quand on marche.
+  const recit = { couverture: false, signe: null, donneeARosa: false };
+  let mylarJoueur = null;
+  function donnerMylarJoueur() {
+    retirerMylarJoueur();
+    const geo = froisser(new THREE.PlaneGeometry(1.1, 0.5, 16, 8), 0.04);
+    mylarJoueur = new THREE.Mesh(geo, matMylar);
+    mylarJoueur.position.set(0, -0.46, -0.42); mylarJoueur.rotation.set(-1.15, 0, 0);
+    camera.add(mylarJoueur);
+  }
+  function retirerMylarJoueur() { if (mylarJoueur) { camera.remove(mylarJoueur); mylarJoueur = null; } }
+
+  // Un choix : deux boutons à l'écran (souris ou doigt). Renvoie l'indice choisi.
+  function choisir(question, options, max) {
+    const el = document.getElementById("choix");
+    el.querySelector(".question").textContent = question;
+    const zoneB = el.querySelector(".options"); zoneB.innerHTML = "";
+    if (document.exitPointerLock) document.exitPointerLock();
+    return new Promise((r) => {
+      let fini = false;
+      const finir = (i) => {
+        if (fini) return; fini = true;
+        el.classList.remove("visible");
+        const cv = R.renderer.domElement;
+        if (cv.requestPointerLock && !document.body.classList.contains("tactile")) { try { cv.requestPointerLock(); } catch (e) {} }
+        r(i);
+      };
+      options.forEach((t, i) => {
+        const b = document.createElement("button"); b.textContent = t;
+        b.addEventListener("click", () => finir(i)); zoneB.appendChild(b);
+      });
+      el.classList.add("visible");
+      if (max) attendre(max).then(() => finir(-1));
+    });
+  }
+  function flash(force) {
+    voile.style.transition = "none"; voile.style.background = "#fff"; voile.style.opacity = String(force || 0.85);
+    requestAnimationFrame(() => requestAnimationFrame(() => { voile.style.transition = "opacity 0.9s ease"; voile.style.opacity = "0"; }));
+  }
+
+  // ---------- Le comptoir de l'enregistrement (séquences 1 et 4) ----------
+  function salleComptoir() {
+    ambiance();
+    piece(-4.5, 4.5, -5.5, 3.5);
+    neons([[-2.2, -1.5], [2.2, -1.5], [0, 1.5], [-3.2, 1.8]]);
+    // Le comptoir, sa vitre, l'écran, le lecteur d'empreintes
+    boite(5.4, 1.05, 0.7, 0x7a7e7a, 0, 0.525, -3.1);
+    boite(5.6, 0.05, 0.8, 0xb0b4b0, 0, 1.075, -3.1);
+    const vitre = new THREE.Mesh(new THREE.PlaneGeometry(5.4, 0.9), new THREE.MeshStandardMaterial({ color: 0xcfe0e8, transparent: true, opacity: 0.12, roughness: 0.05, metalness: 0.2 }));
+    vitre.position.set(0, 1.55, -3.3); groupe.add(vitre);
+    boite(0.5, 0.34, 0.04, 0x1a1c1e, 0.9, 1.35, -3.32);
+    const ecran = emissif(new THREE.PlaneGeometry(0.44, 0.28), 0x8ab0e8, 1.3, groupe, 0.9, 1.35, -3.298); ecran.rotation.y = Math.PI;
+    boite(0.5, 0.34, 0.04, 0x1a1c1e, -1.9, 1.35, -3.32);
+    emissif(new THREE.PlaneGeometry(0.44, 0.28), 0x8ab0e8, 1.1, groupe, -1.9, 1.35, -3.298).rotation.y = Math.PI;
+    boite(0.22, 0.08, 0.18, 0x2a2c2e, -0.7, 1.14, -2.95);
+    const vertLecteur = emissif(new THREE.PlaneGeometry(0.14, 0.1), 0x40ff80, 1.4, groupe, -0.7, 1.185, -2.95); vertLecteur.rotation.x = -Math.PI / 2;
+    // Imprimante à bracelets, tampon, piles de formulaires
+    boite(0.3, 0.18, 0.26, 0xd8d8d0, 2.1, 1.19, -3.2); boite(0.22, 0.02, 0.3, 0xf2f0e8, -1.3, 1.11, -3.0); boite(0.22, 0.03, 0.3, 0xf2f0e8, -1.28, 1.13, -3.02);
+    // Derrière le comptoir : bacs de sacs, étagères de sacs numérotés
+    boite(1.2, 0.5, 0.6, 0x3a5a8a, -2.6, 0.25, -4.6); boite(1.2, 0.5, 0.6, 0x3a5a8a, -1.2, 0.25, -4.6);
+    for (let e = 0; e < 3; e++) {
+      boite(2.2, 0.03, 0.45, 0x8a8e90, 1.4, 0.6 + e * 0.6, -5.25);
+      for (let k = 0; k < 7; k++) boite(0.24, 0.3, 0.3, 0xdfe6ea, 0.5 + k * 0.3, 0.77 + e * 0.6, -5.25);
+    }
+    // Caméras au plafond
+    [[3.6, -5.35, 0], [-4.35, 3.0, Math.PI / 2]].forEach(([x, z, r]) => { const c = boite(0.16, 0.12, 0.24, 0x2a2a2a, x, 2.6, z); c.rotation.y = r; emissif(new THREE.SphereGeometry(0.015, 6, 6), 0xff2020, 3, groupe, x, 2.6, z + 0.13); });
+    // Panneaux
+    affiche(["U.S. BORDER PATROL · PROCESSING"], -1.6, 2.4, -5.46, 0, { w: 1.6, h: 0.4, couleur: "#1a2a4a", fond: "#e8e8e0", police: "bold 54px system-ui, sans-serif" });
+    affiche(["ALL PERSONAL PROPERTY WILL BE INVENTORIED", "TODAS SUS PERTENENCIAS SERÁN INVENTARIADAS"], 4.46, 1.9, -0.6, -Math.PI / 2, { w: 1.5, h: 0.42, police: "bold 36px system-ui, sans-serif" });
+    affiche(["STAY BEHIND THE YELLOW LINE", "QUÉDESE DETRÁS DE LA LÍNEA AMARILLA"], 4.46, 1.9, 1.4, -Math.PI / 2, { w: 1.5, h: 0.42, police: "bold 38px system-ui, sans-serif", fond: "#f2d24a" });
+    // La ligne jaune
+    const ligne = new THREE.Mesh(new THREE.PlaneGeometry(6, 0.1), new THREE.MeshBasicMaterial({ color: Rendu.lumineux(0xe0b020, 0.9) }));
+    ligne.rotation.x = -Math.PI / 2; ligne.position.set(0, 0.004, -1.55); groupe.add(ligne);
+    // Le poste de photo : toise au mur, marque au sol, appareil sur pied
+    const toise = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 1.4), new THREE.MeshBasicMaterial({ map: texte2D(["6'6  —————", "6'0  —————", "5'6  —————", "5'0  —————", "4'6  —————"], { l: 256, h: 400, couleur: "#333", fond: "#e6e8e8", police: "bold 30px monospace" }) }));
+    toise.position.set(-4.48, 1.35, 1.9); toise.rotation.y = Math.PI / 2; groupe.add(toise);
+    const marque = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.36), new THREE.MeshBasicMaterial({ color: Rendu.lumineux(0xe0b020, 0.8) }));
+    marque.rotation.x = -Math.PI / 2; marque.position.set(-4.0, 0.005, 1.9); groupe.add(marque);
+    const pied = new THREE.Group(); pied.position.set(-2.1, 0, 1.9); groupe.add(pied);
+    [0, 2.1, 4.2].forEach((a) => { const j = P.maille(new THREE.CylinderGeometry(0.012, 0.012, 1.45, 5), 0x222222, pied, Math.cos(a) * 0.18, 0.7, Math.sin(a) * 0.18); j.rotation.set(Math.sin(a) * 0.25, 0, -Math.cos(a) * 0.25); });
+    boite(0.16, 0.11, 0.1, 0x1a1a1a, 0, 1.45, 0, pied);
+    P.maille(new THREE.CylinderGeometry(0.035, 0.035, 0.08, 12), 0x0a0a0a, pied, -0.1, 1.45, 0).rotation.z = Math.PI / 2;
+    // Bac à lacets, poubelle, banc d'attente
+    const bac = lacetsBac(2.9, -2.4);
+    P.maille(new THREE.CylinderGeometry(0.2, 0.18, 0.6, 14), 0x2a3a2a, groupe, 3.9, 0.3, -2.4);
+    banc(4.15, 2.0, 2.2, Math.PI / 2);
+    // Portes : l'entrée (derrière l'élève), les cellules (à gauche), le bureau (derrière le comptoir)
+    const entree = porteMetal(0, 3.5, Math.PI, "SALLY PORT");
+    const cellules = porteMetal(-4.5, -0.6, Math.PI / 2, "HOLDING");
+    const bureau = porteMetal(3.4, -5.5, 0, "STAFF ONLY");
+    return { vertLecteur, ecran, entree, cellules, bureau, bac };
+  }
+
+  // ---------- La hielera (séquences 2, 3 et 5) ----------
+  // Cellule des femmes et des enfants (x -3.6 → 1.6) ; à droite, derrière le grillage, celle des hommes (1.6 → 5.2).
+  // Devant, le couloir, fermé par deux portes : l'aile C à gauche, le secteur 4 et les transports à droite.
+  function salleCellule() {
+    ambiance();
+    piece(-3.6, 5.2, -3.6, 2.4, ["avant"]);
+    piece(-3.6, 5.2, 2.4, 5.6, ["fond"]);
+    neons([[-1.0, -1.0, Math.PI / 2], [3.4, -1.0, Math.PI / 2], [0.8, 4.0, Math.PI / 2], [-2.4, 4.0, Math.PI / 2]]);
+    const porteF = barreaux(-3.6, 1.6, 2.4, [-1.3, 0.9]);
+    const porteH = barreaux(1.6, 5.2, 2.4, [3.3, 0.9]);
+    grillage(1.6, -3.6, 2.4);
+    banc(-1.0, -3.3, 5.0); banc(-3.35, -0.8, 3.4, Math.PI / 2);
+    banc(3.4, -3.3, 3.4);
+    toilette(-3.1, -3.0); toilette(4.7, -3.05);
+    // Les autres détenus
+    dormeur(-2.0, -1.2, 0.3); dormeur(-0.9, 0.2, -1.4, 0x8a6448); dormeur(0.4, -1.6, 1.2, 0x6e4a33);
+    dormeur(3.1, 0.6, 1.6); dormeur(4.3, -1.4, 0.2, 0x5a3a26); dormeur(3.6, 1.5, -1.6, 0x8a6448);
+    [[-3.5, -2.4], [4.9, 0.4], [-2.6, 1.6], [2.1, -2.9]].forEach(([x, z]) => mylarPlie(x, 0.03, z));
+    // Détails de la cellule : graffitis, fontaine, repas, rouleau de papier, bonde au sol
+    graffitis(-3.58, 1.25, 1.55, Math.PI / 2);
+    fontaine(1.2, 1.9);
+    repas(-2.4, 0.46, -3.3); repas(0.6, 0.46, -3.35);
+    P.maille(new THREE.CylinderGeometry(0.05, 0.05, 0.1, 10), 0xf2f2ee, groupe, -2.55, 0.05, -3.4).rotation.z = Math.PI / 2;
+    P.maille(new THREE.CylinderGeometry(0.08, 0.08, 0.005, 14), 0x4a4c4e, groupe, -1.0, 0.003, -0.6);
+    // Le couloir : poste de garde, panneaux, portes
+    boite(1.6, 0.8, 0.6, 0x6a6e70, 0.4, 0.4, 5.1); boite(1.7, 0.04, 0.7, 0x9a9ea0, 0.4, 0.82, 5.1);
+    boite(0.45, 0.3, 0.04, 0x1a1c1e, 0.4, 1.05, 5.25);
+    emissif(new THREE.PlaneGeometry(0.4, 0.25), 0x8ab0e8, 1.1, groupe, 0.4, 1.05, 5.228).rotation.y = Math.PI;
+    affiche(["← WING C  ·  ADULT FEMALES", "SECTOR 4  ·  MINORS →"], 0.4, 2.15, 5.58, Math.PI, { w: 2.0, h: 0.5, police: "bold 52px system-ui, sans-serif" });
+    affiche(["HOLD ROOM 3"], -1.0, 2.75, 2.42, 0, { w: 0.7, h: 0.18, couleur: "#e8e8e0", fond: "#1e3a5a", police: "bold 70px system-ui, sans-serif" });
+    affiche(["HOLD ROOM 4"], 3.4, 2.75, 2.42, 0, { w: 0.7, h: 0.18, couleur: "#e8e8e0", fond: "#1e3a5a", police: "bold 70px system-ui, sans-serif" });
+    const aileC = porteMetal(-3.6, 4.0, Math.PI / 2, "WING C");
+    const secteur4 = porteMetal(5.2, 4.0, -Math.PI / 2, "SECTOR 4");
+    boite(0.16, 0.12, 0.24, 0x2a2a2a, -3.4, 2.7, 2.2);
+    emissif(new THREE.SphereGeometry(0.015, 6, 6), 0xff2020, 3, groupe, -3.33, 2.7, 2.08);
+    // Objets à regarder, dans la cellule des femmes
+    objet("graffiti_mur", null, -3.5, 1.25, 1.55);
+    objet("fontaine", null, 1.2, 1.1, 1.9);
+    objet("repas", null, -2.4, 0.5, -3.3);
+    objet("toilettes", null, -2.9, 0.8, -2.7);
+    return { porteF, porteH, aileC, secteur4 };
+  }
+  const ZONE_CELLULE = [-3.25, 1.35, -2.95, 2.15];
+
+  // L'élève garde sa couverture d'une séquence à l'autre.
+  function reprendreCouverture() { if (recit.couverture && !recit.donneeARosa) donnerMylarJoueur(); }
+
   // =====================================================================
-  //  Séquence 1 : l'enregistrement
+  //  Séquence 1 : l'enregistrement (l'élève fait partie du groupe)
   // =====================================================================
   async function sequence1() {
     viderTableau(); ilotCourant = "seq1";
     solY = () => 0;
     const s = salleComptoir();
     const agent = personnage("agent_bureau", 0.4, -3.75, 0, "debout");
+    const agent2 = personnage("agente", 3.8, -0.4, -Math.PI / 2, "debout"); // surveille la file
     const z = -1.45;
     const g = {
       julio: personnage("julio", -2.3, z, Math.PI), yesenia: personnage("yesenia", -1.5, z, Math.PI),
-      rosa: personnage("rosa", -0.55, z, Math.PI), mateo: personnage("mateo", -0.05, z, Math.PI),
-      valeria: personnage("valeria", 0.85, z, Math.PI), joseph: personnage("joseph", 1.7, z, Math.PI),
-      ernesto: personnage("ernesto", 2.55, z, Math.PI),
+      rosa: personnage("rosa", -0.75, z, Math.PI), mateo: personnage("mateo", -0.25, z, Math.PI),
+      valeria: personnage("valeria", 1.25, z, Math.PI), joseph: personnage("joseph", 2.0, z, Math.PI),
+      ernesto: personnage("ernesto", 2.75, z, Math.PI),
     };
     g.ernesto.cible = "tete_basse"; g.yesenia.cible = "tete_basse";
-    // Sur le comptoir : le sac à dos de Mateo, le sac plastique des effets
-    const sacMateo = new THREE.Group(); sacMateo.position.set(0.1, 1.27, -2.95); groupe.add(sacMateo);
+    // Sur le comptoir : le sac à dos de Mateo, les sacs plastiques des effets
+    const sacMateo = new THREE.Group(); sacMateo.position.set(-0.1, 1.27, -2.95); groupe.add(sacMateo);
     boite(0.3, 0.36, 0.16, 0x6a3030, 0, 0, 0, sacMateo); boite(0.22, 0.14, 0.05, 0x5a2828, 0, -0.06, 0.1, sacMateo);
-    const effets = new THREE.Mesh(froisser(new THREE.BoxGeometry(0.34, 0.12, 0.26, 3, 2, 3), 0.03), new THREE.MeshStandardMaterial({ color: 0xe8eef0, transparent: true, opacity: 0.55, roughness: 0.2 }));
-    effets.position.set(-1.6, 1.16, -2.9); groupe.add(effets);
-    boite(0.18, 0.02, 0.12, 0x1a1a1a, -1.62, 1.13, -2.88); // un téléphone dedans
+    const sachet = () => new THREE.Mesh(froisser(new THREE.BoxGeometry(0.34, 0.12, 0.26, 3, 2, 3), 0.03), new THREE.MeshStandardMaterial({ color: 0xe8eef0, transparent: true, opacity: 0.55, roughness: 0.2 }));
+    const effets = sachet(); effets.position.set(-1.6, 1.16, -2.9); groupe.add(effets);
+    boite(0.18, 0.02, 0.12, 0x1a1a1a, -1.62, 1.13, -2.88);
     objet("sac_effets", effets, -1.6, 1.2, -2.9);
-    const cahier = boite(0.22, 0.015, 0.16, 0x3a6a8a, 0.42, 1.11, -2.85); cahier.rotation.y = 0.3;
-    placerJoueur(0.35, 0.9, 0.0, -0.12, 1.5);
+    const sacJoueur = sachet(); sacJoueur.position.set(1.4, 1.16, -2.85); groupe.add(sacJoueur);
+    const cahier = boite(0.22, 0.015, 0.16, 0x3a6a8a, 0.22, 1.11, -2.85); cahier.rotation.y = 0.3;
+    objet("lacets_bac", s.bac, 2.9, 0.45, -2.4);
+    placerJoueur(0.4, 2.2, 0.0, -0.1, 1);
+    zoneJoueur(-4.1, 4.1, -2.6, 3.0);
     A.reinitialiser();
     sonsCentre(0.8);
     const tube = A.neon(0, 2.9, -1.5);
@@ -505,41 +756,78 @@ window.Chapitre4 = (function () {
       s.ecran.material.color.setScalar(1.2 + Math.sin(temps * 0.7) * 0.05);
     };
     await fondu(false, 2);
+    A.claquement(0, 1.2, 3.5); // la porte de l'entrée vient de se refermer derrière vous
     await carte("seq1");
-    await attendre(0.8);
-    agent.regardeJoueur = false;
+    await attendre(0.5);
     await dire("agentBureau1", 0.4);
+    // 1. Se placer sur la ligne jaune, avec les autres
+    objectif("Placez-vous sur la ligne jaune, avec les autres.");
+    await attendreQue(() => Math.abs(joueur.z - (-1.5)) < 0.45, 25);
+    objectif("");
     // L'agent prend le sac de Mateo et le jette dans un bac.
     const t0 = temps;
-    await new Promise((r) => { const pas = () => { const u = Math.min(1, (temps - t0) / 1.4); sacMateo.position.set(0.1 - u * 1.5, 1.27 + Math.sin(u * Math.PI) * 0.3 - u * 0.75, -2.95 - u * 1.6); sacMateo.rotation.z = u * 1.2; if (u < 1) attendre(0.02).then(pas); else r(); }; pas(); });
-    objet("cahier_mateo", cahier, 0.42, 1.12, -2.85);
+    await new Promise((r) => { const pas = () => { const u = Math.min(1, (temps - t0) / 1.4); sacMateo.position.set(-0.1 - u * 1.3, 1.27 + Math.sin(u * Math.PI) * 0.3 - u * 0.75, -2.95 - u * 1.6); sacMateo.rotation.z = u * 1.2; if (u < 1) attendre(0.02).then(pas); else r(); }; pas(); });
+    objet("cahier_mateo", cahier, 0.22, 1.12, -2.85);
     tourner(g.mateo, g.rosa.x, g.rosa.z - 1);
     await dire("mateoSac", 0.3);
     tourner(g.rosa, g.mateo.x, g.mateo.z); g.rosa.cible = "accroupi";
-    await dire("rosaCalme", 1.2);
+    await dire("rosaCalme", 1.0);
     g.rosa.cible = "debout"; tourner(g.rosa, g.rosa.x, g.rosa.z - 2); tourner(g.mateo, g.mateo.x, g.mateo.z - 2);
-    // Julio au lecteur d'empreintes.
+    // 2. Votre tour : ceinture et lacets
+    tourner(agent, joueur.x, joueur.z);
+    await dire("agentToi", 0.3);
+    objectif("Avancez jusqu'au comptoir et déposez votre ceinture et vos lacets dans le sac (E).");
+    let fait = false;
+    interaction(1.4, 1.2, -2.85, "Déposer votre ceinture et vos lacets", () => { fait = true; A.froissement(1.4, 1.2, -2.85, 1.2); A.bip(1.4, 1.2, -2.85); });
+    await attendreQue(() => fait, 35);
+    sacJoueur.scale.set(1, 1.4, 1);
+    objectif("");
+    await attendre(0.6);
+    // 3. Les empreintes
+    tourner(agent, -0.7, -2.6);
+    await dire("agentDoigts", 0.2);
+    objectif("Posez vos doigts sur le lecteur d'empreintes (E).");
+    fait = false;
+    interaction(-0.7, 1.2, -2.95, "Poser vos doigts sur le lecteur", () => { fait = true; });
+    await attendreQue(() => fait, 35);
+    objectif("");
+    for (let i = 0; i < 3; i++) { A.bip(-0.7, 1.2, -2.95); s.vertLecteur.visible = false; await attendre(0.25); s.vertLecteur.visible = true; await attendre(0.5); }
+    // 4. La photo
+    await dire("agentPhoto", 0.2);
+    objectif("Allez sur la marque jaune, dos au mur, face à l'appareil.");
+    await attendreQue(() => pres(-4.0, 1.9, 0.45), 35);
+    objectif("");
+    if (!pres(-4.0, 1.9, 0.45)) { joueur.x = -4.0; joueur.z = 1.9; }
+    K.etat.lacet = regarder(-4.0, 1.9, -2.1, 1.9); K.etat.tangage = 0;
+    await attendre(1.2);
+    A.bip(-2.1, 1.45, 1.9); flash(0.9);
+    await attendre(1.5);
+    // 5. Julio : ses empreintes sont déjà dans le système. On l'emmène.
     await allerVers(g.julio, -0.7, -2.55, 0.8);
     tourner(g.julio, -0.7, -3.2); g.julio.cible = "travaille";
-    await attendre(0.8);
-    for (let i = 0; i < 3; i++) { A.bip(-0.7, 1.2, -2.95); s.vertLecteur.visible = false; await attendre(0.25); s.vertLecteur.visible = true; await attendre(0.55); }
+    await attendre(0.6);
+    for (let i = 0; i < 3; i++) { A.bip(-0.7, 1.2, -2.95); s.vertLecteur.visible = false; await attendre(0.25); s.vertLecteur.visible = true; await attendre(0.5); }
     g.julio.cible = "debout";
-    await dire("agentJulio", 0.6);
-    await allerVers(g.julio, -3.4, -2.2, 0.7);
-    tourner(g.julio, -3.4, -4); g.julio.cible = "tete_basse";
-    await dire("julioEmpreintes", 2);
-    await attendre(5);
+    await dire("agentJulio", 0.4);
+    await allerVers(agent2, -3.2, -1.0, 1.1);
+    tourner(agent2, g.julio.x, g.julio.z);
+    await allerVers(g.julio, -3.4, -1.6, 0.7);
+    g.julio.cible = "tete_basse";
+    await dire("julioEmpreintes", 0.8);
+    g.julio.suivre = { leader: agent2, cote: -0.5 };
+    await sortirPar(s.cellules, agent2, [g.julio], 0.8);
+    await attendre(3);
     tube.arreter(2);
     await fondu(true, 2.5);
   }
 
   // =====================================================================
-  //  Séquence 2 : la hielera
+  //  Séquence 2 : la hielera (on explore la cellule)
   // =====================================================================
   async function sequence2() {
     viderTableau(); ilotCourant = "seq2";
     solY = () => 0;
-    salleCellule();
+    const c = salleCellule();
     const g = {
       rosa: personnage("rosa", -1.25, -3.15, 0, "chaise"), mateo: personnage("mateo", -0.65, -3.15, 0, "chaise"),
       valeria: personnage("valeria", 0.2, -3.15, 0, "chaise"), yesenia: personnage("yesenia", -3.28, -0.4, Math.PI / 2, "chaise"),
@@ -547,39 +835,71 @@ window.Chapitre4 = (function () {
     };
     ["rosa", "valeria", "yesenia", "ernesto", "joseph"].forEach((k) => envelopper(g[k]));
     figurant(-3.28, -1.6, Math.PI / 2, "dort", true); figurant(0.9, -3.15, 0, "chaise", true); figurant(4.1, -3.15, 0, "dort");
-    const plie = mylarPlie(-0.4, 0.03, -0.3);
-    objet("couverture_mylar", plie, -0.4, 0.08, -0.3);
-    placerJoueur(-0.6, 1.3, regarder(-0.6, 1.3, -0.6, -3), -0.15, 1.7);
+    const agent = personnage("agent_bureau", -0.85, 3.0, Math.PI, "debout");
+    // La pile de couvertures, juste derrière la porte
+    const pile = new THREE.Group(); groupe.add(pile);
+    for (let i = 0; i < 5; i++) pile.add(mylarPlie(-0.4, 0.03 + i * 0.05, 1.95));
+    placerJoueur(-0.85, 0.5, Math.PI * 0.97, -0.4, 1);
+    zoneJoueur(...ZONE_CELLULE);
     A.reinitialiser();
     sonsCentre(1.1);
     crepitements("seq2");
-    // Mateo grelotte.
     majTableau = () => {
-      g.mateo.haut.rotation.z += Math.sin(temps * 38) * 0.012;
+      g.mateo.haut.rotation.z += Math.sin(temps * 38) * 0.012; // Mateo grelotte
       g.rosa.haut.rotation.z += Math.sin(temps * 31 + 1) * 0.006;
     };
     await fondu(false, 2.5);
+    // On vient de vous enfermer : la porte claque, l'agent s'en va.
+    A.claquement(-0.85, 1.1, 2.4);
     await carte("seq2");
-    await attendre(2.5);
-    A.froissement(g.ernesto.x, 0.6, g.ernesto.z, 1.4);
-    tourner(g.ernesto, -0.6, -1.5);
-    await dire("ernestoFroid", 1.0);
-    await dire("josephFroid", 1.4);
-    // Valeria se rapproche et ouvre sa couverture sur Mateo.
-    g.valeria.cible = "debout";
-    await attendre(0.8);
-    await allerVers(g.valeria, -0.3, -2.75, 0.5);
-    tourner(g.valeria, -0.65, -3.3);
-    g.valeria.cible = "accroupi";
-    A.froissement(-0.5, 0.5, -2.9, 1.6);
-    await dire("valeriaMateo", 0.6);
-    // Mateo se blottit : la couverture de Valeria passe sur lui.
-    g.valeria.mylar.parent.remove(g.valeria.mylar);
-    envelopper(g.mateo);
-    g.mateo.cible = "dort";
-    await allerVers(g.valeria, 0.0, -3.0, 0.4);
-    g.valeria.cible = "chaise"; g.valeria.cap = 0; g.valeria.capVise = 0;
-    await attendre(8);
+    allerVers(agent, 0.4, 4.4, 0.9).then(() => sortirPar(c.secteur4, agent, [], 0.9));
+    // 1. Prendre une couverture
+    objectif("Il fait 14 °C. Prenez une couverture de survie (E).");
+    let prise = false;
+    interaction(-0.4, 0.2, 1.95, "Prendre une couverture de survie", () => {
+      prise = true; recit.couverture = true; donnerMylarJoueur(); A.froissement(joueur.x, 1, joueur.z, 1.6);
+      pile.children[pile.children.length - 1].visible = false;
+      const def = C.objetsInteractifs.find((o) => o.id === "couverture_mylar");
+      ficheOuverte = { def }; ficheFin = temps + 20;
+      fiche.querySelector(".nom").textContent = def.nom; fiche.querySelector(".texte").textContent = def.texte; fiche.querySelector(".contexte").textContent = def.contexte;
+      fiche.classList.add("visible");
+    });
+    await attendreQue(() => prise, 40);
+    if (!prise) { recit.couverture = true; donnerMylarJoueur(); }
+    await attendre(2);
+    // 2. Explorer, écouter les autres
+    objectif("Trouvez une place. Approchez-vous des autres pour les écouter (E). Regardez autour de vous.");
+    let ernestoEcoute = false, valeriaEcoute = false;
+    const parlerErnesto = async () => {
+      A.froissement(g.ernesto.x, 0.6, g.ernesto.z, 1.4);
+      tourner(g.ernesto, joueur.x, joueur.z); g.ernesto.regardeJoueur = true;
+      await dire("ernestoFroid", 1.0);
+      await dire("josephFroid", 1.0);
+      ernestoEcoute = true;
+    };
+    const parlerValeria = async () => {
+      g.valeria.cible = "debout";
+      await attendre(0.8);
+      await allerVers(g.valeria, -0.3, -2.8, 0.5);
+      tourner(g.valeria, -0.65, -3.3); g.valeria.cible = "accroupi";
+      A.froissement(-0.5, 0.5, -2.9, 1.6);
+      await dire("valeriaMateo", 0.6);
+      g.valeria.mylar.parent.remove(g.valeria.mylar);
+      envelopper(g.mateo); g.mateo.cible = "dort";
+      await allerVers(g.valeria, 0.0, -3.15, 0.4);
+      g.valeria.cible = "chaise"; g.valeria.cap = 0; g.valeria.capVise = 0;
+      valeriaEcoute = true;
+    };
+    const iE = interaction(1.45, 1.0, -0.9, "Écouter Don Ernesto, de l'autre côté du grillage", () => { parlerErnesto(); });
+    const iV = interaction(-0.4, 0.9, -2.9, "S'approcher de Valeria et de Mateo", () => { parlerValeria(); });
+    await attendreQue(() => ernestoEcoute && valeriaEcoute, 110);
+    // Si l'élève n'est pas allé les voir, les scènes se jouent quand même.
+    if (!ernestoEcoute && objets.includes(iE)) { retirerInteraction(iE); await parlerErnesto(); }
+    await attendreQue(() => ernestoEcoute, 20);
+    if (!valeriaEcoute && objets.includes(iV)) { retirerInteraction(iV); await parlerValeria(); }
+    await attendreQue(() => valeriaEcoute, 20);
+    objectif("");
+    await attendre(10);
     await fondu(true, 3);
   }
 
@@ -597,37 +917,45 @@ window.Chapitre4 = (function () {
     };
     ["rosa", "valeria", "yesenia", "ernesto", "joseph", "mateo"].forEach((k) => envelopper(g[k]));
     figurant(-3.28, -1.6, Math.PI / 2, "dort", true); figurant(0.9, -3.15, 0, "chaise", true);
-    const agent = personnage("agent_bureau", -0.5, 3.6, Math.PI, "debout");
-    const agente = personnage("agente", 0.6, 4.4, Math.PI, "debout");
+    const agent = personnage("agent_bureau", -0.5, 3.6, Math.PI, "debout"); agent.racine.visible = false;
+    const agente = personnage("agente", 0.6, 4.4, Math.PI, "debout"); agente.racine.visible = false;
     // La planchette, accrochée aux barreaux à côté de la porte
     const planche = new THREE.Group(); planche.position.set(-1.9, 1.4, 2.36); groupe.add(planche);
     boite(0.24, 0.32, 0.015, 0x6a4a2a, 0, 0, 0, planche);
     const feuille = new THREE.Mesh(new THREE.PlaneGeometry(0.21, 0.27), new THREE.MeshBasicMaterial({ map: texte2D(["884-B  ☐ C", "884-C  ☐ 4", "885-A  ☐ C", "885-D  ☐ 4", "886-B  ☐ C"], { l: 256, h: 320, couleur: "#222", fond: "#f2f0e8", police: "26px monospace" }) }));
     feuille.position.z = -0.01; feuille.rotation.y = Math.PI; planche.add(feuille);
     objet("liste_dossiers", planche, -1.9, 1.4, 2.3);
-    placerJoueur(-2.4, -0.6, regarder(-2.4, -0.6, -0.9, 2.4), -0.05, 1.9);
+    placerJoueur(-2.4, -0.6, regarder(-2.4, -0.6, -0.9, 2.4), -0.05, 1);
+    zoneJoueur(...ZONE_CELLULE);
+    reprendreCouverture();
     A.reinitialiser();
     sonsCentre(1.1);
     crepitements("seq3");
-    let rosaAuxBarreaux = false, mainsLiees = false;
+    let rosaAuxBarreaux = false, mainsLiees = false, porteOuverte = false, avertie = false;
     majTableau = () => {
       if (rosaAuxBarreaux) mainsAuxBarreaux(g.rosa, 2.36);
       if (mainsLiees) mainDansLaMain(agente, g.mateo);
+      // Si l'élève s'approche de la porte ouverte, l'agent le repousse.
+      if (porteOuverte && !avertie && pres(-0.85, 2.3, 1.1)) { avertie = true; tourner(agent, joueur.x, joueur.z); dire("agentRecule", 0.2); }
+      if (porteOuverte && zone) zone.z1 = pres(-0.85, 2.3, 1.6) ? 1.7 : ZONE_CELLULE[3];
     };
     await fondu(false, 2.5);
     await carte("seq3");
-    await attendre(1.5);
-    // L'agent arrive devant la porte, la déverrouille.
-    await allerVers(agent, -0.85, 2.85, 1.0);
+    await attendre(1.0);
+    // Les agents arrivent par la porte du secteur 4.
+    entrerPar(c.secteur4, agente, 0.2, 4.4, 1.0, true);
+    await attendre(2.6);
+    await entrerPar(c.secteur4, agent, -0.85, 2.85, 1.0);
     tourner(agent, -0.85, 0);
-    A.claquement(-0.85, 1.1, 2.4);
+    A.gache(-0.85, 1.1, 2.4);
+    await attendre(0.4);
+    porteOuverte = true;
     await bougerPorte(c.porteF, -1.6, 1.2);
     agent.cible = "travaille";
     await dire("agentSep1", 0.6);
-    // Rosa se lève, serre Mateo contre elle.
     g.rosa.cible = "debout"; g.mateo.cible = "debout";
     await attendre(0.6);
-    g.rosa.mylar.visible = false; // la couverture glisse
+    g.rosa.mylar.visible = false;
     A.froissement(g.rosa.x, 0.6, g.rosa.z, 1.2);
     await allerVers(g.rosa, -1.0, -1.6, 0.9);
     tourner(g.rosa, agent.x, agent.z);
@@ -641,51 +969,59 @@ window.Chapitre4 = (function () {
     g.mateo.mylar.visible = false;
     A.froissement(g.mateo.x, 0.4, g.mateo.z, 1);
     g.mateo.suivre = { leader: agente, cote: 0.42 };
-    allerVers(agente, -0.9, 1.2, 0.9).then(() => allerVers(agente, -0.9, 3.4, 0.9)).then(() => allerVers(agente, 2.0, 4.6, 1.0)).then(() => allerVers(agente, 5.5, 5.0, 1.0));
+    const depart = (async () => {
+      await allerVers(agente, -0.9, 1.2, 0.9); await allerVers(agente, -0.9, 3.4, 0.9); await allerVers(agente, 3.8, 4.1, 1.0);
+      mainsLiees = false;
+      await sortirPar(c.secteur4, agente, [g.mateo], 1.0);
+    })();
     await attendre(1.2);
     await dire("mateoPleurs", 0.2);
     // Rosa veut suivre : l'agent referme la porte devant elle.
     allerVers(g.rosa, -0.9, 1.9, 1.3);
     await attendre(2.6);
     await bougerPorte(c.porteF, 0, 0.7);
+    porteOuverte = false; zone.z1 = ZONE_CELLULE[3];
     A.claquement(-0.85, 1.1, 2.4);
     allerVers(agent, 0.9, 3.5, 0.8).then(() => tourner(agent, -0.9, 2.4));
     await attendre(0.5);
     tourner(g.rosa, -0.9, 3); rosaAuxBarreaux = true;
     await dire("rosaCriCell", 1.5);
-    allerVers(agent, 2.0, 4.8, 0.9);
+    await depart;
+    await allerVers(agent, 3.8, 4.1, 0.9);
+    sortirPar(c.secteur4, agent, [], 0.9);
     await attendre(3);
     rosaAuxBarreaux = false; g.rosa.cible = "agenouille";
-    await attendre(7);
+    await attendre(8);
     await fondu(true, 3);
   }
 
   // =====================================================================
-  //  Séquence 4 : les papiers
+  //  Séquence 4 : les papiers (et le choix de l'élève)
   // =====================================================================
   async function sequence4() {
     viderTableau(); ilotCourant = "seq4";
     solY = () => 0;
-    salleComptoir();
+    const s = salleComptoir();
     const agent = personnage("agent_bureau", -0.2, -3.75, 0, "debout");
+    const zl = -1.45;
     const g = {
       yesenia: personnage("yesenia", -0.2, -2.55, Math.PI, "debout"),
-      joseph: personnage("joseph", 0.9, z0(), Math.PI, "debout"), valeria: personnage("valeria", 1.8, z0(), Math.PI, "debout"),
+      joseph: personnage("joseph", 0.6, zl, Math.PI, "debout"), valeria: personnage("valeria", 1.4, zl, Math.PI, "debout"),
     };
-    function z0() { return -1.45; }
     envelopper(g.yesenia); envelopper(g.joseph); envelopper(g.valeria);
-    // Le formulaire et un stylo attaché à une chaînette
     const feuille = new THREE.Mesh(new THREE.PlaneGeometry(0.21, 0.29), new THREE.MeshBasicMaterial({ map: texte2D(["I-826", "NOTICE OF RIGHTS", "AND REQUEST", "FOR DISPOSITION", "", "☐ I request a hearing", "☒ I give up my right", "   to a hearing", "", "Sign: ________"], { l: 256, h: 360, couleur: "#1a1a1a", fond: "#f4f2ea", police: "18px Georgia, serif" }) }));
     feuille.rotation.x = -Math.PI / 2; feuille.position.set(-0.2, 1.104, -2.9); groupe.add(feuille);
     const stylo = P.maille(new THREE.CylinderGeometry(0.006, 0.006, 0.14, 6), 0x1a2a5a, groupe, -0.05, 1.11, -2.88); stylo.rotation.z = Math.PI / 2;
     objet("formulaire_expulsion", feuille, -0.2, 1.12, -2.9);
-    placerJoueur(-1.6, -0.6, regarder(-1.6, -0.6, -0.2, -2.9), -0.22, 1.6);
+    placerJoueur(2.3, zl + 0.1, regarder(2.3, zl, -0.2, -2.9), -0.18, 1);
+    zoneJoueur(-4.1, 4.1, -2.6, 3.0);
+    reprendreCouverture();
     A.reinitialiser();
     sonsCentre(0.8);
     const tube = A.neon(0, 2.9, -1.5);
-    let signe = 0;
+    let signe = null;
     majTableau = () => {
-      if (signe > 0) { _m.set(-0.2 + Math.sin(temps * 12) * 0.04, 1.14, -2.85); P.pointerBras(g.yesenia, 1, _m, 0.8); }
+      if (signe) { _m.set(signe.x + Math.sin(temps * 12) * 0.04, 1.14, -2.85); P.pointerBras(signe.p, 1, _m, 0.8); }
     };
     await fondu(false, 2);
     await carte("seq4");
@@ -696,24 +1032,48 @@ window.Chapitre4 = (function () {
     await dire("yeseniaConfuse", 2.2);
     // Personne ne lui répond. Elle finit par signer.
     await attendre(1.5);
-    signe = 1; stylo.visible = false;
+    signe = { p: g.yesenia, x: -0.2 }; stylo.visible = false;
     await attendre(3);
-    signe = 0; stylo.visible = true;
+    signe = null; stylo.visible = true; A.claquement(-0.2, 1.1, -2.9);
     await allerVers(g.yesenia, -2.6, -1.9, 0.6);
     g.yesenia.cible = "tete_basse"; tourner(g.yesenia, -2.6, -4);
+    await dire("agentSuivant", 0.4);
     await allerVers(g.joseph, -0.2, -2.55, 0.8);
     tourner(g.joseph, -0.2, -3.5);
     agent.cible = "debout";
     await dire("josephInterprete", 2.0);
     agent.cible = "travaille";
     await attendre(1.8);
-    await allerVers(g.joseph, 0.9, -2.2, 0.6);
-    await allerVers(g.valeria, 0.3, -2.55, 0.8);
-    tourner(g.valeria, 0.3, -3.5);
+    await allerVers(g.joseph, -1.3, -2.0, 0.6);
+    await dire("agentSuivant", 0.4);
+    await allerVers(g.valeria, -0.2, -2.55, 0.8);
+    tourner(g.valeria, -0.2, -3.5);
     await attendre(0.8);
-    await dire("valeriaAsile", 2.5);
+    await dire("valeriaAsile", 2.0);
     agent.cible = "debout";
-    await attendre(5);
+    await attendre(1.5);
+    await allerVers(g.valeria, 1.2, -2.1, 0.6);
+    // Votre tour.
+    tourner(agent, joueur.x, joueur.z);
+    await dire("agentSuivant", 0.4);
+    objectif("C'est votre tour. Avancez jusqu'au comptoir.");
+    await attendreQue(() => pres(-0.2, -2.5, 0.9), 30);
+    objectif("");
+    if (!pres(-0.2, -2.5, 0.9)) { joueur.x = -0.2; joueur.z = -2.4; }
+    K.etat.lacet = regarder(joueur.x, joueur.z, -0.2, -2.9); K.etat.tangage = -0.55;
+    await dire("agentSigne", 0.3);
+    const i = await choisir("Le formulaire est en anglais. Vous ne pouvez pas le lire. L'agent attend, le stylo tendu.", ["Signer", "Ne pas signer"], 45);
+    if (i === 0) {
+      recit.signe = true;
+      stylo.visible = false; A.froissement(-0.2, 1.1, -2.9, 0.6);
+      await attendre(1.2); stylo.visible = true; A.claquement(-0.2, 1.1, -2.9);
+      await dire("agentSuivant", 1.5);
+    } else {
+      recit.signe = i === 1 ? false : null;
+      await attendre(1.5);
+      await dire("agentRefus", 1.5);
+    }
+    await attendre(3);
     tube.arreter(2);
     await fondu(true, 2.5);
   }
@@ -728,53 +1088,75 @@ window.Chapitre4 = (function () {
     const g = {
       rosa: personnage("rosa", -1.25, -3.15, 0, "dort"),
       valeria: personnage("valeria", 0.2, -3.15, 0, "chaise"), yesenia: personnage("yesenia", -3.28, -0.4, Math.PI / 2, "dort"),
-      ernesto: personnage("ernesto", 2.6, -2.9, 0, "chaise"), joseph: personnage("joseph", 3.6, -3.15, 0, "dort"),
+      ernesto: personnage("ernesto", 2.6, -3.15, 0, "chaise"), joseph: personnage("joseph", 3.6, -3.15, 0, "dort"),
     };
-    Object.values(g).forEach((p) => envelopper(p));
+    ["valeria", "yesenia", "ernesto", "joseph"].forEach((k) => envelopper(g[k])); // Rosa n'a plus de couverture
     figurant(-3.28, -1.6, Math.PI / 2, "dort", true); figurant(4.4, -3.15, 0, "chaise");
-    const agent = personnage("agent_bureau", 4.8, 4.2, Math.PI, "debout");
-    placerJoueur(-0.2, 0.9, regarder(-0.2, 0.9, 1.6, -1.6), -0.12, 1.6);
+    const agent = personnage("agent_bureau", 4.8, 4.2, Math.PI, "debout"); agent.racine.visible = false;
+    placerJoueur(-0.2, 0.9, regarder(-0.2, 0.9, 1.6, -1.6), -0.12, 1);
+    zoneJoueur(...ZONE_CELLULE);
+    reprendreCouverture();
     A.reinitialiser();
     sonsCentre(1.1);
     crepitements("seq5");
-    majTableau = () => {};
+    majTableau = () => { g.rosa.haut.rotation.z += Math.sin(temps * 33) * 0.01; }; // Rosa grelotte
     await fondu(false, 2.5);
     await carte("seq5");
-    await attendre(2);
-    await allerVers(agent, 3.75, 2.9, 1.0);
+    // Rosa, sans couverture : l'élève peut lui donner la sienne.
+    let donnee = false;
+    const iR = recit.couverture ? interaction(-1.25, 0.9, -2.9, "Donner votre couverture à Rosa", () => {
+      donnee = true; recit.donneeARosa = true; retirerMylarJoueur(); envelopper(g.rosa); A.froissement(-1.25, 0.7, -3.0, 1.8);
+      g.rosa.regardeJoueur = true; g.rosa.parleJusqua = temps + 2.5; g.rosa.cible = "chaise";
+    }) : null;
+    if (iR) objectif("Rosa grelotte. Elle n'a plus de couverture.");
+    await attendre(5);
+    await entrerPar(c.secteur4, agent, 3.75, 2.9, 1.0);
     tourner(agent, 3.75, 0);
-    A.claquement(3.6, 1.1, 2.4);
+    A.gache(3.6, 1.1, 2.4);
+    await attendre(0.4);
     await bougerPorte(c.porteH, -1.6, 1.0);
     await dire("agentAube", 0.8);
     // Don Ernesto se lève, plie sa couverture et va jusqu'au grillage, près de Rosa.
     g.ernesto.cible = "debout";
     await attendre(1.2);
     g.ernesto.mylar.visible = false; A.froissement(g.ernesto.x, 0.8, g.ernesto.z, 1.6);
-    const plie = mylarPlie(2.6, 0.48, -3.3);
+    mylarPlie(2.6, 0.48, -3.3);
     await allerVers(g.ernesto, 1.85, -2.4, 0.6);
     tourner(g.ernesto, -1.25, -3.0);
-    g.rosa.cible = "chaise";
+    if (g.rosa.cible !== "chaise") g.rosa.cible = "chaise";
     await attendre(1.2);
     tourner(g.rosa, 1.6, -2.4);
     await dire("ernestoAdieu", 1.2);
     await allerVers(g.ernesto, 3.6, 1.6, 0.6);
-    await allerVers(g.ernesto, 3.75, 3.6, 0.6);
-    allerVers(g.ernesto, 6, 4.4, 0.6);
-    allerVers(agent, 6.2, 4.0, 0.8);
-    await attendre(1.5);
+    await allerVers(g.ernesto, 3.75, 3.4, 0.6);
+    allerVers(agent, 3.75, 3.9, 0.8);
+    await attendre(1.0);
     await bougerPorte(c.porteH, 0, 0.7);
     A.claquement(3.6, 1.1, 2.4);
-    await attendre(2);
-    g.rosa.cible = "dort";
-    plie.visible = true;
+    g.ernesto.suivre = { leader: agent, cote: 0.5 };
+    await allerVers(agent, 4.2, 4.0, 0.8);
+    await sortirPar(c.secteur4, agent, [g.ernesto], 0.8);
     // Le froid, la lumière blanche, le bourdonnement. Personne ne sait l'heure.
-    await attendre(9);
+    await attendreQue(() => donnee, 14);
+    objectif("");
+    if (iR) retirerInteraction(iR);
+    if (!donnee) g.rosa.cible = "dort";
+    await attendre(7);
     voile.style.transition = "opacity 5s ease"; voile.style.background = "#e8eef6"; voile.style.opacity = "1";
     await attendre(5.5);
     if (sonClim) { sonClim.arreter(3); sonClim = null; }
     A.toutCouper(3);
     voile.style.transition = "opacity 2.5s ease"; voile.style.background = "#000";
     await attendre(3);
+  }
+
+  // Ce que l'élève a fait, pour la fin du chapitre.
+  function lignesRecit() {
+    const l = [];
+    if (recit.signe === true) l.push("Vous avez signé un papier que vous ne pouviez pas lire. Beaucoup de personnes renvoyées racontent la même chose.");
+    if (recit.signe === false) l.push("Vous n'avez pas signé. Pour vous, l'attente commence : des jours, peut-être des semaines, avant qu'on écoute votre peur.");
+    if (recit.donneeARosa) l.push("Vous avez donné votre couverture à Rosa.");
+    return l;
   }
 
   // =====================================================================
@@ -790,10 +1172,11 @@ window.Chapitre4 = (function () {
     let nx = joueur.x + joueur.vx * dt, nz = joueur.z + joueur.vz * dt;
     const d = Math.hypot(nx - limite.x, nz - limite.z);
     if (d > limite.r) { nx = limite.x + (nx - limite.x) / d * limite.r; nz = limite.z + (nz - limite.z) / d * limite.r; }
+    if (zone) { nx = Math.max(zone.x0, Math.min(zone.x1, nx)); nz = Math.max(zone.z0, Math.min(zone.z1, nz)); }
     const pas = Math.hypot(nx - joueur.x, nz - joueur.z);
     joueur.x = nx; joueur.z = nz;
     joueur.distPas += pas; joueur.balance += pas * 5.5;
-    if (joueur.distPas > 0.72) { joueur.distPas = 0; A.pas(0.18); }
+    if (joueur.distPas > 0.72) { joueur.distPas = 0; A.pas(0.18); if (mylarJoueur) A.froissement(joueur.x, 1.0, joueur.z, 0.35); }
     camera.position.set(joueur.x, solY(joueur.x, joueur.z) + joueur.yeux + Math.sin(joueur.balance) * 0.025, joueur.z);
     camera.rotation.set(K.etat.tangage, l, 0, "YXZ");
   }
@@ -809,12 +1192,13 @@ window.Chapitre4 = (function () {
       const d = _versObj.length();
       if (d < 2.6 && _versObj.normalize().dot(_dir) > 0.82) { objetVise = o; break; }
     }
-    objets.forEach((o) => { o.lueur.intensity = o === objetVise ? 0.6 : o.vu ? 0 : 0.25; });
-    K.montrerInvite(objetVise ? "[E] Regarder : " + objetVise.def.nom : "");
+    objets.forEach((o) => { if (o.lueur) o.lueur.intensity = o === objetVise ? 0.6 : o.vu ? 0 : 0.25; });
+    K.montrerInvite(objetVise ? (objetVise.agir ? "[E] " + objetVise.def.nom : "[E] Regarder : " + objetVise.def.nom) : "");
   }
   function action() {
     if (ficheOuverte) return fermerFiche();
     if (!objetVise) return;
+    if (objetVise.agir) { const o = objetVise; retirerInteraction(o); objetVise = null; o.agir(); return; }
     ficheOuverte = objetVise; objetVise.vu = true; ficheFin = temps + (objetVise.def.contexte ? 22 : 14);
     fiche.querySelector(".nom").textContent = objetVise.def.nom;
     fiche.querySelector(".texte").textContent = objetVise.def.texte;
@@ -844,6 +1228,7 @@ window.Chapitre4 = (function () {
     majJoueur(dt);
     persosMaj(dt);
     if (majTableau) majTableau(dt);
+    majPassages();
     majObjets();
     A.auditeur(camera.position, _avant.set(0, 0, -1).applyQuaternion(camera.quaternion));
     R.surveiller(dtReel);
@@ -863,6 +1248,8 @@ window.Chapitre4 = (function () {
     carteLieu = document.getElementById("carte-lieu");
     R = Rendu.creer({ qualite: options.qualite, exposition: 1.3 });
     scene = R.scene; camera = R.camera; env.haute = R.haute;
+    if (!camera.parent) scene.add(camera); // pour voir la couverture que l'élève tient
+    objectifEl = document.getElementById("objectif");
     K = Controles.creer({ canvas: R.renderer.domElement, action, actif: () => ilotCourant !== "fin" });
     fiche.addEventListener("click", fermerFiche);
     aide.classList.add("visible", "controles");
@@ -877,6 +1264,7 @@ window.Chapitre4 = (function () {
     for (const [, f] of ordre.slice(depart)) await f();
 
     ilotCourant = "fin";
+    objectif("");
     K.liberer();
     aide.classList.remove("visible");
     if (sonClim) { sonClim.arreter(1); sonClim = null; }
@@ -890,5 +1278,7 @@ window.Chapitre4 = (function () {
     _placer: (x, z, l, t) => { joueur.x = x; joueur.z = z; K.etat.lacet = l; K.etat.tangage = t || 0; limite.r = 99; },
     _action: action,
     _scene: () => scene, // tests
+    lignesRecit,
+    _recit: () => recit,
   };
 })();

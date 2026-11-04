@@ -6,6 +6,22 @@
   <title>Chapitre 4 : La Hielera</title>
   <link rel="stylesheet" href="../frontiere-mexique/css/style.css">
   <link rel="stylesheet" href="../chapitre-2/css/ch2.css">
+  <style>
+    /* Ce que l'élève doit faire (chapitre 4) */
+    #objectif { position: fixed; left: 50%; top: 64px; transform: translateX(-50%); z-index: 6; max-width: min(640px, calc(100% - 32px));
+      padding: 8px 16px; font-family: system-ui, sans-serif; font-size: 14px; letter-spacing: 0.03em; line-height: 1.45; text-align: center;
+      color: #e9e3d6; background: rgba(10, 20, 35, 0.72); border-left: 2px solid #6aa0d8; opacity: 0; transition: opacity 0.6s; pointer-events: none; text-wrap: balance; }
+    #objectif.visible { opacity: 1; }
+    /* Le choix : signer ou non */
+    #choix { position: fixed; inset: 0; z-index: 14; display: flex; align-items: center; justify-content: center; background: rgba(4, 6, 10, 0.55);
+      opacity: 0; pointer-events: none; transition: opacity 0.5s; padding: 16px; }
+    #choix.visible { opacity: 1; pointer-events: auto; }
+    #choix .carte { max-width: 460px; text-align: center; background: rgba(10, 9, 8, 0.92); border: 1px solid rgba(200, 180, 140, 0.4); padding: 24px; }
+    #choix .question { margin: 0 0 22px; font-size: 18px; line-height: 1.55; text-wrap: balance; }
+    #choix .options { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+    #choix button { background: transparent; color: var(--texte); border: 1px solid var(--sable); padding: 12px 26px; letter-spacing: 0.06em; }
+    #choix button:hover, #choix button:focus-visible { background: var(--sable); color: var(--fond); outline: none; }
+  </style>
 </head>
 <body>
   <!-- 0. Avertissement -->
@@ -19,8 +35,9 @@
       <div class="avertissement">
         <p><strong>Avant de commencer</strong></p>
         <ul>
-          <li>Durée : environ 9 minutes.</li>
+          <li>Durée : environ 12 minutes.</li>
           <li>Les heures qui suivent l'arrestation du chapitre 1, dans un centre de la Patrouille frontalière : le froid, l'enregistrement, les papiers, et la séparation d'une mère et de son enfant. Ce chapitre peut être difficile. Aucune violence physique n'est montrée.</li>
+          <li>Vous faites partie du groupe arrêté au chapitre 1. On vous dira quoi faire : déposer vos affaires, donner vos empreintes, signer un papier… À vous de décider de certaines choses.</li>
           <li>C'est le dernier chapitre de <em>Traversées</em>.</li>
           <li>Les agents parlent anglais, les personnages espagnol, et Joseph aussi créole haïtien. Tout est sous-titré.</li>
           <li>Certains objets peuvent être regardés de près : approchez-vous et appuyez sur <kbd>E</kbd>.</li>
@@ -51,6 +68,8 @@
   <div id="carte-lieu"><p class="lieu"></p><p class="moment"></p></div>
   <div id="sous-titre"><div class="st-nom"></div><div class="st-original"></div><div class="st-trad"></div></div>
   <div id="invite"></div>
+  <div id="objectif" aria-live="polite"></div>
+  <section id="choix" aria-live="assertive"><div class="carte"><p class="question"></p><div class="options"></div></div></section>
   <div id="fiche" class="fiche"><p class="nom"></p><p class="texte"></p><p class="contexte"></p><p class="fermer">E ou clic pour fermer</p></div>
   <div id="aide">
     <span class="souris">Cliquez pour regarder autour de vous</span>
