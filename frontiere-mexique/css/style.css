@@ -20,6 +20,8 @@ button { font: inherit; cursor: pointer; }
 /* Accueil */
 .carte { max-width: 620px; width: 100%; }
 h1 { font-weight: 400; font-size: clamp(44px, 8vw, 76px); letter-spacing: 0.08em; margin: 0; color: var(--sable); }
+.retour-chapitres { display: inline-block; margin: 0 0 28px; font-family: system-ui, sans-serif; font-size: 13px; letter-spacing: 0.08em; color: var(--doux); text-decoration: none; border-bottom: 1px solid #3a352f; padding-bottom: 2px; }
+.retour-chapitres:hover, .retour-chapitres:focus-visible { color: var(--texte); outline: none; }
 .chapitre { margin: 0 0 6px; color: var(--doux); font-family: system-ui, sans-serif; font-size: 13px; letter-spacing: 0.22em; text-transform: uppercase; }
 .sous { color: var(--doux); margin: 4px 0 6px; letter-spacing: 0.04em; }
 .inspiration { color: #7d766a; margin: 0 0 32px; font-size: 14px; font-style: italic; }
