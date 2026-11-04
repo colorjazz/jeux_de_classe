@@ -46,6 +46,7 @@ Les répliques enregistrées sont jouées en son 3D, depuis l'endroit où se tro
 |---|---|---|---|---|
 | `murAttente.mp3` | Le guide | chuchoté | Uno por uno. Rápido y sin ruido. | Un par un. Vite, et sans bruit. |
 | `murMateo.mp3` | Rosa | tendre, doux | Agárrate fuerte, mijo. No mires abajo. | Tiens-toi bien, mon chéri. Ne regarde pas en bas. |
+| `murJoseph.mp3` | Joseph (34 ans, Haïtien) | tendre, rassurant | Sube, ti gason. Yo te sostengo. | Monte, petit gars. Je te tiens. |
 | `murJoueur.mp3` | Julio | chuchoté, pressé | ¡Sube! ¡Te toca! | Monte ! C'est ton tour ! |
 | `murApres.mp3` | Le guide | chuchoté | Ya estamos del otro lado. Ahora empieza lo difícil. | On est de l'autre côté. Maintenant, le plus dur commence. |
 | `depart.mp3` | Le guide | chuchoté | Sin luces. Sin hablar. Caminen detrás de mí. | Pas de lumière. Pas un mot. Marchez derrière moi. |
@@ -53,16 +54,20 @@ Les répliques enregistrées sont jouées en son 3D, depuis l'endroit où se tro
 | `mere.mp3` | Rosa | tendre, doux | Ya casi, mijo. Ya casi. | Presque, mon chéri. Presque. |
 | `yesenia1.mp3` | Yesenia | tendre, doux | Me llamo Yesenia. ¿Y tú? | Je m'appelle Yesenia. Et toi ? |
 | `yesenia2.mp3` | Yesenia | tendre, doux | …No hablas mucho. Yo tampoco. | … Tu ne parles pas beaucoup. Moi non plus. |
+| `valeriaIntro.mp3` | Valeria (Vénézuélienne, infirmière) | doux, posé | Soy enfermera. Si te duelen los pies, avísame. | Je suis infirmière. Si tu as mal aux pieds, dis-le-moi. |
 | `julio1.mp3` | Julio | triste, retenu | Mi hija tiene cinco años. Está en Los Ángeles. Ya ni se acuerda de mi cara. | Ma fille a cinq ans. Elle est à Los Angeles. Elle ne se souvient même plus de mon visage. |
 | `coyoteEnfant.mp3` | Mateo (9 ans) | apeuré | Mami, ¿qué es eso? | Maman, c'est quoi ça ? |
 | `coyoteMere.mp3` | Rosa | chuchoté | Coyotes. No me sueltes la mano. | Des coyotes. Ne lâche pas ma main. |
 | `cruz1.mp3` | Yesenia | triste, retenu | Aquí murió alguien. | Quelqu'un est mort ici. |
 | `cruz2.mp3` | Rosa | triste, retenu | Que Dios lo tenga en su gloria. | Que Dieu l'accueille. |
+| `josephCroix.mp3` | Joseph | prière, très bas (créole) | Bondye, bay li repo. | Mon Dieu, donne-lui le repos. |
 | `halte.mp3` | Le guide | chuchoté | Descansen. Cinco minutos. Nada más. | Reposez-vous. Cinq minutes. Pas plus. |
 | `eau.mp3` | Julio | tendre, doux | Toma. Poquito, ¿eh? Hay que guardar. | Tiens. Juste un peu, hein ? Il faut en garder. |
 | `eauMerci.mp3` | Julio | tendre, doux | Así. Despacito. | Voilà. Doucement. |
 | `berceuse.mp3` | Rosa | chanté tout bas | Duérmete, mi niño, duérmete ya… | Dors, mon petit, dors maintenant… |
+| `valeriaHalte.mp3` | Valeria | doux, posé | Tiene frío, no fiebre. Tápelo con esto. | Il a froid, pas de fièvre. Couvrez-le avec ça. |
 | `ernestoHalte.mp3` | Don Ernesto (61 ans) | triste, retenu | Mi hijo vive en Arizona. Hace nueve años que no lo veo. | Mon fils vit en Arizona. Ça fait neuf ans que je ne l'ai pas vu. |
+| `josephHalte.mp3` | Joseph | triste, retenu | En Chile levanté edificios de treinta pisos. Aquí no tengo ni dónde dormir. | Au Chili, j'ai monté des immeubles de trente étages. Ici, je n'ai même pas où dormir. |
 | `repart.mp3` | Le guide | chuchoté, pressé | Vámonos. Arriba, arriba. | On y va. Debout, debout. |
 | `rythme.mp3` | Le guide | chuchoté, pressé | Rápido. Antes de que salga el sol. | Plus vite. Avant que le soleil se lève. |
 | `froid.mp3` | Mateo (9 ans) | épuisé | Mami, tengo frío. | Maman, j'ai froid. |
@@ -74,16 +79,20 @@ Les répliques enregistrées sont jouées en son 3D, depuis l'endroit où se tro
 | `attendre2.mp3` | Rosa | chuchoté, pressé | No te quedes atrás… | Ne reste pas derrière… |
 | `perdu.mp3` | Yesenia | apeuré | ¿Dónde estás? Por aquí… | Où es-tu ? Par ici… |
 | `chute.mp3` | Don Ernesto (61 ans) | douleur, souffle court | Ay… no puedo… mis piernas… | Aïe… je ne peux plus… mes jambes… |
+| `valeriaChute.mp3` | Valeria | calme, ferme | Don Ernesto, míreme. Respire despacio… No me queda nada en la mochila, pero aquí estoy. | Don Ernesto, regardez-moi. Respirez lentement… Il ne me reste rien dans le sac, mais je suis là. |
 | `aide.mp3` | Don Ernesto (61 ans) | tendre, doux | Gracias, hijo. Dios te lo pague. | Merci, mon fils. Que Dieu te le rende. |
 | `aideAutre.mp3` | Julio | chuchoté, pressé | Arriba, don Ernesto. Arriba. | Debout, don Ernesto. Debout. |
 | `espoir1.mp3` | Le guide | soulagé, presque joyeux | ¿Ven esas luces? Allá es. Ya casi llegamos. | Vous voyez ces lumières ? C'est là. On y est presque. |
 | `espoir2.mp3` | Rosa | soulagé, presque joyeux | Mira, mijo… mira. | Regarde, mon chéri… regarde. |
 | `espoir3.mp3` | Mateo (9 ans) | soulagé, presque joyeux | ¿Allá vive mi tía? | C'est là qu'habite ma tante ? |
 | `espoir4.mp3` | Rosa | tendre, doux | Sí, mi amor. Allá. | Oui, mon amour. Là-bas. |
+| `josephEspoir.mp3` | Joseph | soulagé (créole) | Dis fwontyè… Sa a se dènye a. | Dix frontières… Celle-ci est la dernière. |
+| `valeriaEspoir.mp3` | Valeria | ému, très bas | Ya casi, mamá. Ya casi. | Presque, maman. Presque. |
 | `chut.mp3` | Le guide | chuchoté, pressé | Shhh… ¡Esperen! | Chut… Attendez ! |
 | `alerte.mp3` | Le guide | crié | ¡Escóndanse! ¡Al suelo! ¡Ya! | Cachez-vous ! À plat ventre ! Vite ! |
 | `panique.mp3` | Rosa | crié | ¡Mateo! ¡Mateo, no te muevas! | Mateo ! Mateo, ne bouge pas ! |
 | `priere.mp3` | Yesenia | apeuré | Dios mío, Dios mío… | Mon Dieu, mon Dieu… |
+| `josephPriere.mp3` | Joseph | apeuré (créole) | Bondye, pa kite yo separe nou. | Mon Dieu, ne les laisse pas nous séparer. |
 | `agent1.mp3` | Un agent (anglais) | crié | Border Patrol! Stay down! Stay down! | Police des frontières ! Restez à terre ! À terre ! |
 | `agent2.mp3` | Un agent (anglais) | crié | Show me your hands! Hands! | Montrez vos mains ! Les mains ! |
 | `agent3.mp3` | Un agent (anglais) | crié | Get up on your knees! Hands up! Now! | À genoux ! Les mains en l'air ! Tout de suite ! |

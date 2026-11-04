@@ -69,7 +69,10 @@ window.Desert = (function () {
   }
 
   // Place dans la file : Mateo marche à côté de sa mère, pas derrière elle.
-  function rangDe(i) { return i <= 2 ? i : i === 3 ? 2 : i - 1; }
+  // 0 guide, 1 Julio, 2 Rosa, 3 Mateo (à côté de sa mère), 4 Yesenia, 5 Don Ernesto, 6 Valeria, 7 Joseph
+  // Ordre de marche : guide, Julio, Rosa et Mateo, Yesenia, Valeria, Don Ernesto, Joseph (qui ferme la file).
+  const RANG = [0, 1, 2, 2, 3, 5, 4, 6];
+  function rangDe(i) { return RANG[i] !== undefined ? RANG[i] : i; }
   const MATEO_COTE = 0.92; // distance entre Rosa et Mateo (main dans la main)
 
   // =====================================================================
@@ -156,6 +159,7 @@ window.Desert = (function () {
       const l = maille(new THREE.SphereGeometry(0.1, 10, 10), coulCheveux, tete, 0, -0.07, -0.06);
       l.scale.set(1.05, 1.5, 0.55);
     }
+    if (o.cheveux === "attaches") maille(new THREE.SphereGeometry(0.045, 10, 8), coulCheveux, tete, 0, 0.03, -0.1); // chignon
     if (o.cheveux === "tresse") {
       for (let i = 0; i < 6; i++) maille(new THREE.SphereGeometry(0.028 - i * 0.002, 8, 6), coulCheveux, haut, 0, 0.66 - i * 0.055, -0.13 - (i < 2 ? i * 0.02 : 0.03));
     }
@@ -721,7 +725,7 @@ window.Desert = (function () {
   //  Interface
   // =====================================================================
   let sousTitreTimer = null;
-  const ID_PERSONNAGE = ["guia", "julio", "rosa", "mateo", "yesenia", "ernesto"];
+  const ID_PERSONNAGE = ["guia", "julio", "rosa", "mateo", "yesenia", "ernesto", "valeria", "joseph"];
   function dire(cle, chuchote) {
     const r = C.repliques[cle];
     if (!r) return;
@@ -731,7 +735,7 @@ window.Desert = (function () {
     if (r.qui === "agent") p = agents.find((a) => a.racine.visible) || null;
     else p = groupe[ID_PERSONNAGE.indexOf(r.qui)] || null;
     const pos = p ? { x: p.x, y: hauteur(p.x, p.z), z: p.z } : null;
-    const duree = A.parler(r.qui, r.texte, ton, cle, pos) || 2;
+    const duree = A.parler(r.qui, r.texte, ton, cle, pos, { langue: r.langue }) || 2;
     if (p) {
       p.parleJusqua = horlogeAnim + duree;
       // On se tourne vers le joueur pour lui parler, sauf quand on crie ou qu'on chuchote un ordre.
@@ -865,6 +869,7 @@ window.Desert = (function () {
   function relever(parJoueur) {
     ernestoEtat = "releve";
     ernesto.cible = "marche";
+    groupe[6].cible = "marche";
     montrerInvite("");
     dire(parJoueur ? "aide" : "aideAutre", parJoueur);
   }
@@ -975,7 +980,7 @@ window.Desert = (function () {
   // =====================================================================
   //  Le mur
   // =====================================================================
-  const POS_ATTENTE = [[-1.2, 25.0], [1.4, 25.6], [-2.6, 26.8], [-0.6, 27.6], [-1.6, 28.0], [2.8, 27.2]];
+  const POS_ATTENTE = [[-1.2, 25.0], [1.4, 25.6], [-2.6, 26.8], [-0.6, 27.6], [-1.6, 28.0], [2.8, 27.2], [-3.4, 28.2], [0.9, 26.6]];
   function franchir(p, duree) {
     p.franchit = { t: 0, duree };
     p.cible = "grimpe";
@@ -988,15 +993,18 @@ window.Desert = (function () {
   function majMur(dt) {
     unefois("murAttente", tm > 4, () => dire("murAttente", true));
     // Chacun passe à son tour, le guide d'abord.
-    const ordre = [0, 1, 4, 2, 3, 5]; // guide, Julio, Yesenia, Rosa, Mateo, Ernesto
+    // guide, Julio, Yesenia, Valeria, Rosa, Mateo, Ernesto, Joseph (qui aide les autres avant de passer)
+    const ordre = [0, 1, 4, 6, 2, 3, 5, 7];
+    const FIN = 8 + (ordre.length - 1) * 5.5 + 5;
     ordre.forEach((i, rang) => unefois("passe" + i, tm > 8 + rang * 5.5, () => franchir(groupe[i], i === 5 ? 8.5 : i === 3 ? 7 : 6)));
-    unefois("murMateo", tm > 8 + 4 * 5.5 - 1, () => dire("murMateo", true));
-    unefois("tousPasses", tm > 8 + 5 * 5.5 + 5, () => {});
+    unefois("murMateo", tm > 8 + 5 * 5.5 - 1, () => dire("murMateo", true));
+    unefois("murJoseph", tm > 8 + 5 * 5.5 + 3, () => dire("murJoseph", true));
+    unefois("tousPasses", tm > FIN, () => {});
     if (evenements.tousPasses && joueur.etat === "attend") {
       montrerInvite(distEchelle() < 3 ? "[E] Monter à l'échelle" : "Rejoignez l'échelle");
       if (!evenements.murJoueur) { evenements.murJoueur = tm; dire("murJoueur"); }
       else if (tm - evenements.murJoueur > 14) { evenements.murJoueur = tm; dire("murJoueur"); }
-      if (tm > 8 + 5 * 5.5 + 5 + 45) franchirJoueur(); // personne ne reste derrière
+      if (tm > FIN + 45) franchirJoueur(); // personne ne reste derrière
     }
 
     groupe.forEach((p, i) => {
@@ -1075,7 +1083,7 @@ window.Desert = (function () {
       }
       if (enMarche) {
         const cibleS = sLeader - ESPACEMENT * rangDe(i);
-        const bloque = p === ernesto && ernestoEtat === "tombe";
+        const bloque = (p === ernesto || p.id === "valeria") && ernestoEtat === "tombe";
         const vMax = p === ernesto && ernestoEtat === "releve" ? 1.6 : 1.45;
         const avant = p.abscisse;
         // Accélération et freinage progressifs.
@@ -1132,6 +1140,7 @@ window.Desert = (function () {
     ev("mere", 32, () => dire("mere", true));
     ev("yesenia1", 52, () => dire("yesenia1", true));
     ev("yesenia2", 60, () => dire("yesenia2", true));
+    ev("valeriaIntro", 70, () => dire("valeriaIntro", true));
     ev("julio1", 84, () => dire("julio1", true));
     ev("coyotes", 108, () => { const g = groupe[0]; A.coyotes(g.x - 120, g.z - 90); });
     ev("coyoteEnfant", 113, () => dire("coyoteEnfant"));
@@ -1140,6 +1149,7 @@ window.Desert = (function () {
     // La croix : quand le guide passe à sa hauteur
     unefois("cruz1", groupe[4].abscisse > S_CROIX - 4, () => { dire("cruz1", true); groupe[4].regard = 0.9; });
     unefois("cruz2", evenements.cruz1 && groupe[2].abscisse > S_CROIX + 1, () => { dire("cruz2", true); groupe[4].regard = 0; });
+    unefois("josephCroix", evenements.cruz2 && groupe[7].abscisse > S_CROIX - 1, () => { dire("josephCroix", true); groupe[7].regard = 0.9; plus_tard(3, () => (groupe[7].regard = 0)); });
 
     // --- La halte ---
     ev("halte", 160, () => {
@@ -1152,7 +1162,9 @@ window.Desert = (function () {
       montrerInvite(d < 3.2 ? "[E] Boire" : "");
     }
     ev("berceuse", 182, () => { dire("berceuse", true); groupe[3].cible = "dort"; });
+    ev("valeriaHalte", 188, () => dire("valeriaHalte", true));
     ev("ernestoHalte", 196, () => dire("ernestoHalte", true));
+    ev("josephHalte", 204, () => dire("josephHalte", true));
     ev("repart", 214, () => {
       dire("repart", true); arret = false; eauOfferte = false; montrerInvite("");
       groupe.forEach((p) => (p.cible = "marche"));
@@ -1190,6 +1202,8 @@ window.Desert = (function () {
       ernestoEtat = "tombe"; ernestoChuteT = tp;
       ernesto.cible = "chute";
       dire("chute");
+      // Valeria s'agenouille près de lui.
+      plus_tard(2.2, () => { const v = groupe[6]; if (ernestoEtat === "tombe") { v.cible = "accroupi"; dire("valeriaChute", true); } });
     });
     if (ernestoEtat === "tombe") {
       const d = Math.hypot(joueur.x - ernesto.x, joueur.z - ernesto.z);
@@ -1206,6 +1220,8 @@ window.Desert = (function () {
     ev("espoir2", 359, () => dire("espoir2", true));
     ev("espoir3", 364, () => dire("espoir3"));
     ev("espoir4", 368, () => dire("espoir4", true));
+    ev("josephEspoir", 372, () => dire("josephEspoir", true));
+    ev("valeriaEspoir", 377, () => dire("valeriaEspoir", true));
     if (evenements.espoir1) lumieresVille.material.opacity = Math.min(1, lumieresVille.material.opacity + 0.004);
 
     if (tp < 14) aide.classList.add("controles");
@@ -1243,7 +1259,7 @@ window.Desert = (function () {
       dire("alerte");
       // Chacun se jette au sol, tout près du joueur.
       const fx = -Math.sin(lacet), fz = -Math.cos(lacet), rx = Math.cos(lacet), rz = -Math.sin(lacet);
-      const places = [null, [2.6, 1.2], [3.4, -1.0], [2.2, -2.3], [4.6, 0.3], [1.3, 2.4]]; // [devant, côté]
+      const places = [null, [2.6, 1.2], [3.4, -1.0], [2.2, -2.3], [4.6, 0.3], [1.3, 2.4], [3.9, 2.4], [1.5, -3.4]]; // [devant, côté]
       groupe.forEach((p, i) => {
         if (!places[i]) return;
         const [av, co] = places[i];
@@ -1254,6 +1270,7 @@ window.Desert = (function () {
       A.coeur(true); A.tension(0.16);
     });
     unefois("priere", ta > 10, () => dire("priere", true));
+    unefois("josephPriere", ta > 14, () => dire("josephPriere", true));
 
     unefois("helicoVisible", ta > 0.01, () => {
       helicoDepart = new THREE.Vector3(G.x - 60, 80, G.z - 380);
@@ -1619,13 +1636,13 @@ window.Desert = (function () {
       phase = "marche"; joueur.etat = "libre";
       sLeader = Math.min(longueur - 10, S_DEPART + t0 * 1.05);
       groupe.forEach((p, i) => (p.abscisse = sLeader - ESPACEMENT * rangDe(i)));
-      const pj = pointS(sLeader - ESPACEMENT * 6 - 3);
+      const pj = pointS(sLeader - ESPACEMENT * 8 - 3);
       joueur.x = pj.x; joueur.z = pj.z; lacet = capS(sLeader) + Math.PI;
       tp = t0;
       joueur.fatigue = Math.min(1, t0 / 330);
       // Les événements déjà passés sont marqués comme faits.
       const passes = { depart: 7, enfant: 28, mere: 32, yesenia1: 52, yesenia2: 60, julio1: 84, coyotes: 108, coyoteEnfant: 113, coyoteMere: 117, coyotes2: 135,
-        halte: 160, eau: 170, berceuse: 182, ernestoHalte: 196, repart: 214, rythme: 226, froid: 240, soif: 256, soifReponse: 261, fausseAlerte: 276, fausseFin: 292, chute: 316 };
+        valeriaIntro: 70, halte: 160, eau: 170, berceuse: 182, valeriaHalte: 188, ernestoHalte: 196, josephHalte: 204, repart: 214, rythme: 226, froid: 240, soif: 256, soifReponse: 261, fausseAlerte: 276, fausseFin: 292, chute: 316 };
       for (const k in passes) if (t0 > passes[k]) evenements[k] = true;
       if (sLeader > S_CROIX + 6) evenements.cruz1 = evenements.cruz2 = true;
       if (t0 > 160 && t0 < 214) { arret = true; groupe.forEach((p) => (p.cible = "assis")); eauOfferte = t0 > 170; }
@@ -1647,7 +1664,7 @@ window.Desert = (function () {
 
     if (options.reve) {
       phase = "marche"; joueur.etat = "libre";
-      const pj = pointS(sLeader - ESPACEMENT * 6 - 3);
+      const pj = pointS(sLeader - ESPACEMENT * 8 - 3);
       joueur.x = pj.x; joueur.z = pj.z; lacet = capS(sLeader) + Math.PI;
       groupe.forEach((p, i) => { const pt = pointS(p.abscisse); p.x = pt.x; p.z = pt.z; });
       debutAlerte(); ta = 47; scenarioAlerte(0.016);

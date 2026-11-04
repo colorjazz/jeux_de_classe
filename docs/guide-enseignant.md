@@ -22,10 +22,10 @@ L'expérience est construite comme une montée : appréhension, calme, intimité
 |---|---|---|---|
 | Avertissement | libre | Contenu, durée, consigne des écouteurs, choix des sous-titres | – |
 | Le sas | ~45 s | Écran froid, bourdonnement, quelques phrases sur le désert et les objets abandonnés | Se taire, entrer |
-| Le mur | ~1 min 30 | Côté mexicain, le groupe attend au pied du mur. Chacun monte à l'échelle à son tour. L'élève passe en dernier (touche E) | Appréhension |
-| Première marche | ~2 min 30 | Marche de nuit derrière le guide. Les personnages se présentent : Mateo demande si c'est encore loin, Yesenia dit son prénom, Julio parle de sa fille. Des coyotes au loin. Une croix au bord du chemin | Calme, attachement |
-| La halte | ~1 min | Le groupe s'assoit. Julio partage l'eau (touche E pour boire). Rosa chante une berceuse à Mateo qui s'endort. Don Ernesto parle de son fils | Intimité |
-| Deuxième marche | ~2 min 15 | Le froid, la soif, il n'y a plus d'eau. Fausse alerte : des phares sur une route au loin, tout le monde se cache. Don Ernesto tombe : l'élève peut l'aider (touche E) | Fatigue, peur |
+| Le mur | ~1 min 30 | Côté mexicain, le groupe attend au pied du mur. Chacun monte à l'échelle à son tour ; Joseph aide Mateo. L'élève passe en dernier (touche E) | Appréhension |
+| Première marche | ~2 min 30 | Marche de nuit derrière le guide. Les personnages se présentent : Mateo demande si c'est encore loin, Yesenia dit son prénom, Valeria, infirmière, propose son aide, Julio parle de sa fille. Des coyotes au loin. Une croix au bord du chemin, où Joseph prie en créole | Calme, attachement |
+| La halte | ~1 min | Le groupe s'assoit. Julio partage l'eau (touche E pour boire). Rosa chante une berceuse à Mateo qui s'endort ; Valeria le couvre. Don Ernesto parle de son fils, Joseph des immeubles qu'il construisait au Chili | Intimité |
+| Deuxième marche | ~2 min 15 | Le froid, la soif, il n'y a plus d'eau. Fausse alerte : des phares sur une route au loin, tout le monde se cache. Don Ernesto tombe : Valeria s'agenouille près de lui, l'élève peut l'aider (touche E) | Fatigue, peur |
 | L'espoir | ~30 s | Les lumières d'une ville apparaissent à l'horizon. « On y est presque. » Une musique douce s'installe | Soulagement |
 | Le choc | ~45 s | La musique se coupe net. Un hélicoptère, tout le monde se jette à plat ventre autour de l'élève. Projecteur, le guide s'enfuit, un pick-up, trois agents. Ordre de se mettre à genoux, mains en l'air, lampe torche dans les yeux | Choc, impuissance |
 | La rupture | ~45 s | Silence. Le monde se fige et change de couleur. Les agents disparaissent. Les personnes se relèvent, leurs noms s'élèvent dans la lumière | Suspension |
@@ -87,7 +87,7 @@ Laissez d'abord **une minute de silence** après l'expérience. Ensuite :
 **Comprendre**
 5. Pourquoi chacune de ces personnes est-elle partie ? Classez les raisons : violence, économie, climat, famille.
 6. Pourquoi l'expérience ne permet-elle pas d'échapper à la patrouille ?
-7. Les personnages parlent espagnol et anglais : quel effet cela produit-il, même avec les sous-titres ?
+7. Les personnages parlent espagnol, créole haïtien et anglais : quel effet cela produit-il, même avec les sous-titres ?
 8. Que devient chaque personne après l'arrestation ? Ces issues sont-elles les mêmes pour tous ?
 
 **Prendre du recul**

@@ -67,6 +67,16 @@ window.CONTENU = {
     // Les agents parlent anglais.
     agent1:        { qui: "agent", ton: "cri", direction: "Shout loudly in English, an American Border Patrol agent, aggressive and commanding: ", texte: "Border Patrol! Stay down! Stay down!", fr: "Police des frontières ! Restez à terre ! À terre !" },
     agent2:        { qui: "agent", ton: "cri", direction: "Shout in English, a tense Border Patrol agent pointing a flashlight, harsh and urgent: ", texte: "Show me your hands! Hands!", fr: "Montrez vos mains ! Les mains !" },
+    // Valeria (Venezuela) et Joseph (Haïti, puis le Chili) : ils ont rejoint le groupe au Mexique.
+    murJoseph:      { qui: "joseph", ton: "tendre", direction: "Whisper in Spanish with a strong Haitian Creole accent, ending with Creole words, gentle and strong, helping a child climb a ladder at night: ", texte: "Sube, ti gason. Yo te sostengo.", fr: "Monte, petit gars. Je te tiens.", en: "Climb up, little boy. I've got you." },
+    valeriaIntro:   { qui: "valeria", ton: "tendre", direction: "Whisper in Spanish with a tired, kind Venezuelan voice, a nurse speaking to a companion while walking at night: ", texte: "Soy enfermera. Si te duelen los pies, avísame.", fr: "Je suis infirmière. Si tu as mal aux pieds, dis-le-moi.", en: "I'm a nurse. If your feet hurt, tell me." },
+    josephCroix:    { qui: "joseph", ton: "triste", langue: "ht", direction: "Murmur a short prayer in native Haitian Creole, deep, slow and reverent: ", texte: "Bondye, bay li repo.", fr: "[En créole] Mon Dieu, donne-lui le repos.", en: "[In Creole] God, give them rest." },
+    valeriaHalte:   { qui: "valeria", ton: "tendre", direction: "Whisper in Spanish like a gentle Venezuelan nurse checking a sleeping child: ", texte: "Tiene frío, no fiebre. Tápelo con esto.", fr: "Il a froid, pas de fièvre. Couvrez-le avec ça.", en: "He's cold, not feverish. Cover him with this." },
+    josephHalte:    { qui: "joseph", ton: "triste", direction: "Say quietly in Spanish with a strong Haitian Creole accent, tired and bitter but dignified: ", texte: "En Chile levanté edificios de treinta pisos. Aquí no tengo ni dónde dormir.", fr: "Au Chili, j'ai monté des immeubles de trente étages. Ici, je n'ai même pas où dormir.", en: "In Chile I put up thirty-story buildings. Here I don't even have a place to sleep." },
+    valeriaChute:   { qui: "valeria", ton: "presse", direction: "Say in Spanish with an urgent, calm Venezuelan nurse's voice, kneeling next to an old man who collapsed: ", texte: "Don Ernesto, míreme. Respire despacio… No me queda nada en la mochila, pero aquí estoy.", fr: "Don Ernesto, regardez-moi. Respirez doucement… Il ne me reste rien dans mon sac, mais je suis là.", en: "Don Ernesto, look at me. Breathe slowly… I have nothing left in my bag, but I'm here." },
+    josephEspoir:   { qui: "joseph", ton: "joie", langue: "ht", direction: "Whisper in native Haitian Creole, moved, almost smiling, looking at distant city lights: ", texte: "Dis fwontyè… Sa a se dènye a.", fr: "[En créole] Dix frontières… C'est la dernière.", en: "[In Creole] Ten borders… This is the last one." },
+    valeriaEspoir:  { qui: "valeria", ton: "tendre", direction: "Whisper in Spanish to herself, thinking of her mother, with hope and tears: ", texte: "Ya casi, mamá. Ya casi.", fr: "Presque, maman. Presque.", en: "Almost, mom. Almost." },
+    josephPriere:   { qui: "joseph", ton: "peur", langue: "ht", direction: "Pray in native Haitian Creole in a fast, terrified whisper, lying face down: ", texte: "Bondye, pa kite yo separe nou.", fr: "[En créole] Mon Dieu, ne les laisse pas nous séparer.", en: "[In Creole] God, don't let them separate us." },
     agent3:        { qui: "agent", ton: "cri", direction: "Shout in English, a Border Patrol agent barking orders, loud, fast, no hesitation: ", texte: "Get up on your knees! Hands up! Now!", fr: "À genoux ! Les mains en l'air ! Tout de suite !" },
   },
 
@@ -80,6 +90,8 @@ window.CONTENU = {
     yesenia: "Achernar",   // douce, timide
     ernesto: "Sadaltager", // mûre, fatiguée
     agent: "Fenrir",       // sec, autoritaire
+    valeria: "Kore",       // mêmes voix qu'aux chapitres 2 et 3
+    joseph: "Alnilam",
   },
 
   // Personnages du groupe (ordre de marche), leur apparence et leur témoignage final.
@@ -132,10 +144,26 @@ window.CONTENU = {
       recit: "« J'ai cultivé le maïs toute ma vie. Il ne pleut plus comme avant, et les hommes armés ont pris la route du marché. Mon fils travaille dans les toitures en Arizona. Je voulais juste être près de lui. Je n'avais pas imaginé que le désert serait si long à mon âge. »",
       apres: "Don Ernesto a été renvoyé au Mexique le lendemain, à Nogales. Il a passé une nuit dans un refuge tenu par des bénévoles.",
     },
+    {
+      id: "valeria",
+      corps: { taille: 1.63, haut: 0x2b5b6c, bas: 0x1f2937, peau: 0x9c7254, cheveux: "attaches", couleurCheveux: 0x1a1412, chaussures: 0x8a8070, sac: "petit", couleurSac: 0x374151 },
+      nom: "Valeria",
+      detail: "31 ans · Maracaibo, Venezuela",
+      recit: "« J'étais infirmière aux urgences pédiatriques de Maracaibo. Quand l'électricité coupait douze heures par jour et qu'on n'avait même plus d'antibiotiques ni de sérum, ce sont les parents qui devaient tout acheter au marché noir. Mon salaire d'un mois suffisait à peine pour un kilo de farine et six œufs. Je suis partie pour envoyer de quoi soigner ma mère. »",
+      apres: "Dans le Darién, Valeria a soigné les pieds blessés des marcheurs avec ce qui lui restait de bandages. Arrêtée en Arizona, elle attend son audience d'asile.",
+    },
+    {
+      id: "joseph",
+      corps: { taille: 1.81, haut: 0x4a453e, bas: 0x2b3548, peau: 0x3b2618, chaussures: 0x5c4028, sac: "grand", couleurSac: 0x1f2421 },
+      nom: "Joseph",
+      detail: "36 ans · Né à Léogâne (Haïti), parti de Santiago du Chili",
+      recit: "« Après le tremblement de terre de 2010 en Haïti, je suis parti travailler sur les chantiers à Santiago du Chili. J'ai construit des tours là-bas pendant sept ans. Puis les lois ont changé : impossible de renouveler mon visa, plus de contrat, seulement du travail au noir sans droits. Rentrer en Haïti était impossible à cause des gangs. Il ne restait que la route du nord, à pied, depuis le Chili. »",
+      apres: "Après quatre mois de marche à travers dix frontières, Joseph a été détenu en Arizona puis expulsé vers Port-au-Prince, une ville où il n'avait pas vécu depuis quatorze ans.",
+    },
   ],
 
   fin: [
-    "Ces six personnes n'existent pas.",
+    "Ces huit personnes n'existent pas.",
     "Leurs histoires, si.",
     "Elles sont composées à partir de récits de migrants recueillis par des journalistes, des chercheurs et des associations.",
     "Chaque année, des personnes meurent de chaleur, de froid ou de soif en tentant de traverser ce désert. Beaucoup ne sont jamais identifiées.",
