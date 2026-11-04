@@ -1,5 +1,6 @@
 (() => {
   const S = window.SITE;
+  const ALL = "Tous";
   const $ = (sel) => document.querySelector(sel);
   const esc = (s = "") =>
     String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
@@ -56,12 +57,12 @@
 
   const grid = $("#projects");
   const render = (filter) => {
-    const list = filter === "All" ? projects : projects.filter((p) => (p.tags || []).includes(filter));
+    const list = filter === ALL ? projects : projects.filter((p) => (p.tags || []).includes(filter));
     grid.innerHTML = list.map(card).join("");
     observe();
   };
 
-  const tags = ["All", ...new Set(projects.flatMap((p) => p.tags || []))];
+  const tags = [ALL, ...new Set(projects.flatMap((p) => p.tags || []))];
   const filters = $("#filters");
   filters.innerHTML = tags
     .map((t, i) => `<button type="button" aria-pressed="${i === 0}" data-tag="${esc(t)}">${esc(t)}</button>`)
@@ -85,7 +86,7 @@
         <div class="card__meta"><span>${esc((p.tags || []).join(" · "))}</span><span>${esc(p.year || "")}</span></div>
         <h3>${esc(p.title)}</h3>
         <p>${esc(p.description || p.summary)}</p>
-        ${p.role ? `<p class="modal__role"><strong>My role:</strong> ${esc(p.role)}</p>` : ""}
+        ${p.role ? `<p class="modal__role"><strong>Mon rôle&nbsp;:</strong> ${esc(p.role)}</p>` : ""}
         ${
           p.links && p.links.length
             ? `<div class="modal__links">${p.links
@@ -122,7 +123,7 @@
     grid.querySelectorAll(".reveal").forEach((el) => (io ? io.observe(el) : el.classList.add("is-visible")));
   }
 
-  render("All");
+  render(ALL);
 
   /* ---------- Theme toggle ---------- */
   const root = document.documentElement;

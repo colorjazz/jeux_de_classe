@@ -1,25 +1,27 @@
 /*
  * ─────────────────────────────────────────────────────────────
- *  EDIT THIS FILE to make the portfolio yours.
- *  Everything on the site (name, bio, projects, contact) comes
- *  from here — no need to touch index.html, styles.css or app.js.
+ *  MODIFIEZ CE FICHIER pour personnaliser votre portfolio.
+ *  Tout le contenu du site (nom, présentation, projets, contact)
+ *  vient d'ici — inutile de toucher à index.html, styles.css ou app.js.
  * ─────────────────────────────────────────────────────────────
  *
- *  Projects:
- *   - "image" is optional. Put files in assets/img/ and use
- *     "assets/img/my-game.png". Without one, a generated cover is shown.
- *   - "accent" picks the cover colour when there's no image.
- *   - "tags" feed the filter buttons automatically.
- *   - "links" can hold any number of { label, url } buttons.
+ *  Projets :
+ *   - « image » est facultatif. Placez vos fichiers dans assets/img/
+ *     et écrivez "assets/img/mon-jeu.png". Sans image, une couverture
+ *     colorée est générée automatiquement.
+ *   - « accent » choisit la couleur de cette couverture.
+ *   - « tags » créent automatiquement les boutons de filtre.
+ *   - « featured: true » affiche la carte en double largeur.
+ *   - « links » peut contenir autant de boutons { label, url } que voulu.
  */
 window.SITE = {
-  name: "Your Name",
-  role: "Educational Game Designer",
+  name: "Votre Nom",
+  role: "Conceptrice de jeux éducatifs",
   tagline:
-    "I design playful learning experiences — classroom games that turn lessons into moments students remember.",
+    "Je crée des expériences d’apprentissage ludiques — des jeux de classe qui transforment les leçons en moments dont les élèves se souviennent.",
   location: "Montréal, QC",
-  available: true, // shows the "Available for projects" badge
-  email: "hello@example.com",
+  available: true, // affiche le badge « Disponible pour des projets »
+  email: "bonjour@exemple.com",
 
   socials: [
     { label: "GitHub", url: "https://github.com/colorjazz" },
@@ -28,93 +30,93 @@ window.SITE = {
   ],
 
   about: [
-    "I build games for classrooms: quick to set up, easy to understand, and grounded in what teachers actually need to teach.",
-    "My work spans printable card and board games, browser games and interactive whiteboard activities. Every project starts with a learning goal and gets tested with real students before it ships.",
+    "Je conçois des jeux pour la classe : rapides à installer, faciles à comprendre et ancrés dans ce que les enseignants ont réellement besoin d’enseigner.",
+    "Mon travail couvre les jeux de cartes et de plateau à imprimer, les jeux en ligne et les activités pour tableau interactif. Chaque projet part d’un objectif d’apprentissage et est testé avec de vrais élèves avant sa sortie.",
   ],
 
   stats: [
-    { value: "12+", label: "Games published" },
-    { value: "40", label: "Classrooms playtested" },
-    { value: "3", label: "Languages supported" },
+    { value: "12+", label: "Jeux publiés" },
+    { value: "40", label: "Classes testées" },
+    { value: "3", label: "Langues offertes" },
   ],
 
   skills: [
-    { title: "Game design", items: ["Core loops & mechanics", "Playtesting", "Balancing", "Rules writing"] },
-    { title: "Learning design", items: ["Curriculum alignment", "Differentiation", "Formative assessment"] },
-    { title: "Build", items: ["HTML / CSS / JavaScript", "Print & layout", "Illustration"] },
+    { title: "Conception de jeux", items: ["Mécaniques et boucles de jeu", "Tests avec les joueurs", "Équilibrage", "Rédaction des règles"] },
+    { title: "Pédagogie", items: ["Arrimage au programme", "Différenciation", "Évaluation formative"] },
+    { title: "Réalisation", items: ["HTML / CSS / JavaScript", "Mise en page pour l’impression", "Illustration"] },
   ],
 
   projects: [
     {
       title: "Verbes en Course",
       year: 2026,
-      summary: "A fast-paced racing card game for practising French verb conjugation.",
+      summary: "Un jeu de cartes de course rapide pour pratiquer la conjugaison.",
       description:
-        "Teams race around a track by conjugating verbs correctly under time pressure. Cards scale from present tense to passé composé, so one deck lasts the whole year.",
-      tags: ["Card game", "Languages"],
-      role: "Design, illustration, print layout",
+        "Les équipes avancent sur une piste en conjuguant correctement des verbes, contre la montre. Les cartes vont du présent au passé composé : un seul paquet sert toute l’année.",
+      tags: ["Jeu de cartes", "Français"],
+      role: "Conception, illustration, mise en page",
       accent: "#e4572e",
       featured: true,
-      links: [{ label: "Download PDF", url: "#" }],
+      links: [{ label: "Télécharger le PDF", url: "#" }],
     },
     {
-      title: "Fraction Frenzy",
+      title: "Fractions en Folie",
       year: 2026,
-      summary: "A browser game where students slice pizzas to match target fractions.",
+      summary: "Un jeu en ligne où les élèves coupent des pizzas pour obtenir la bonne fraction.",
       description:
-        "Built for interactive whiteboards and tablets. Includes a teacher mode with custom rounds and a live class leaderboard.",
-      tags: ["Digital", "Math"],
-      role: "Design & development",
+        "Conçu pour le tableau interactif et la tablette. Comprend un mode enseignant pour créer ses propres manches et un classement en direct pour la classe.",
+      tags: ["Numérique", "Mathématiques"],
+      role: "Conception et développement",
       accent: "#2a9d8f",
       featured: true,
       links: [
-        { label: "Play", url: "#" },
-        { label: "Source", url: "https://github.com/colorjazz" },
+        { label: "Jouer", url: "#" },
+        { label: "Code source", url: "https://github.com/colorjazz" },
       ],
     },
     {
       title: "Carte au Trésor",
       year: 2025,
-      summary: "A cooperative geography escape game for the whole class.",
+      summary: "Un jeu d’évasion coopératif en géographie pour toute la classe.",
       description:
-        "Small groups solve map-reading puzzles to unlock the next clue. Runs in a single 45-minute period with printable materials only.",
-      tags: ["Escape game", "Geography"],
-      role: "Concept, puzzles, playtesting",
+        "En petits groupes, les élèves résolvent des énigmes de lecture de cartes pour débloquer l’indice suivant. Se joue en une période de 45 minutes, avec du matériel imprimé seulement.",
+      tags: ["Jeu d’évasion", "Géographie"],
+      role: "Concept, énigmes, tests",
       accent: "#3a86ff",
-      links: [{ label: "Teacher guide", url: "#" }],
+      links: [{ label: "Guide de l’enseignant", url: "#" }],
     },
     {
-      title: "Lab Lotto",
+      title: "Loto du Labo",
       year: 2025,
-      summary: "Science vocabulary bingo with picture and definition cards.",
+      summary: "Un bingo de vocabulaire scientifique avec cartes images et définitions.",
       description:
-        "Bingo-style review game covering states of matter, ecosystems and simple machines. Generator creates unique boards for every student.",
-      tags: ["Card game", "Science"],
-      role: "Design & board generator",
+        "Un jeu de révision style bingo sur les états de la matière, les écosystèmes et les machines simples. Un générateur crée une grille unique pour chaque élève.",
+      tags: ["Jeu de cartes", "Sciences"],
+      role: "Conception et générateur de grilles",
       accent: "#8338ec",
       links: [],
     },
     {
-      title: "Timeline Tussle",
+      title: "Duel des Dates",
       year: 2024,
-      summary: "Place historical events in order before the other team does.",
+      summary: "Placez les événements historiques dans l’ordre avant l’autre équipe.",
       description:
-        "A tabletop history game that gets students debating chronology. Expansion packs cover ancient, medieval and modern periods.",
-      tags: ["Board game", "History"],
-      role: "Design & research",
+        "Un jeu de table qui amène les élèves à débattre de la chronologie. Des extensions couvrent l’Antiquité, le Moyen Âge et l’époque moderne.",
+      tags: ["Jeu de plateau", "Histoire"],
+      role: "Conception et recherche",
       accent: "#ffb703",
       links: [],
     },
     {
-      title: "Word Weavers",
+      title: "Tisseurs de Mots",
       year: 2024,
-      summary: "A collaborative storytelling app for early readers.",
+      summary: "Une application d’écriture collaborative pour les jeunes lecteurs.",
       description:
-        "Students take turns adding words and pictures to build a class story, which can be exported as a printable book.",
-      tags: ["Digital", "Languages"],
-      role: "UX design & front-end",
+        "Chacun leur tour, les élèves ajoutent des mots et des images pour bâtir une histoire de classe, qu’on peut ensuite imprimer sous forme de livre.",
+      tags: ["Numérique", "Français"],
+      role: "Design UX et développement",
       accent: "#fb5607",
-      links: [{ label: "Demo", url: "#" }],
+      links: [{ label: "Démo", url: "#" }],
     },
   ],
 };

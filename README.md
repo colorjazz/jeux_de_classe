@@ -1,31 +1,31 @@
 # jeux_de_classe — Portfolio
 
-A fast, dependency-free portfolio site for showcasing classroom and educational games.
+Un site portfolio rapide et sans dépendances pour présenter des jeux éducatifs et des jeux de classe.
 
-## Make it yours
+## Personnaliser le site
 
-Edit **`content.js`**. It holds everything on the site: name, role, tagline, bio, stats, skills, contact links and projects.
-You don't need to touch the HTML, CSS or JS.
+Modifiez **`content.js`**. Ce fichier contient tout le texte du site : nom, rôle, accroche, présentation, statistiques, compétences, contact et projets.
+Pas besoin de toucher au HTML, au CSS ni au JS.
 
-For each project:
+Pour chaque projet :
 
-| Field | Purpose |
+| Champ | Rôle |
 | --- | --- |
-| `title`, `year`, `summary` | Shown on the card |
-| `description`, `role` | Shown in the detail popup |
-| `tags` | Builds the filter buttons automatically |
-| `image` | Optional. Drop a file in `assets/img/` and use `"assets/img/name.png"` |
-| `accent` | Cover colour used when there's no image |
-| `featured` | `true` makes the card double-width |
-| `links` | Buttons in the popup, e.g. `{ label: "Play", url: "https://…" }` |
+| `title`, `year`, `summary` | Affichés sur la carte |
+| `description`, `role` | Affichés dans la fenêtre de détails |
+| `tags` | Créent automatiquement les boutons de filtre |
+| `image` | Facultatif. Placez le fichier dans `assets/img/` et écrivez `"assets/img/nom.png"` |
+| `accent` | Couleur de la couverture quand il n’y a pas d’image |
+| `featured` | `true` affiche la carte en double largeur |
+| `links` | Boutons de la fenêtre de détails, ex. `{ label: "Jouer", url: "https://…" }` |
 
-## Preview locally
+## Aperçu local
 
-Open `index.html` in a browser. No build step needed.
+Ouvrez `index.html` dans un navigateur. Aucune compilation nécessaire.
 
-## Publish free with GitHub Pages
+## Publier gratuitement avec GitHub Pages
 
-1. Merge this branch into `main`.
-2. In the repo on GitHub go to **Settings → Pages**.
-3. Under *Build and deployment*, choose **Deploy from a branch**, pick `main` and `/ (root)`, then save.
-4. The site goes live at `https://colorjazz.github.io/jeux_de_classe/`. You can attach a custom domain from the same page.
+1. Fusionnez cette branche dans `main`.
+2. Sur GitHub, allez dans **Settings → Pages**.
+3. Sous *Build and deployment*, choisissez **Deploy from a branch**, sélectionnez `main` et `/ (root)`, puis enregistrez.
+4. Le site sera en ligne à `https://colorjazz.github.io/jeux_de_classe/`. Vous pouvez y associer un nom de domaine personnalisé depuis la même page.
