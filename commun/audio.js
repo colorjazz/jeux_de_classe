@@ -532,6 +532,63 @@ window.Audio3D = (function () {
     n.connect(f).connect(gn).connect(master); n.start(t(), 0, 0.3);
   }
 
+  // ---------- Chapitre 4 ----------
+  // Climatisation industrielle : souffle grave continu, ronflement du compresseur.
+  function clim() {
+    const n = sourceBruit("brun");
+    const f = ctx.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 260;
+    const g = ctx.createGain(); g.gain.value = 0;
+    const o = ctx.createOscillator(); o.type = "triangle"; o.frequency.value = 58;
+    const go = ctx.createGain(); go.gain.value = 0.05; o.connect(go).connect(g);
+    const s = sourceBruit("blanc");
+    const fs = ctx.createBiquadFilter(); fs.type = "bandpass"; fs.frequency.value = 900; fs.Q.value = 0.5;
+    const gs = ctx.createGain(); gs.gain.value = 0.05; s.connect(fs).connect(gs).connect(g);
+    n.connect(f).connect(g).connect(master); n.start(); o.start(); s.start();
+    rampe(g.gain, 0.32, 2.5);
+    const r = arreteur([n, o, s], g);
+    r.force = (v, d) => rampe(g.gain, 0.32 * v, d || 1);
+    return r;
+  }
+  // Porte grillagée qui claque, verrou métallique.
+  function claquement(x, y, z) {
+    if (!ctx) return;
+    const p = panner(x, y, z); p.connect(master); const t0 = t();
+    [[0, 1], [0.32, 0.45]].forEach(([d, v]) => {
+      const n = ctx.createBufferSource(); n.buffer = bruitBuffer;
+      const f = ctx.createBiquadFilter(); f.type = "bandpass"; f.frequency.value = 620; f.Q.value = 2.5;
+      const g = ctx.createGain(); g.gain.setValueAtTime(0.9 * v, t0 + d); g.gain.exponentialRampToValueAtTime(0.001, t0 + d + 0.7);
+      n.connect(f).connect(g).connect(p); n.start(t0 + d, Math.random(), 0.8);
+      [180, 413, 997].forEach((fr, i) => {
+        const o = ctx.createOscillator(); o.frequency.value = fr * (1 + Math.random() * 0.02);
+        const go = ctx.createGain(); go.gain.setValueAtTime(0.12 * v / (i + 1), t0 + d); go.gain.exponentialRampToValueAtTime(0.0005, t0 + d + 1.6);
+        o.connect(go).connect(p); o.start(t0 + d); o.stop(t0 + d + 1.7);
+      });
+    });
+  }
+  // Froissement d'une couverture de survie (crépitements aigus brefs).
+  function froissement(x, y, z, duree) {
+    if (!ctx) return;
+    const p = panner(x, y, z); p.refDistance = 1; p.connect(master);
+    const t0 = t(), nb = Math.round((duree || 1.2) * 26);
+    for (let i = 0; i < nb; i++) {
+      const d = t0 + Math.random() * (duree || 1.2);
+      const n = ctx.createBufferSource(); n.buffer = bruitBuffer;
+      const f = ctx.createBiquadFilter(); f.type = "highpass"; f.frequency.value = 3000 + Math.random() * 4000;
+      const g = ctx.createGain(); const v = 0.05 + Math.random() * 0.12;
+      g.gain.setValueAtTime(v, d); g.gain.exponentialRampToValueAtTime(0.001, d + 0.03 + Math.random() * 0.05);
+      n.connect(f).connect(g).connect(p); n.start(d, Math.random() * 3, 0.1);
+    }
+  }
+  // Bip d'un lecteur (bracelet, scanner).
+  function bip(x, y, z) {
+    if (!ctx) return;
+    const p = panner(x, y, z); p.connect(master);
+    const o = ctx.createOscillator(); o.type = "square"; o.frequency.value = 1850;
+    const f = ctx.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 2600;
+    const g = ctx.createGain(); g.gain.setValueAtTime(0, t()); g.gain.linearRampToValueAtTime(0.05, t() + 0.01); g.gain.setValueAtTime(0.05, t() + 0.12); g.gain.linearRampToValueAtTime(0, t() + 0.14);
+    o.connect(f).connect(g).connect(p); o.start(); o.stop(t() + 0.16);
+  }
+
   // Volume général (fondus entre les tableaux)
   function volumeGeneral(v, d) { if (master) rampe(master.gain, v, d || 1); }
   function reinitialiser() { sons.silence = false; if (master) { master.gain.cancelScheduledValues(t()); master.gain.setValueAtTime(0.9, t()); } }
@@ -615,6 +672,9 @@ window.Audio3D = (function () {
     mere_valeria: { genre: "f", rang: 7, pitch: 0.85, rate: 0.85 },
     contremaitre: { genre: "m", rang: 5, pitch: 0.95, rate: 1.15 },
     joseph:       { genre: "m", rang: 6, pitch: 0.82, rate: 0.92 },
+    // Chapitre 4
+    agent_bureau: { genre: "m", rang: 1, pitch: 0.85, rate: 1.05, anglais: true },
+    agente:       { genre: "f", rang: 0, pitch: 1.0,  rate: 1.1,  anglais: true },
   };
   // Le ton modifie débit, hauteur et volume.
   const TONS = {
@@ -748,7 +808,7 @@ window.Audio3D = (function () {
     setFatigue, setPeur, coeur, helicoptere, positionHelico, moteur, positionMoteur,
     voiture, positionVoiture, voitureFin, coyotes, echelon, gorgees, espoir, espoirCouper,
     tension, setVent, pause, reprise, prechargerVoix, voixUtilisees,
-    comal, rue, moto, ventSec, neon, sonnerie, volumeGeneral, reinitialiser, chargerSon, sonPret, jouerSon, coupure, pluie, riviere, tonnerre,
+    clim, claquement, froissement, bip, comal, rue, moto, ventSec, neon, sonnerie, volumeGeneral, reinitialiser, chargerSon, sonPret, jouerSon, coupure, pluie, riviere, tonnerre,
     enregistrementsCharges: () => Object.keys(enregistrements),
     auditeur, parler, silence, nappe, toutCouper,
   };

@@ -79,7 +79,7 @@
       await attendre(100); p.classList.add("visible");
       await attendre(3000 + ligne.length * 30);
     }
-    $("lien-ch1").classList.add("visible"); $("btn-recommencer").classList.add("visible");
+    $("lien-ch1").classList.add("visible"); if ($("lien-suivant")) $("lien-suivant").classList.add("visible"); $("btn-recommencer").classList.add("visible");
   }
   $("btn-recommencer").addEventListener("click", () => { location.href = location.pathname; });
 

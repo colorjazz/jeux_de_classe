@@ -7,13 +7,13 @@ Elles sont conçues pour une classe d'élèves de 16 à 17 ans.
 | Chapitre | Titre | Dossier | État |
 |---|---|---|---|
 | 1 | Le sable (frontière Mexique – États-Unis, désert de Sonora) | `frontiere-mexique/` | jouable |
-| 2 | Partir (Honduras, Mexique, Guatemala, Salvador : le jour du départ) | `chapitre-2/` | jouable, voix à générer |
-| 3 | à venir | | à concevoir |
-| 4 | à venir | | à concevoir |
+| 2 | Partir (Honduras, Mexique, Guatemala, Salvador, Venezuela, Chili : le jour du départ) | `chapitre-2/` | jouable |
+| 3 | L'Entonnoir (la jungle du Darién, Colombie – Panama) | `chapitre-3/` | jouable |
+| 4 | La Hielera (centre de détention, Tucson, Arizona) | `chapitre-4/` | jouable |
 
 ## Lancer
 
-Ouvrez `frontiere-mexique/index.html` dans Chrome, Edge ou Firefox, en double-cliquant dessus. Il n'y a rien à installer et aucune connexion n'est nécessaire. **Les écouteurs sont indispensables.**
+Ouvrez `index.html` (la page d'accueil, qui mène aux quatre chapitres) dans Chrome, Edge ou Firefox, en double-cliquant dessus. Il n'y a rien à installer et aucune connexion n'est nécessaire. **Les écouteurs sont indispensables.**
 
 Le guide pour l'enseignant (déroulé, précautions, questions de débrief) se trouve dans [`docs/guide-enseignant.md`](docs/guide-enseignant.md). Le script pour enregistrer de vraies voix est dans [`docs/script-enregistrement.md`](docs/script-enregistrement.md).
 
@@ -25,7 +25,9 @@ commun/             briques partagées par les chapitres
   personnages.js    personnages articulés, poses, animation
   rendu.js          moteur 3D, qualité automatique, halos
   controles.js      clavier, souris, tactile
-chapitre-2/         chapitre 2 (contenu.js, ilots.js : les quatre tableaux, main.js)
+chapitre-2/         chapitre 2 (contenu.js, ilots.js : les tableaux, main.js)
+chapitre-3/         chapitre 3 (contenu.js, darien.js, main.js)
+chapitre-4/         chapitre 4 (contenu.js, hielera.js, main.js)
 frontiere-mexique/
   index.html        écrans : avertissement, sas, témoignages, fin
   css/style.css
