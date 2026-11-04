@@ -50,6 +50,8 @@ kbd { font-family: ui-monospace, monospace; font-size: 13px; border: 1px solid #
   opacity: 0; transition: opacity 1.8s ease; color: #dde3e6;
 }
 #sas-texte.visible { opacity: 1; }
+/* Lignes équilibrées : pas de mot isolé en fin ou en début de ligne */
+#sas-texte, #fin-texte p, #sous-titre .st-original, #carte-lieu .lieu, #portrait .recit { text-wrap: balance; }
 
 /* Désert */
 #scene3d { position: fixed; inset: 0; display: block; cursor: crosshair; }

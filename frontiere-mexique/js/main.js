@@ -60,6 +60,12 @@
   function montrer(id) { $(id).classList.add("visible"); }
   function cacher(id) { $(id).classList.remove("visible"); }
 
+  // Pas de petit mot seul en fin de ligne (« Le », « la », « de »…) : il reste attaché au mot suivant.
+  function insecables(t) {
+    return t.replace(/(?<=^|[\s(«])(le|la|les|un|une|des|de|du|à|au|aux|et|en|ou|ni|ce|ces|cet|cette|son|sa|ses|sur|par|pour|sans|dans|qui|que|ne|se|on|il|elle|y|mon|ma|mes) +/gi, "$1\u00a0")
+            .replace(/ +([:;!?»])/g, "\u00a0$1").replace(/« +/g, "«\u00a0");
+  }
+
   async function sas() {
     cacher("accueil");
     pauseDisponible(true);
@@ -68,7 +74,7 @@
     A.sasDebut();
     const el = $("sas-texte");
     for (const fragment of C.sas) {
-      el.innerHTML = fragment;
+      el.innerHTML = insecables(fragment);
       el.classList.add("visible");
       await attendre(4200 + fragment.length * 35);
       el.classList.remove("visible");
