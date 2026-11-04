@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Accès direct – Traversées</title>
+  <style>
+    :root { --fond: #050608; --texte: #e9e3d6; --doux: #9a9282; --sable: #c8b48c; --trait: #2a2622; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; background: var(--fond); color: var(--texte); font-family: Georgia, "Times New Roman", serif; }
+    main { max-width: 680px; margin: 0 auto; padding: 48px 16px 64px; }
+    .retour { color: var(--doux); font-family: system-ui, sans-serif; font-size: 13px; text-decoration: none; letter-spacing: 0.04em; }
+    .retour:hover { color: var(--sable); }
+    h1 { font-weight: 400; color: var(--sable); font-size: clamp(32px, 6vw, 44px); letter-spacing: 0.06em; margin: 28px 0 8px; }
+    .intro { color: var(--doux); font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.6; margin: 0 0 12px; }
+    .options { display: flex; flex-wrap: wrap; gap: 8px 20px; margin: 18px 0 8px; padding: 12px 16px; border-left: 2px solid var(--sable);
+      background: rgba(200, 180, 140, 0.05); font-family: system-ui, sans-serif; font-size: 14px; color: #cfc8b9; }
+    .options label { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+    .options span.t { color: var(--doux); }
+    h2 { font-weight: 400; font-size: 24px; margin: 40px 0 6px; display: flex; gap: 14px; align-items: baseline; }
+    h2 .num { color: var(--sable); font-size: 28px; }
+    h2 a { color: inherit; text-decoration: none; }
+    h2 a:hover { color: var(--sable); }
+    h2 small { color: var(--doux); font-family: system-ui, sans-serif; font-size: 13px; }
+    ol { list-style: none; padding: 0; margin: 10px 0 0; }
+    li { border-top: 1px solid var(--trait); }
+    li:last-child { border-bottom: 1px solid var(--trait); }
+    li a { display: flex; gap: 14px; align-items: baseline; padding: 12px 4px; color: var(--texte); text-decoration: none; }
+    li a:hover .nom, li a:focus-visible .nom { color: var(--sable); }
+    li a:focus-visible { outline: 1px solid var(--sable); outline-offset: 2px; }
+    .rep { flex: none; width: 2.4em; text-align: right; color: var(--sable); font-family: system-ui, sans-serif; font-size: 13px; }
+    .nom { flex: 1; font-size: 17px; line-height: 1.4; transition: color 0.2s; }
+    .nom em { display: block; font-style: normal; color: var(--doux); font-family: system-ui, sans-serif; font-size: 12.5px; margin-top: 2px; }
+    footer { margin-top: 40px; color: #6b655a; font-family: system-ui, sans-serif; font-size: 12.5px; line-height: 1.6; }
+  </style>
+</head>
+<body>
+<main>
+  <a class="retour" href="./#chapitres">← Tous les chapitres</a>
+  <h1>Accès direct</h1>
+  <p class="intro">Pour l'enseignant : chaque lien ouvre le chapitre directement à la scène choisie, sans l'introduction. Cliquer ensuite sur « Commencer » pour lancer la scène.</p>
+
+  <div class="options" role="group" aria-label="Options">
+    <span class="t">Sous-titres :</span>
+    <label><input type="radio" name="st" value="fr" checked> français</label>
+    <label><input type="radio" name="st" value="en"> anglais</label>
+    <span class="t">Qualité :</span>
+    <label><input type="radio" name="qualite" value="" checked> auto</label>
+    <label><input type="radio" name="qualite" value="legere"> légère</label>
+    <label><input type="radio" name="qualite" value="haute"> haute</label>
+  </div>
+
+  <h2><span class="num">1</span><a href="frontiere-mexique/">Le sable</a> <small>désert de Sonora</small></h2>
+  <ol>
+    <li><a data-href="frontiere-mexique/?scene=desert"><span class="rep">1</span><span class="nom">Le mur<em>début du désert</em></span></a></li>
+    <li><a data-href="frontiere-mexique/?scene=desert&t=0"><span class="rep">2</span><span class="nom">Le départ de la marche<em>« Sin luces. Sin hablar. »</em></span></a></li>
+    <li><a data-href="frontiere-mexique/?scene=desert&t=105"><span class="rep">3</span><span class="nom">Les coyotes</span></a></li>
+    <li><a data-href="frontiere-mexique/?scene=desert&t=160"><span class="rep">4</span><span class="nom">La halte<em>l'eau, la berceuse, Don Ernesto</em></span></a></li>
+    <li><a data-href="frontiere-mexique/?scene=desert&t=212"><span class="rep">5</span><span class="nom">La reprise de la marche<em>le froid, la soif</em></span></a></li>
+    <li><a data-href="frontiere-mexique/?scene=desert&t=270"><span class="rep">6</span><span class="nom">La fausse alerte</span></a></li>
+    <li><a data-href="frontiere-mexique/?scene=desert&t=314"><span class="rep">7</span><span class="nom">La chute</span></a></li>
+    <li><a data-href="frontiere-mexique/?scene=desert&t=345"><span class="rep">8</span><span class="nom">L'espoir</span></a></li>
+    <li><a data-href="frontiere-mexique/?scene=reve"><span class="rep">9</span><span class="nom">La rupture onirique</span></a></li>
+    <li><a data-href="frontiere-mexique/?scene=temoignages"><span class="rep">10</span><span class="nom">Les témoignages</span></a></li>
+  </ol>
+
+  <h2><span class="num">2</span><a href="chapitre-2/">Partir</a> <small>les tableaux</small></h2>
+  <ol>
+    <li><a data-href="chapitre-2/?ilot=ilot1"><span class="rep">1</span><span class="nom">San Pedro Sula<em>Rosa et Mateo, Honduras</em></span></a></li>
+    <li><a data-href="chapitre-2/?ilot=ilot2a"><span class="rep">2a</span><span class="nom">La milpa de Don Ernesto<em>Guerrero, Mexique</em></span></a></li>
+    <li><a data-href="chapitre-2/?ilot=ilot2b"><span class="rep">2b</span><span class="nom">La maison de Yesenia<em>hautes terres du Guatemala</em></span></a></li>
+    <li><a data-href="chapitre-2/?ilot=ilot3"><span class="rep">3</span><span class="nom">Julio à San Salvador</span></a></li>
+    <li><a data-href="chapitre-2/?ilot=ilot4"><span class="rep">4</span><span class="nom">Valeria à Maracaibo<em>l'hôpital dans le noir, puis la cuisine</em></span></a></li>
+    <li><a data-href="chapitre-2/?ilot=ilot5"><span class="rep">5</span><span class="nom">Joseph à Santiago du Chili<em>la remise du chantier</em></span></a></li>
+    <li><a data-href="chapitre-2/?ilot=final"><span class="rep">6</span><span class="nom">Final : l'appel au guide</span></a></li>
+  </ol>
+
+  <h2><span class="num">3</span><a href="chapitre-3/">L'Entonnoir</a> <small>le Darién</small></h2>
+  <ol>
+    <li><a data-href="chapitre-3/?ilot=seq1"><span class="rep">1</span><span class="nom">La boue et les sacs bleus</span></a></li>
+    <li><a data-href="chapitre-3/?ilot=seq2"><span class="rep">2</span><span class="nom">La halte sous la bâche</span></a></li>
+    <li><a data-href="chapitre-3/?ilot=seq3"><span class="rep">3</span><span class="nom">La rivière en crue<em>la chaîne humaine</em></span></a></li>
+    <li><a data-href="chapitre-3/?ilot=seq4"><span class="rep">4</span><span class="nom">Le péage humain</span></a></li>
+    <li><a data-href="chapitre-3/?ilot=seq5"><span class="rep">5</span><span class="nom">La route vers le nord<em>le montage, puis la dernière crête</em></span></a></li>
+  </ol>
+
+  <h2><span class="num">4</span><a href="chapitre-4/">La Hielera</a> <small>centre de détention, Tucson</small></h2>
+  <ol>
+    <li><a data-href="chapitre-4/?ilot=seq1"><span class="rep">1</span><span class="nom">L'enregistrement</span></a></li>
+    <li><a data-href="chapitre-4/?ilot=seq2"><span class="rep">2</span><span class="nom">La hielera</span></a></li>
+    <li><a data-href="chapitre-4/?ilot=seq3"><span class="rep">3</span><span class="nom">La séparation</span></a></li>
+    <li><a data-href="chapitre-4/?ilot=seq4"><span class="rep">4</span><span class="nom">Les papiers</span></a></li>
+    <li><a data-href="chapitre-4/?ilot=seq5"><span class="rep">5</span><span class="nom">Le départ de Don Ernesto</span></a></li>
+  </ol>
+
+  <footer>Chaque scène continue ensuite normalement jusqu'à la fin du chapitre.</footer>
+</main>
+<script>
+  // Construit chaque lien avec les options choisies (sous-titres, qualité).
+  const liens = document.querySelectorAll("a[data-href]");
+  function maj() {
+    const st = document.querySelector('input[name="st"]:checked').value;
+    const q = document.querySelector('input[name="qualite"]:checked').value;
+    liens.forEach((a) => {
+      let h = a.dataset.href;
+      if (st === "en") h += "&st=en";
+      if (q) h += "&qualite=" + q;
+      a.href = h;
+    });
+  }
+  document.querySelectorAll(".options input").forEach((i) => i.addEventListener("change", maj));
+  maj();
+</script>
+</body>
+</html>
