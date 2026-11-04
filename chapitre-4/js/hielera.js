@@ -597,6 +597,7 @@ window.Chapitre4 = (function () {
     const el = document.getElementById("choix");
     el.querySelector(".question").textContent = question;
     const zoneB = el.querySelector(".options"); zoneB.innerHTML = "";
+    fermerFiche(); K.montrerInvite("");
     if (document.exitPointerLock) document.exitPointerLock();
     return new Promise((r) => {
       let fini = false;
