@@ -112,7 +112,7 @@ window.SITE = {
       description: "Une mission pleine de rebondissements où les élèves doivent faire face aux tempêtes.",
       tags: ["Jeux amusants"],
       accent: "#457b9d",
-      links: [{ label: "Jouer", url: "https://soft-chimera-064677.netlify.app/" }],
+      links: [{ label: "Jouer", url: "https://tangerine-cat-1c9462.netlify.app/" }],
     },
     {
       title: "Brûle la Pile",
