@@ -18,10 +18,17 @@
     header { text-align: center; padding: 14vh 16px 0; }
     header h1 {
       font-weight: 400; font-size: clamp(52px, 11vw, 104px); letter-spacing: 0.14em; margin: 0; color: var(--sable);
-      opacity: 0; transform: translateY(8px); transition: opacity 2s ease, transform 2s ease;
+      opacity: 0; transform: translateY(8px); transition: opacity 4s ease-in, transform 4s ease-out;
     }
-    header .sous { margin: 18px 0 0; color: var(--doux); font-size: clamp(16px, 2.4vw, 19px); line-height: 1.6; opacity: 0; transition: opacity 1.6s ease 0.6s; }
-    header .inspiration { margin: 10px 0 0; color: #7d766a; font-style: italic; font-size: 14px; opacity: 0; transition: opacity 1.6s ease 0.9s; }
+    header .sous { margin: 18px 0 0; color: var(--doux); font-size: clamp(16px, 2.4vw, 19px); line-height: 1.6; opacity: 0; transition: opacity 1.6s ease 3.6s; }
+    header .inspiration { margin: 10px 0 0; color: #7d766a; font-style: italic; font-size: 14px; opacity: 0; transition: opacity 1.6s ease 4s; }
+
+    /* Écran d'entrée : le son ne peut démarrer qu'après un geste du visiteur */
+    #entree { position: fixed; inset: 0; z-index: 5; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      background: var(--fond); cursor: pointer; transition: opacity 1s ease; font-family: system-ui, sans-serif; }
+    #entree span { color: #8a8378; font-size: 13px; letter-spacing: 0.24em; text-transform: uppercase; border-bottom: 1px solid #3a352f; padding-bottom: 4px; }
+    #entree small { margin-top: 14px; color: #5e584f; font-size: 12px; letter-spacing: 0.06em; }
+    #entree.parti { opacity: 0; pointer-events: none; }
     header .inspiration em { font-style: normal; color: var(--doux); }
     body.titre header h1 { opacity: 1; transform: none; }
     body.titre header .sous, body.titre header .inspiration { opacity: 1; }
@@ -59,6 +66,8 @@
   </style>
 </head>
 <body>
+  <div id="entree" role="button" tabindex="0" aria-label="Entrer"><span>Toucher pour entrer</span><small>Écouteurs conseillés</small></div>
+
   <header>
     <h1>Traversées</h1>
     <p class="sous">On ne joue pas un rôle. On marche avec eux.</p>
@@ -68,7 +77,7 @@
   <!-- 2. Les chapitres -->
   <main id="chapitres">
     <p class="ordre apparait"><strong>Faites les chapitres dans l'ordre.</strong> Chacun prépare le suivant : on comprend mieux ce que vivent les personnages quand on les a déjà rencontrés.</p>
-    <p class="ecouteurs apparait">Écouteurs indispensables · environ 25 minutes pour les deux premiers chapitres</p>
+    <p class="ecouteurs apparait">Écouteurs indispensables · environ 35 minutes pour les trois premiers chapitres</p>
     <ol>
       <li class="apparait" data-chapitre="1">
         <a href="frontiere-mexique/"><span class="num">1</span><span class="infos"><span class="titre">Le sable</span><small>Frontière Mexique – États-Unis · Désert de Sonora · environ 12 minutes</small></span><span class="etat"></span></a>
@@ -76,8 +85,8 @@
       <li class="apparait" data-chapitre="2">
         <a href="chapitre-2/"><span class="num">2</span><span class="infos"><span class="titre">Partir</span><small>Honduras · Mexique · Guatemala · Salvador · Venezuela · Chili · environ 13 minutes</small></span><span class="etat"></span></a>
       </li>
-      <li class="apparait">
-        <span class="bientot"><span class="num">3</span><span class="infos"><span class="titre">À venir</span></span></span>
+      <li class="apparait" data-chapitre="3">
+        <a href="chapitre-3/"><span class="num">3</span><span class="infos"><span class="titre">L'Entonnoir</span><small>La jungle du Darién · Colombie – Panama · environ 10 minutes</small></span><span class="etat"></span></a>
       </li>
       <li class="apparait">
         <span class="bientot"><span class="num">4</span><span class="infos"><span class="titre">À venir</span></span></span>
@@ -102,9 +111,44 @@
 
       const elements = Array.from(document.querySelectorAll(".apparait"));
       const direct = location.hash === "#chapitres"; // retour depuis un chapitre : pas d'attente
-      requestAnimationFrame(() => requestAnimationFrame(() => document.body.classList.add("titre")));
-      // Deux secondes après le titre, les chapitres apparaissent l'un après l'autre.
-      elements.forEach((el, i) => setTimeout(() => el.classList.add("visible"), (direct ? 300 : 2000) + i * (direct ? 120 : 380)));
+      const entree = document.getElementById("entree");
+
+      // Le son du titre : un souffle qui monte pendant 4 secondes, puis se résout en un accord doux.
+      function sonTitre() {
+        let ctx; try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; }
+        const t = ctx.currentTime, sortie = ctx.createGain(); sortie.gain.value = 0.9; sortie.connect(ctx.destination);
+        // Souffle (bruit brun filtré qui s'ouvre)
+        const buf = ctx.createBuffer(1, ctx.sampleRate * 6, ctx.sampleRate), d = buf.getChannelData(0);
+        let der = 0; for (let i = 0; i < d.length; i++) { der = (der + 0.02 * (Math.random() * 2 - 1)) / 1.02; d[i] = der * 3.5; }
+        const n = ctx.createBufferSource(); n.buffer = buf;
+        const f = ctx.createBiquadFilter(); f.type = "lowpass"; f.Q.value = 0.8;
+        f.frequency.setValueAtTime(180, t); f.frequency.exponentialRampToValueAtTime(2600, t + 4);
+        const gn = ctx.createGain(); gn.gain.setValueAtTime(0, t); gn.gain.linearRampToValueAtTime(0.22, t + 3.8); gn.gain.exponentialRampToValueAtTime(0.001, t + 5.2);
+        n.connect(f).connect(gn).connect(sortie); n.start(t); n.stop(t + 5.5);
+        // Une tension (la, mi, la, si) qui se résout sur un accord de la majeur quand le mot apparaît
+        const notes = [[110, 110], [164.8, 164.8], [220, 220], [246.9, 277.2], [329.6, 329.6]];
+        notes.forEach(([avant, apres], i) => {
+          const o = ctx.createOscillator(); o.type = "sine"; o.detune.value = (Math.random() - 0.5) * 8;
+          o.frequency.setValueAtTime(avant, t); o.frequency.setValueAtTime(avant, t + 3.9); o.frequency.exponentialRampToValueAtTime(apres, t + 4.6);
+          const g = ctx.createGain(); const v = 0.06 / (1 + i * 0.4);
+          g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(v * 0.6, t + 3.9); g.gain.linearRampToValueAtTime(v, t + 4.6); g.gain.exponentialRampToValueAtTime(0.0005, t + 10);
+          o.connect(g).connect(sortie); o.start(t); o.stop(t + 10.2);
+        });
+      }
+
+      function commencer(avecSon) {
+        if (avecSon) sonTitre();
+        entree.classList.add("parti");
+        requestAnimationFrame(() => requestAnimationFrame(() => document.body.classList.add("titre")));
+        // Le titre met 4 secondes à apparaître ; deux secondes après, les chapitres, l'un après l'autre.
+        elements.forEach((el, i) => setTimeout(() => el.classList.add("visible"), (direct ? 300 : 6000) + i * (direct ? 120 : 380)));
+      }
+      if (direct) { entree.style.display = "none"; commencer(false); }
+      else {
+        const go = () => { entree.removeEventListener("click", go); window.removeEventListener("keydown", touche); commencer(true); };
+        const touche = (e) => { if (e.key === "Enter" || e.key === " ") go(); };
+        entree.addEventListener("click", go); window.addEventListener("keydown", touche);
+      }
 
       // Choisir un chapitre : la page s'efface, puis le chapitre apparaît (fondu d'entrée dans le chapitre).
       document.querySelectorAll("li a").forEach((a) => a.addEventListener("click", (e) => {

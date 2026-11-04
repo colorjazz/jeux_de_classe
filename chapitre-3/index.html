@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Chapitre 3 : L'Entonnoir</title>
+  <link rel="stylesheet" href="../frontiere-mexique/css/style.css">
+  <link rel="stylesheet" href="../chapitre-2/css/ch2.css">
+</head>
+<body>
+  <!-- 0. Avertissement -->
+  <section id="accueil" class="ecran visible">
+    <div class="carte">
+      <a class="retour-chapitres" href="../#chapitres">← Tous les chapitres</a>
+      <p class="chapitre">Chapitre 3</p>
+      <h1>L'Entonnoir</h1>
+      <p class="sous">Le bouchon du Darién · Colombie – Panama</p>
+      <p class="inspiration">Inspiré de <em>Carne y Arena</em> (2017)</p>
+      <div class="avertissement">
+        <p><strong>Avant de commencer</strong></p>
+        <ul>
+          <li>Durée : environ 10 minutes.</li>
+          <li>La traversée de la jungle du Darién : pluie, boue, une rivière en crue, un barrage d'hommes armés qui rançonnent les migrants. Aucune violence n'est montrée.</li>
+          <li>Le chapitre se termine dans le désert, au début de l'arrestation du chapitre 1.</li>
+          <li>Les personnages parlent espagnol, et Joseph aussi créole haïtien. Leurs paroles sont sous-titrées.</li>
+          <li>Certains objets peuvent être regardés de près : approchez-vous et appuyez sur <kbd>E</kbd>.</li>
+          <li>Pause à tout moment : bouton <strong>Pause</strong> en haut à droite, touche <kbd>P</kbd> ou <kbd>Échap</kbd>.</li>
+          <li class="si-tactile">Sur téléphone : tenez-le à l'horizontale.</li>
+        </ul>
+      </div>
+      <div class="casque">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 14v-2a8 8 0 0 1 16 0v2M4 14h3v6H5a1 1 0 0 1-1-1zM20 14h-3v6h2a1 1 0 0 0 1-1z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+        <p>Mettez vos <strong>écouteurs</strong>. Le son est en 3D.</p>
+      </div>
+      <fieldset class="langue">
+        <legend>Sous-titres</legend>
+        <label><input type="radio" name="st" value="fr" checked> Français</label>
+        <label><input type="radio" name="st" value="en"> English</label>
+      </fieldset>
+      <button id="btn-entrer">Je suis prêt·e</button>
+    </div>
+  </section>
+
+  <!-- 1. Sas -->
+  <section id="sas" class="ecran">
+    <p id="sas-texte"></p>
+  </section>
+
+  <!-- 2. Les tableaux (le canvas 3D est ajouté par commun/rendu.js) -->
+  <div id="vignette"></div>
+  <div id="carte-lieu"><p class="lieu"></p><p class="moment"></p></div>
+  <div id="sous-titre"><div class="st-nom"></div><div class="st-original"></div><div class="st-trad"></div></div>
+  <div id="invite"></div>
+  <div id="fiche" class="fiche"><p class="nom"></p><p class="texte"></p><p class="contexte"></p><p class="fermer">E ou clic pour fermer</p></div>
+  <div id="aide">
+    <span class="souris">Cliquez pour regarder autour de vous</span>
+    <span class="doigt">Joystick à gauche pour marcher · glissez le doigt pour regarder</span>
+    <span class="clavier">Z Q S D ou flèches pour marcher · souris pour regarder · E pour regarder un objet · P pour la pause</span>
+  </div>
+  <div id="tactile" aria-hidden="true">
+    <div id="joystick"><div id="joystick-bouton"></div></div>
+    <button id="btn-action" tabindex="-1">Agir</button>
+  </div>
+  <div id="voile"></div>
+
+  <button id="btn-pause" aria-label="Pause"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>Pause</button>
+  <section id="pause" class="ecran" aria-live="polite">
+    <div class="carte">
+      <h2>Pause</h2>
+      <p>Prenez le temps qu'il faut.</p>
+      <button id="btn-reprendre">Reprendre</button>
+      <button id="btn-quitter" class="discret visible">Recommencer depuis le début</button>
+    </div>
+  </section>
+
+  <!-- 3. Fin -->
+  <section id="fin" class="ecran">
+    <div id="fin-texte"></div>
+    <div class="actions">
+      <a id="lien-ch1" class="discret" href="../#chapitres">Tous les chapitres</a>
+      <button id="btn-recommencer" class="discret">Recommencer</button>
+    </div>
+  </section>
+
+  <script src="../vendor/three.min.js"></script>
+  <script src="../vendor/three-postprocess.min.js"></script>
+  <script src="js/contenu.js"></script>
+  <script src="../commun/audio.js"></script>
+  <script src="../commun/personnages.js"></script>
+  <script src="../commun/rendu.js"></script>
+  <script src="../commun/controles.js"></script>
+  <script src="js/darien.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

@@ -469,6 +469,57 @@ window.Audio3D = (function () {
     };
   }
 
+  // =====================================================================
+  //  Chapitre 3 : la jungle
+  // =====================================================================
+  // Pluie battante : nappe de bruit + gouttes sur les feuilles et la bâche.
+  function pluie(force) {
+    const n = sourceBruit("blanc");
+    const f = ctx.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 5000;
+    const f2 = ctx.createBiquadFilter(); f2.type = "highpass"; f2.frequency.value = 300;
+    const g = ctx.createGain(); g.gain.value = 0;
+    n.connect(f).connect(f2).connect(g).connect(master); n.start();
+    rampe(g.gain, 0.09 * (force || 1), 3);
+    let actif = true;
+    const goutte = () => {
+      if (!actif) return;
+      const s2 = ctx.createBufferSource(); s2.buffer = bruitBuffer;
+      const bp = ctx.createBiquadFilter(); bp.type = "bandpass"; bp.frequency.value = 900 + Math.random() * 1500; bp.Q.value = 4;
+      const gg = ctx.createGain(); gg.gain.setValueAtTime(0.05 + Math.random() * 0.06, t()); gg.gain.exponentialRampToValueAtTime(0.001, t() + 0.06);
+      const a = Math.random() * 6.28, r = 1 + Math.random() * 6;
+      const p = panner((sons.lx || 0) + Math.cos(a) * r, 2, (sons.lz || 0) + Math.sin(a) * r);
+      s2.connect(bp).connect(gg).connect(p).connect(master); s2.start(t(), Math.random() * 3, 0.08);
+      sons.goutteTimer = setTimeout(goutte, 20 + Math.random() * 60);
+    };
+    goutte();
+    return { g, arreter(d) { actif = false; rampe(g.gain, 0, d || 1); setTimeout(() => { try { n.stop(); } catch (e) {} }, (d || 1) * 1000 + 300); },
+             couper() { actif = false; g.gain.cancelScheduledValues(t()); g.gain.setValueAtTime(0, t()); try { n.stop(); } catch (e) {} } };
+  }
+  // Rivière en crue : grondement grave, spatialisé.
+  function riviere(x, z) {
+    const n = sourceBruit("brun");
+    const f = ctx.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 900;
+    const n2 = sourceBruit("blanc");
+    const f2 = ctx.createBiquadFilter(); f2.type = "bandpass"; f2.frequency.value = 1400; f2.Q.value = 0.5;
+    const g2 = ctx.createGain(); g2.gain.value = 0.15;
+    const g = ctx.createGain(); g.gain.value = 0;
+    const p = panner(x, 0, z); p.refDistance = 8;
+    n.connect(f).connect(g); n2.connect(f2).connect(g2).connect(g); g.connect(p).connect(master);
+    n.start(); n2.start();
+    rampe(g.gain, 0.9, 3);
+    return { g, monter(v, d) { rampe(g.gain, v, d || 3); }, arreter(d) { rampe(g.gain, 0, d || 2); setTimeout(() => { try { n.stop(); n2.stop(); } catch (e) {} }, (d || 2) * 1000 + 300); } };
+  }
+  // Tonnerre lointain
+  function tonnerre() {
+    if (!ctx) return;
+    const n = ctx.createBufferSource(); n.buffer = sons._brun;
+    const f = ctx.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 260;
+    const g = ctx.createGain(); const t0 = t();
+    g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(0.9, t0 + 0.25); g.gain.exponentialRampToValueAtTime(0.4, t0 + 1.2);
+    g.gain.exponentialRampToValueAtTime(0.001, t0 + 4);
+    n.connect(f).connect(g).connect(master); n.start(t0, Math.random(), 4.2);
+  }
+
   // Coupure de courant : le transformateur qui lâche (choc sourd + crépitement bref).
   function coupure() {
     if (!ctx) return;
@@ -697,7 +748,7 @@ window.Audio3D = (function () {
     setFatigue, setPeur, coeur, helicoptere, positionHelico, moteur, positionMoteur,
     voiture, positionVoiture, voitureFin, coyotes, echelon, gorgees, espoir, espoirCouper,
     tension, setVent, pause, reprise, prechargerVoix, voixUtilisees,
-    comal, rue, moto, ventSec, neon, sonnerie, volumeGeneral, reinitialiser, chargerSon, sonPret, jouerSon, coupure,
+    comal, rue, moto, ventSec, neon, sonnerie, volumeGeneral, reinitialiser, chargerSon, sonPret, jouerSon, coupure, pluie, riviere, tonnerre,
     enregistrementsCharges: () => Object.keys(enregistrements),
     auditeur, parler, silence, nappe, toutCouper,
   };
