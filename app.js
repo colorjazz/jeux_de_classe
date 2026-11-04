@@ -32,23 +32,22 @@
   /* ---------- Projects ---------- */
   const projects = (S.projects || []).map((p, i) => ({ ...p, id: i }));
 
+  const initials = (t) => {
+    const words = t.split(/[\s-]+/).filter((w) => /^\p{Lu}/u.test(w));
+    return words.length > 1 ? words.map((w) => w[0]).join("").slice(0, 3) : t.slice(0, 2);
+  };
+
   const cover = (p) =>
     p.image
       ? `<img src="${esc(p.image)}" alt="" loading="lazy" />`
-      : `<div class="art" style="--c:${esc(p.accent || "#e4572e")}"><span class="art__label">${esc(
-          p.title
-            .split(/\s+/)
-            .filter((w, i, a) => a.length < 3 || /^\p{Lu}/u.test(w))
-            .map((w) => w[0])
-            .join("")
-            .slice(0, 3)
+      : `<div class="art" style="--c:${esc(p.accent || "#e4572e")}"><span class="art__label">${esc(initials(p.title)
         )}</span></div>`;
 
   const card = (p) => `
     <button class="card reveal ${p.featured ? "card--featured" : ""}" data-id="${p.id}" type="button">
       <div class="card__cover">${cover(p)}</div>
       <div class="card__body">
-        <div class="card__meta"><span>${esc(p.role || "")}</span><span>${esc(p.year || "")}</span></div>
+        ${p.role || p.year ? `<div class="card__meta"><span>${esc(p.role || "")}</span><span>${esc(p.year || "")}</span></div>` : ""}
         <h3>${esc(p.title)}</h3>
         <p>${esc(p.summary)}</p>
         <div class="tags">${(p.tags || []).map((t) => `<span class="tag">${esc(t)}</span>`).join("")}</div>
