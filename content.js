@@ -35,7 +35,7 @@ window.SITE = {
   ],
 
   stats: [
-    { value: "7", label: "Jeux créés" },
+    { value: "8", label: "Jeux créés" },
     { value: "3", label: "Jeux pédagogiques" },
     { value: "2", label: "Services en ligne" },
   ],
@@ -105,6 +105,14 @@ window.SITE = {
       tags: ["Jeux amusants"],
       accent: "#ffb703",
       links: [{ label: "Jouer", url: "https://sites.google.com/view/tricheur/accueil" }],
+    },
+    {
+      title: "SOS-Tempêtes",
+      summary: "Affrontez la tempête et sauvez la situation !",
+      description: "Une mission pleine de rebondissements où les élèves doivent faire face aux tempêtes.",
+      tags: ["Jeux amusants"],
+      accent: "#457b9d",
+      links: [{ label: "Jouer", url: "https://soft-chimera-064677.netlify.app/" }],
     },
     {
       title: "Brûle la Pile",
