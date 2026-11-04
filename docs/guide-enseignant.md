@@ -12,7 +12,7 @@ Trois principes guident la conception :
 
 - **Ce n'est pas un jeu à gagner.** Il n'y a ni score, ni échec, ni moyen d'échapper à la patrouille. Quoi que fasse l'élève, l'issue est la même, et c'est le propos.
 - **L'élève n'est pas un héros.** Il marche avec le groupe. Il peut aider ou non un homme âgé qui tombe, mais ce geste ne change pas l'issue.
-- **On entend leur langue.** Les migrants parlent espagnol et les agents anglais. Les paroles sont sous-titrées en français, ou en anglais si on le choisit sur l'écran d'accueil.
+- **On entend leur langue.** Les migrants parlent espagnol et les agents anglais. Les sous-titres ne montrent que la traduction, en français ou en anglais selon le choix fait sur l'écran d'accueil.
 
 ## Déroulé de l'expérience
 

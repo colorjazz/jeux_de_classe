@@ -742,8 +742,9 @@ window.Desert = (function () {
     const nom = r.qui === "agent" ? (langue === "en" ? "Border Patrol" : "Police des frontières") : perso ? perso.nom : "";
     const trad = r[langue] && r[langue] !== r.texte ? r[langue] : "";
     sousTitre.querySelector(".st-nom").textContent = nom;
-    sousTitre.querySelector(".st-original").textContent = r.texte;
-    sousTitre.querySelector(".st-trad").textContent = trad;
+    // Seulement la traduction (ou la réplique telle quelle si elle est déjà dans la langue choisie).
+    sousTitre.querySelector(".st-original").textContent = trad || r.texte;
+    sousTitre.querySelector(".st-trad").textContent = "";
     sousTitre.className = r.qui === "agent" ? "visible agent" : "visible";
     clearTimeout(sousTitreTimer);
     sousTitreTimer = setTimeout(() => { sousTitre.className = ""; }, Math.max(3400, duree * 1000 + 1200));

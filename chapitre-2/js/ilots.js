@@ -61,8 +61,9 @@ window.Chapitre2 = (function () {
     const langue = window.LANGUE_SOUS_TITRES || "fr";
     const nom = (langue === "en" && C.nomsEn[r.qui]) || C.noms[r.qui] || "";
     sousTitre.querySelector(".st-nom").textContent = nom;
-    sousTitre.querySelector(".st-original").textContent = r.texte;
-    sousTitre.querySelector(".st-trad").textContent = r[langue] && r[langue] !== r.texte ? r[langue] : "";
+    // Seulement la traduction (ou la réplique telle quelle si elle est déjà dans la langue choisie).
+    sousTitre.querySelector(".st-original").textContent = r[langue] || r.texte;
+    sousTitre.querySelector(".st-trad").textContent = "";
     sousTitre.className = "visible" + (r.telephone ? " telephone" : "");
     clearTimeout(sousTitreTimer);
     sousTitreTimer = setTimeout(() => { sousTitre.className = ""; }, Math.max(3400, duree * 1000 + 1500));
