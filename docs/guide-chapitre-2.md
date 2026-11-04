@@ -34,7 +34,7 @@ Public : 16-17 ans. Durée : environ 13 minutes. On peut le faire avant ou aprè
 
 ## Débrief : quelques questions
 
-1. Pour chacun des quatre personnages, qu'est-ce qui l'a poussé à partir ? Classez : violence, économie, climat, famille.
+1. Pour chacun des personnages (Rosa et Mateo, Don Ernesto, Yesenia, Julio, Valeria, Joseph), qu'est-ce qui l'a poussé à partir ? Classez : violence, économie, climat, effondrement de l'État, statut administratif, famille.
 2. Le titre dit « Partir ». Avaient-ils vraiment le choix ?
 3. Qu'est-ce que le cahier de Mateo nous apprend que ses paroles ne disent pas ?
 4. Julio a vécu huit ans aux États-Unis. Dans quel pays est-il « chez lui » ?
