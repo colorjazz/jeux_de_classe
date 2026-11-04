@@ -349,7 +349,14 @@ window.Chapitre4 = (function () {
       if (porte && x > porte[0] - 0.02 && x < porte[0] + porte[1] + 0.02) continue;
       ajouter(x, groupe);
     }
-    [0.1, 1.05, 2.1, H_PLAFOND - 0.05].forEach((y) => boite(x1 - x0, 0.05, 0.04, 0x8a9094, (x0 + x1) / 2, y, z));
+    // Traverses fixes : interrompues au niveau de la porte (sinon elles barrent l'ouverture
+    // quand la porte pivote) ; seul le rail du plafond reste continu.
+    const traverse = (a, b, y) => { if (b - a > 0.01) boite(b - a, 0.05, 0.04, 0x8a9094, (a + b) / 2, y, z); };
+    [0.1, 1.05, 2.1].forEach((y) => {
+      if (porte) { traverse(x0, porte[0], y); traverse(porte[0] + porte[1], x1, y); }
+      else traverse(x0, x1, y);
+    });
+    traverse(x0, x1, H_PLAFOND - 0.05);
     return p;
   }
   // Grillage entre deux cellules (axe z, à x fixe).
