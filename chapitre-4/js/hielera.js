@@ -1189,10 +1189,14 @@ window.Chapitre4 = (function () {
     objetVise = null;
     if (ficheOuverte) { if (temps > ficheFin) fermerFiche(); K.montrerInvite(""); return; }
     camera.getWorldDirection(_dir);
+    // L'objet le plus au centre du regard ; les gestes (prendre, donner, écouter) passent avant les fiches.
+    let meilleur = 0;
     for (const o of objets) {
       _versObj.set(o.x - camera.position.x, o.y - camera.position.y, o.z - camera.position.z);
       const d = _versObj.length();
-      if (d < 2.6 && _versObj.normalize().dot(_dir) > 0.82) { objetVise = o; break; }
+      const vise = _versObj.normalize().dot(_dir);
+      const score = vise + (o.agir ? 0.05 : 0);
+      if (d < 2.6 && vise > 0.82 && score > meilleur) { objetVise = o; meilleur = score; }
     }
     objets.forEach((o) => { if (o.lueur) o.lueur.intensity = o === objetVise ? 0.6 : o.vu ? 0 : 0.25; });
     K.montrerInvite(objetVise ? (objetVise.agir ? "[E] " + objetVise.def.nom : "[E] Regarder : " + objetVise.def.nom) : "");
