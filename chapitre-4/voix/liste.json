@@ -4,6 +4,9 @@
  "rosaCalme",
  "agentJulio",
  "julioEmpreintes",
+ "agentToi",
+ "agentDoigts",
+ "agentPhoto",
  "ernestoFroid",
  "josephFroid",
  "valeriaMateo",
@@ -12,10 +15,13 @@
  "agenteMateo",
  "mateoPleurs",
  "rosaCriCell",
+ "agentRecule",
  "agentSigne",
  "yeseniaConfuse",
  "josephInterprete",
  "valeriaAsile",
+ "agentSuivant",
+ "agentRefus",
  "agentAube",
  "ernestoAdieu"
 ]
