@@ -158,3 +158,9 @@ body.tactile #aide.visible .souris, body.tactile #aide.controles .clavier { disp
 body.tactile #aide.controles .doigt { display: inline; }
 body.tactile #aide.visible.controles .souris::after { content: none; }
 body.tactile #scene3d { touch-action: none; }
+
+/* Transitions entre les pages (accueil du site ↔ chapitres) */
+@keyframes apparition-page { from { opacity: 0; } to { opacity: 1; } }
+body { animation: apparition-page 1.4s ease both; transition: opacity 0.9s ease; }
+body.sortie { opacity: 0; }
+@media (prefers-reduced-motion: reduce) { body { animation: none; transition: none; } }

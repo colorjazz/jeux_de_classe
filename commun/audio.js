@@ -439,6 +439,36 @@ window.Audio3D = (function () {
       });
     }
   }
+  // =====================================================================
+  //  Sons enregistrés (bruitages réels). Chargés à l'avance ; seulement sur un
+  //  vrai site web (pas en ouvrant le fichier en double-cliquant). Sinon, on
+  //  garde le son généré : sonPret(nom) permet de choisir.
+  // =====================================================================
+  const bruitages = {};
+  function chargerSon(nom, url) {
+    if (!/^https?:/.test(location.protocol) || !ctx || bruitages[nom]) return;
+    bruitages[nom] = "chargement";
+    fetch(url).then((r) => (r.ok ? r.arrayBuffer() : Promise.reject()))
+      .then((b) => ctx.decodeAudioData(b)).then((ab) => { bruitages[nom] = ab; })
+      .catch(() => { delete bruitages[nom]; });
+  }
+  function sonPret(nom) { return bruitages[nom] instanceof AudioBuffer; }
+  // pos : {x, y, z} ; renvoie { position(x, z), arreter(d), duree }
+  function jouerSon(nom, pos, volume) {
+    if (!sonPret(nom)) return null;
+    const src = ctx.createBufferSource(); src.buffer = bruitages[nom];
+    const g = ctx.createGain(); g.gain.value = volume || 1;
+    const p = panner(pos.x, pos.y || 1, pos.z);
+    // L'enregistrement contient déjà son éloignement : atténuation douce seulement.
+    p.refDistance = 25; p.rolloffFactor = 0.6;
+    src.connect(g).connect(p).connect(master); src.start();
+    return {
+      duree: src.buffer.duration,
+      position(x, z) { p.positionX.value = x; p.positionZ.value = z; },
+      arreter(d) { rampe(g.gain, 0, d || 1); setTimeout(() => { try { src.stop(); } catch (e) {} }, (d || 1) * 1000 + 200); },
+    };
+  }
+
   // Volume général (fondus entre les tableaux)
   function volumeGeneral(v, d) { if (master) rampe(master.gain, v, d || 1); }
   function reinitialiser() { sons.silence = false; if (master) { master.gain.cancelScheduledValues(t()); master.gain.setValueAtTime(0.9, t()); } }
@@ -645,7 +675,7 @@ window.Audio3D = (function () {
     setFatigue, setPeur, coeur, helicoptere, positionHelico, moteur, positionMoteur,
     voiture, positionVoiture, voitureFin, coyotes, echelon, gorgees, espoir, espoirCouper,
     tension, setVent, pause, reprise, prechargerVoix, voixUtilisees,
-    comal, rue, moto, ventSec, neon, sonnerie, volumeGeneral, reinitialiser,
+    comal, rue, moto, ventSec, neon, sonnerie, volumeGeneral, reinitialiser, chargerSon, sonPret, jouerSon,
     enregistrementsCharges: () => Object.keys(enregistrements),
     auditeur, parler, silence, nappe, toutCouper,
   };

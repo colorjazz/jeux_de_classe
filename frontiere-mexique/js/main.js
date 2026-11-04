@@ -133,6 +133,15 @@
 
   $("btn-recommencer").addEventListener("click", () => { location.href = location.pathname; });
 
+  // Liens vers d'autres pages (« Tous les chapitres », chapitre suivant) : sortie en fondu.
+  document.querySelectorAll("a.retour-chapitres, #lien-suivant, #lien-ch1").forEach((a) => a.addEventListener("click", (e) => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+    e.preventDefault();
+    document.body.classList.add("sortie");
+    setTimeout(() => { location.href = a.href; }, 900);
+  }));
+  window.addEventListener("pageshow", (e) => { if (e.persisted) document.body.classList.remove("sortie"); });
+
   // Langue des sous-titres : ?st=en, sinon le dernier choix, sinon le français.
   let langue = params.get("st");
   try { langue = langue || localStorage.getItem("sable-sous-titres"); } catch (e) {}

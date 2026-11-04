@@ -10,30 +10,27 @@
     html, body { margin: 0; min-height: 100%; background: var(--fond); color: var(--texte); font-family: Georgia, "Times New Roman", serif; }
     body { overflow-x: hidden; }
 
-    /* 1. Le titre seul */
-    #titre {
-      position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
-      text-align: center; padding: 24px 16px; cursor: pointer; z-index: 2;
-      transition: opacity 1.6s ease;
+    /* Toute la page s'efface quand on choisit un chapitre */
+    body { transition: opacity 0.9s ease; }
+    body.sortie { opacity: 0; }
+
+    /* Le titre apparaît en fondu */
+    header { text-align: center; padding: 14vh 16px 0; }
+    header h1 {
+      font-weight: 400; font-size: clamp(52px, 11vw, 104px); letter-spacing: 0.14em; margin: 0; color: var(--sable);
+      opacity: 0; transform: translateY(8px); transition: opacity 2s ease, transform 2s ease;
     }
-    #titre h1 {
-      font-weight: 400; font-size: clamp(52px, 11vw, 110px); letter-spacing: 0.14em; margin: 0; color: var(--sable);
-      opacity: 0; transform: translateY(8px); transition: opacity 2.4s ease, transform 2.4s ease;
-    }
-    #titre .sous { margin: 22px 0 0; color: var(--doux); font-size: clamp(16px, 2.4vw, 20px); line-height: 1.6; opacity: 0; transition: opacity 2s ease 1.2s; }
-    #titre .inspiration { margin: 14px 0 0; color: #7d766a; font-style: italic; font-size: 14px; opacity: 0; transition: opacity 2s ease 1.8s; }
-    #titre .inspiration em { font-style: normal; color: var(--doux); }
-    #titre .passer { position: absolute; bottom: 28px; font-family: system-ui, sans-serif; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: #5e584f; opacity: 0; transition: opacity 1s ease 3s; }
-    #titre.visible h1 { opacity: 1; transform: none; }
-    #titre.visible .sous, #titre.visible .inspiration, #titre.visible .passer { opacity: 1; }
-    #titre.parti { opacity: 0; pointer-events: none; }
+    header .sous { margin: 18px 0 0; color: var(--doux); font-size: clamp(16px, 2.4vw, 19px); line-height: 1.6; opacity: 0; transition: opacity 1.6s ease 0.6s; }
+    header .inspiration { margin: 10px 0 0; color: #7d766a; font-style: italic; font-size: 14px; opacity: 0; transition: opacity 1.6s ease 0.9s; }
+    header .inspiration em { font-style: normal; color: var(--doux); }
+    body.titre header h1 { opacity: 1; transform: none; }
+    body.titre header .sous, body.titre header .inspiration { opacity: 1; }
 
     /* 2. Les chapitres */
-    main { max-width: 640px; margin: 0 auto; padding: 12vh 16px 48px; visibility: hidden; }
-    main.visible { visibility: visible; }
-    .apparait { opacity: 0; transform: translateY(10px); transition: opacity 1.2s ease, transform 1.2s ease; }
-    main.visible .apparait { opacity: 1; transform: none; }
-    main h2 { font-weight: 400; font-size: clamp(34px, 6vw, 52px); letter-spacing: 0.1em; margin: 0; color: var(--sable); }
+    /* Puis les chapitres, l'un après l'autre */
+    main { max-width: 640px; margin: 0 auto; padding: 5vh 16px 48px; }
+    .apparait { opacity: 0; transform: translateY(10px); transition: opacity 1.1s ease, transform 1.1s ease; }
+    .apparait.visible { opacity: 1; transform: none; }
     .ordre {
       margin: 22px 0 0; padding: 14px 18px; border-left: 2px solid var(--sable); color: #cfc8b9; line-height: 1.6;
       background: rgba(200, 180, 140, 0.05);
@@ -57,39 +54,36 @@
     footer { margin-top: 30px; color: #5e584f; font-family: system-ui, sans-serif; font-size: 12px; line-height: 1.6; }
 
     @media (prefers-reduced-motion: reduce) {
-      #titre, #titre *, .apparait { transition: none !important; }
+      header *, .apparait, body { transition: none !important; }
     }
   </style>
 </head>
 <body>
-  <!-- 1. Le titre -->
-  <section id="titre" aria-label="Titre">
+  <header>
     <h1>Traversées</h1>
-    <p class="sous">On ne joue pas un rôle.<br>On marche avec eux.</p>
+    <p class="sous">On ne joue pas un rôle. On marche avec eux.</p>
     <p class="inspiration">Inspiré de <em>Carne y Arena</em> (2017)</p>
-    <p class="passer">Cliquez pour continuer</p>
-  </section>
+  </header>
 
   <!-- 2. Les chapitres -->
-  <main id="chapitres" aria-live="polite">
-    <h2 class="apparait" style="transition-delay: 0.1s">Traversées</h2>
-    <p class="ordre apparait" style="transition-delay: 0.5s"><strong>Faites les chapitres dans l'ordre.</strong> Chacun prépare le suivant : on comprend mieux ce que vivent les personnages quand on les a déjà rencontrés.</p>
-    <p class="ecouteurs apparait" style="transition-delay: 0.7s">Écouteurs indispensables · environ 20 minutes pour les deux premiers chapitres</p>
+  <main id="chapitres">
+    <p class="ordre apparait"><strong>Faites les chapitres dans l'ordre.</strong> Chacun prépare le suivant : on comprend mieux ce que vivent les personnages quand on les a déjà rencontrés.</p>
+    <p class="ecouteurs apparait">Écouteurs indispensables · environ 20 minutes pour les deux premiers chapitres</p>
     <ol>
-      <li class="apparait" style="transition-delay: 0.9s" data-chapitre="1">
+      <li class="apparait" data-chapitre="1">
         <a href="frontiere-mexique/"><span class="num">1</span><span class="infos"><span class="titre">Le sable</span><small>Frontière Mexique – États-Unis · Désert de Sonora · environ 12 minutes</small></span><span class="etat"></span></a>
       </li>
-      <li class="apparait" style="transition-delay: 1.15s" data-chapitre="2">
+      <li class="apparait" data-chapitre="2">
         <a href="chapitre-2/"><span class="num">2</span><span class="infos"><span class="titre">Partir</span><small>Honduras · Mexique · Guatemala · Salvador · environ 8 minutes</small></span><span class="etat"></span></a>
       </li>
-      <li class="apparait" style="transition-delay: 1.4s">
+      <li class="apparait">
         <span class="bientot"><span class="num">3</span><span class="infos"><span class="titre">À venir</span></span></span>
       </li>
-      <li class="apparait" style="transition-delay: 1.6s">
+      <li class="apparait">
         <span class="bientot"><span class="num">4</span><span class="infos"><span class="titre">À venir</span></span></span>
       </li>
     </ol>
-    <footer class="apparait" style="transition-delay: 1.9s">Personnages fictifs, composés à partir de récits de migrants documentés. Un guide pour l'enseignant accompagne chaque chapitre.</footer>
+    <footer class="apparait">Personnages fictifs, composés à partir de récits de migrants documentés. Un guide pour l'enseignant accompagne chaque chapitre.</footer>
   </main>
 
   <script>
@@ -106,24 +100,21 @@
         else if (!suivantMarque) { etat.textContent = "À faire"; etat.classList.add("suivant"); suivantMarque = true; }
       });
 
-      let fait = false;
-      function montrerChapitres() {
-        if (fait) return; fait = true;
-        titre.classList.add("parti");
-        setTimeout(() => { titre.style.display = "none"; chapitres.classList.add("visible"); }, 1600);
-      }
+      const elements = Array.from(document.querySelectorAll(".apparait"));
+      const direct = location.hash === "#chapitres"; // retour depuis un chapitre : pas d'attente
+      requestAnimationFrame(() => requestAnimationFrame(() => document.body.classList.add("titre")));
+      // Deux secondes après le titre, les chapitres apparaissent l'un après l'autre.
+      elements.forEach((el, i) => setTimeout(() => el.classList.add("visible"), (direct ? 300 : 2000) + i * (direct ? 120 : 380)));
 
-      // En revenant d'un chapitre (« Tous les chapitres »), on va directement à la liste.
-      if (location.hash === "#chapitres") {
-        titre.style.display = "none";
-        chapitres.classList.add("visible");
-        fait = true;
-        return;
-      }
-      requestAnimationFrame(() => requestAnimationFrame(() => titre.classList.add("visible")));
-      setTimeout(montrerChapitres, 6000);
-      titre.addEventListener("click", montrerChapitres);
-      window.addEventListener("keydown", (e) => { if (!fait && (e.key === "Enter" || e.key === " " || e.key === "Escape")) montrerChapitres(); });
+      // Choisir un chapitre : la page s'efface, puis le chapitre apparaît (fondu d'entrée dans le chapitre).
+      document.querySelectorAll("li a").forEach((a) => a.addEventListener("click", (e) => {
+        if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+        e.preventDefault();
+        document.body.classList.add("sortie");
+        setTimeout(() => { location.href = a.href; }, 900);
+      }));
+      // En revenant avec le bouton « Précédent », la page doit réapparaître.
+      window.addEventListener("pageshow", (e) => { if (e.persisted) document.body.classList.remove("sortie"); });
     })();
   </script>
 </body>

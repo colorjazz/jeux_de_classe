@@ -309,9 +309,13 @@ window.Chapitre2 = (function () {
     await attendre(5);
 
     // La rue se tait. Les motos arrivent.
+    // Avec le bruitage enregistré, l'image est calée sur le son : elles s'arrêtent
+    // à 11 s, les moteurs se coupent à 13,7 s. Sinon, moteurs générés.
     sonRue.arreter(5);
     const motos = [creerMoto(-60, 1.2), creerMoto(-64, 2.6)];
-    const sonMotos = motos.map((m) => A.moto(m.x, m.z));
+    const enregistre = A.sonPret("moto-arrivee") && A.sonPret("moto-depart");
+    let sonSuivi = enregistre ? A.jouerSon("moto-arrivee", { x: -62, y: 1, z: 1.9 }, 1) : null;
+    const sonMotos = enregistre ? [] : motos.map((m) => A.moto(m.x, m.z));
     passants.forEach((p) => allerVers(p, p.x, p.z < 3 ? -3.0 : 8.0, 1.4).then(() => { p.racine.visible = false; }));
     let crepuscule = 0;
     const majAvant = majTableau;
@@ -320,15 +324,21 @@ window.Chapitre2 = (function () {
       // Le jour baisse pendant toute la scène.
       crepuscule = Math.min(1, crepuscule + dt / 70);
       sol.intensity = 2.6 * (1 - crepuscule * 0.85); ciel.intensity = 1.4 * (1 - crepuscule * 0.6);
-      motos.forEach((m, i) => { m.maj(dt); sonMotos[i].position(m.x, m.z); sonMotos[i].regime(m.v / 8); });
+      motos.forEach((m, i) => { m.maj(dt); if (sonMotos[i]) { sonMotos[i].position(m.x, m.z); sonMotos[i].regime(m.v / 8); } });
+      if (sonSuivi) sonSuivi.position((motos[0].x + motos[1].x) / 2, (motos[0].z + motos[1].z) / 2);
     };
     await attendre(2);
     gesteComal = false; rosa.cible = "debout"; tourner(rosa, -10, 1);
     mateo.cible = "chaise"; tourner(mateo, -10, 1);
-    await Promise.all([motos[0].arriver(-3.2, 1.2), motos[1].arriver(-5.4, 2.4)]);
-    await attendre(1.2);
-    sonMotos.forEach((s) => s.arreter(0.6));   // moteurs coupés : silence
-    await attendre(1.5);
+    if (enregistre) {
+      await Promise.all([motos[0].arriverEn(-3.2, 9), motos[1].arriverEn(-5.4, 9.4)]); // ≈ 11 s après le début du son
+      await attendre(3);                                                               // ralenti, puis moteurs coupés (13,7 s)
+    } else {
+      await Promise.all([motos[0].arriver(-3.2, 1.2), motos[1].arriver(-5.4, 2.4)]);
+      await attendre(1.2);
+      sonMotos.forEach((s) => s.arreter(0.6));   // moteurs coupés : silence
+      await attendre(1.5);
+    }
 
     // L'homme descend et s'approche.
     const marero = personnage("marero", -3.2, 0.7, Math.PI / 2, "debout");
@@ -351,11 +361,19 @@ window.Chapitre2 = (function () {
     await allerVers(marero, -3.2, 0.7, 1.0);
     marero.racine.visible = false; complice.racine.visible = false;
     motos[0].pilote.visible = true; motos[1].pilote.visible = true;
-    const sonDepart = motos.map((m) => A.moto(m.x, m.z));
-    sonMotos.length = 0; sonDepart.forEach((s) => sonMotos.push(s));
-    motos[0].partir(60); motos[1].partir(64);
-    await attendre(6);
-    sonDepart.forEach((s) => s.arreter(3));
+    if (enregistre) {
+      // Démarrage et coups d'accélérateur sur place, puis elles s'éloignent (à 7 s).
+      sonSuivi = A.jouerSon("moto-depart", { x: -4.3, y: 1, z: 1.8 }, 1);
+      await attendre(6.6);
+      motos[0].partir(60); motos[1].partir(64);
+      await attendre(6);
+    } else {
+      const sonDepart = motos.map((m) => A.moto(m.x, m.z));
+      sonMotos.length = 0; sonDepart.forEach((s) => sonMotos.push(s));
+      motos[0].partir(60); motos[1].partir(64);
+      await attendre(6);
+      sonDepart.forEach((s) => s.arreter(3));
+    }
 
     // Le silence. Seul le comal grésille encore.
     await attendre(3);
@@ -395,8 +413,19 @@ window.Chapitre2 = (function () {
     const m = { g, pilote, x, z, v: 0, but: null };
     g.position.set(x, 0, z);
     m.arriver = (bx) => new Promise((r) => { m.but = { x: bx, r }; m.v = 8; });
-    m.partir = (bx) => { m.but = { x: bx, r: () => {} }; m.v = 0.5; m.depart = true; };
+    m.partir = (bx) => { m.but = { x: bx, r: () => {} }; m.v = 0.5; m.depart = true; m.cale = null; };
+    // Arrivée en une durée donnée, avec un freinage progressif.
+    m.arriverEn = (bx, duree) => new Promise((r) => { m.cale = { x0: m.x, bx, duree, t: 0, r }; });
     m.maj = (dt) => {
+      if (m.cale) {
+        const c = m.cale; c.t += dt;
+        const u = Math.min(1, c.t / c.duree), e = 1 - Math.pow(1 - u, 2.4);
+        const avant = m.x; m.x = c.x0 + (c.bx - c.x0) * e; m.v = Math.abs(m.x - avant) / Math.max(dt, 1e-4);
+        g.position.x = m.x; g.rotation.y = 0;
+        g.children.forEach((k) => { if (k.geometry && k.geometry.type === "TorusGeometry") k.rotation.z -= m.v * dt * 3; });
+        if (u >= 1) { m.cale = null; m.v = 0; c.r(); }
+        return;
+      }
       if (!m.but) return;
       const d = m.but.x - m.x;
       if (m.depart) m.v = Math.min(11, m.v + dt * 5);
@@ -825,6 +854,8 @@ window.Chapitre2 = (function () {
     horloge = new THREE.Clock();
     R.renderer.setAnimationLoop(boucle);
     A.prechargerVoix();
+    A.chargerSon("moto-arrivee", "sons/moto-arrivee.mp3");
+    A.chargerSon("moto-depart", "sons/moto-depart.mp3");
 
     const ordre = [["ilot1", tableau1], ["ilot2a", tableau2a], ["ilot2b", tableau2b], ["ilot3", tableau3], ["final", appelFinal]];
     const depart = Math.max(0, ordre.findIndex(([n]) => n === options.ilot));
