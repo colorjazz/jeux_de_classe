@@ -244,16 +244,16 @@ window.Chapitre4 = (function () {
       return;
     }
     const env = new THREE.Scene();
-    env.add(new THREE.Mesh(new THREE.BoxGeometry(10, 6, 10), new THREE.MeshBasicMaterial({ color: 0x121416, side: THREE.BackSide })));
+    env.add(new THREE.Mesh(new THREE.BoxGeometry(10, 6, 10), new THREE.MeshBasicMaterial({ color: 0x6a6e74, side: THREE.BackSide })));
     for (let i = -1; i <= 1; i++) {
       const tube = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.05, 2.4), new THREE.MeshBasicMaterial({ color: 0xffffff }));
       tube.position.set(i * 2.5, 2.9, 0); env.add(tube);
     }
-    const sol = new THREE.Mesh(new THREE.PlaneGeometry(10, 10), new THREE.MeshBasicMaterial({ color: 0x3a3c3e }));
+    const sol = new THREE.Mesh(new THREE.PlaneGeometry(10, 10), new THREE.MeshBasicMaterial({ color: 0x9a9ea2 }));
     sol.rotation.x = -Math.PI / 2; sol.position.y = -2.9; env.add(sol);
     const pm = new THREE.PMREMGenerator(R.renderer);
     const tex = pm.fromScene(env, 0.02).texture; pm.dispose();
-    matMylar = new THREE.MeshStandardMaterial({ color: 0xdfe3ea, metalness: 1, roughness: 0.16, envMap: tex, envMapIntensity: 1.4, flatShading: true, side: THREE.DoubleSide });
+    matMylar = new THREE.MeshStandardMaterial({ color: 0xdfe3ea, metalness: 0.9, roughness: 0.24, envMap: tex, envMapIntensity: 1.2, flatShading: true, side: THREE.DoubleSide });
   }
   function froisser(geo, force) {
     const p = geo.attributes.position;
@@ -431,8 +431,8 @@ window.Chapitre4 = (function () {
     banc(3.4, -3.3, 3.4);
     toilette(-3.1, -3.0); toilette(4.7, -3.05);
     // Les autres détenus
-    dormeur(-2.0, -1.2, 0.3); dormeur(-0.9, 0.2, -1.4, 0x8a6448); dormeur(0.7, -1.6, 1.2, 0x6e4a33);
-    dormeur(2.4, 0.6, 1.6); dormeur(4.3, -1.4, 0.2, 0x5a3a26); dormeur(3.5, 1.5, -1.6, 0x8a6448);
+    dormeur(-2.0, -1.2, 0.3); dormeur(-0.9, 0.2, -1.4, 0x8a6448); dormeur(0.4, -1.6, 1.2, 0x6e4a33);
+    dormeur(3.1, 0.6, 1.6); dormeur(4.3, -1.4, 0.2, 0x5a3a26); dormeur(3.6, 1.5, -1.6, 0x8a6448);
     [[-3.5, -2.4], [0.9, 1.2], [4.9, 0.4], [-2.6, 1.6], [2.1, -2.9]].forEach(([x, z]) => mylarPlie(x, 0.03, z));
     // Une caméra au plafond, et l'horloge… qu'on ne voit pas : il n'y en a pas.
     boite(0.16, 0.12, 0.24, 0x2a2a2a, -3.4, 2.7, 2.2);
@@ -543,7 +543,7 @@ window.Chapitre4 = (function () {
     const g = {
       rosa: personnage("rosa", -1.25, -3.15, 0, "chaise"), mateo: personnage("mateo", -0.65, -3.15, 0, "chaise"),
       valeria: personnage("valeria", 0.2, -3.15, 0, "chaise"), yesenia: personnage("yesenia", -3.28, -0.4, Math.PI / 2, "chaise"),
-      ernesto: personnage("ernesto", 2.0, -0.9, -Math.PI / 2, "assis"), joseph: personnage("joseph", 3.2, -3.15, 0, "chaise"),
+      ernesto: personnage("ernesto", 2.5, -0.9, -Math.PI / 2, "assis"), joseph: personnage("joseph", 3.2, -3.15, 0, "chaise"),
     };
     ["rosa", "valeria", "yesenia", "ernesto", "joseph"].forEach((k) => envelopper(g[k]));
     figurant(-3.28, -1.6, Math.PI / 2, "dort", true); figurant(0.9, -3.15, 0, "chaise", true); figurant(4.1, -3.15, 0, "dort");
@@ -593,7 +593,7 @@ window.Chapitre4 = (function () {
     const g = {
       rosa: personnage("rosa", -1.25, -3.15, 0, "chaise"), mateo: personnage("mateo", -0.65, -3.15, 0, "chaise"),
       valeria: personnage("valeria", 0.2, -3.15, 0, "chaise"), yesenia: personnage("yesenia", -3.28, -0.4, Math.PI / 2, "chaise"),
-      ernesto: personnage("ernesto", 2.0, -0.9, -Math.PI / 2, "assis"), joseph: personnage("joseph", 3.2, -3.15, 0, "chaise"),
+      ernesto: personnage("ernesto", 2.5, -0.9, -Math.PI / 2, "assis"), joseph: personnage("joseph", 3.2, -3.15, 0, "chaise"),
     };
     ["rosa", "valeria", "yesenia", "ernesto", "joseph", "mateo"].forEach((k) => envelopper(g[k]));
     figurant(-3.28, -1.6, Math.PI / 2, "dort", true); figurant(0.9, -3.15, 0, "chaise", true);
@@ -889,5 +889,6 @@ window.Chapitre4 = (function () {
     _etat: () => ({ ilot: ilotCourant, temps, t: temps - debutIlot, brume: scene && scene.fog ? [scene.fog.density, scene.fog.color.getHexString(), scene.background.getHexString ? scene.background.getHexString() : "tex"] : null, joueur: { x: joueur.x, z: joueur.z }, objets: objets.map((o) => o.id), persos: persos.map((p) => [p.qui, Math.round(p.x * 10) / 10, Math.round(p.z * 10) / 10, p.cible]), qualite: R && R.etat() }),
     _placer: (x, z, l, t) => { joueur.x = x; joueur.z = z; K.etat.lacet = l; K.etat.tangage = t || 0; limite.r = 99; },
     _action: action,
+    _scene: () => scene, // tests
   };
 })();
