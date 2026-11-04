@@ -68,6 +68,7 @@
   }
 
   async function fin() {
+    try { localStorage.setItem("traversees-chapitre-2", "fini"); } catch (e) {}
     pauseDisponible(false);
     $("voile").style.transition = "opacity 2s"; $("voile").style.opacity = "0";
     montrer("fin");

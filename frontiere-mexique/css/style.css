@@ -116,6 +116,8 @@ body.en-scene #vignette { display: block; }
 .mention { color: var(--doux); font-family: system-ui, sans-serif; font-size: 13px; margin-top: 30px; opacity: 0; transition: opacity 2s; }
 .mention.visible { opacity: 1; }
 .actions .discret { margin-top: 24px; }
+.actions { display: flex; gap: 28px; justify-content: center; flex-wrap: wrap; }
+a.discret { text-decoration: none; display: inline-block; }
 
 /* Pause */
 #btn-pause {

@@ -5,32 +5,126 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Traversées</title>
   <style>
-    html, body { margin: 0; min-height: 100%; background: #050608; color: #e9e3d6; font-family: Georgia, "Times New Roman", serif; }
-    main { max-width: 620px; margin: 0 auto; padding: 18vh 16px 40px; }
-    h1 { font-weight: 400; font-size: clamp(48px, 9vw, 84px); letter-spacing: 0.12em; margin: 0; color: #c8b48c; }
-    p { color: #9a9282; line-height: 1.6; }
-    ul { list-style: none; padding: 0; margin: 40px 0 0; }
-    li { border-top: 1px solid #2a2622; padding: 18px 0; }
-    a { color: #e9e3d6; text-decoration: none; font-size: 22px; }
-    a:hover, a:focus-visible { color: #c8b48c; }
-    .bientot { color: #6b655a; font-size: 22px; }
-    .num { display: block; color: #9a9282; font-family: system-ui, sans-serif; font-size: 12px; letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 4px; }
-    .inspiration { font-style: italic; color: #7d766a; font-size: 14px; margin-top: -6px; }
-    .inspiration em { font-style: normal; color: #9a9282; }
-    small { display: block; color: #9a9282; font-family: system-ui, sans-serif; font-size: 13px; margin-top: 4px; }
+    :root { --fond: #050608; --texte: #e9e3d6; --doux: #9a9282; --sable: #c8b48c; --trait: #2a2622; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; background: var(--fond); color: var(--texte); font-family: Georgia, "Times New Roman", serif; }
+    body { overflow-x: hidden; }
+
+    /* 1. Le titre seul */
+    #titre {
+      position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center; padding: 24px 16px; cursor: pointer; z-index: 2;
+      transition: opacity 1.6s ease;
+    }
+    #titre h1 {
+      font-weight: 400; font-size: clamp(52px, 11vw, 110px); letter-spacing: 0.14em; margin: 0; color: var(--sable);
+      opacity: 0; transform: translateY(8px); transition: opacity 2.4s ease, transform 2.4s ease;
+    }
+    #titre .sous { margin: 22px 0 0; color: var(--doux); font-size: clamp(16px, 2.4vw, 20px); line-height: 1.6; opacity: 0; transition: opacity 2s ease 1.2s; }
+    #titre .inspiration { margin: 14px 0 0; color: #7d766a; font-style: italic; font-size: 14px; opacity: 0; transition: opacity 2s ease 1.8s; }
+    #titre .inspiration em { font-style: normal; color: var(--doux); }
+    #titre .passer { position: absolute; bottom: 28px; font-family: system-ui, sans-serif; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: #5e584f; opacity: 0; transition: opacity 1s ease 3s; }
+    #titre.visible h1 { opacity: 1; transform: none; }
+    #titre.visible .sous, #titre.visible .inspiration, #titre.visible .passer { opacity: 1; }
+    #titre.parti { opacity: 0; pointer-events: none; }
+
+    /* 2. Les chapitres */
+    main { max-width: 640px; margin: 0 auto; padding: 12vh 16px 48px; visibility: hidden; }
+    main.visible { visibility: visible; }
+    .apparait { opacity: 0; transform: translateY(10px); transition: opacity 1.2s ease, transform 1.2s ease; }
+    main.visible .apparait { opacity: 1; transform: none; }
+    main h2 { font-weight: 400; font-size: clamp(34px, 6vw, 52px); letter-spacing: 0.1em; margin: 0; color: var(--sable); }
+    .ordre {
+      margin: 22px 0 0; padding: 14px 18px; border-left: 2px solid var(--sable); color: #cfc8b9; line-height: 1.6;
+      background: rgba(200, 180, 140, 0.05);
+    }
+    .ordre strong { color: var(--texte); font-weight: 400; }
+    .ecouteurs { margin: 14px 0 0; color: var(--doux); font-family: system-ui, sans-serif; font-size: 13px; letter-spacing: 0.04em; }
+    ol { list-style: none; padding: 0; margin: 36px 0 0; counter-reset: none; }
+    li { border-top: 1px solid var(--trait); }
+    li:last-child { border-bottom: 1px solid var(--trait); }
+    li a, li .bientot { display: flex; gap: 18px; align-items: baseline; padding: 20px 4px; text-decoration: none; color: var(--texte); }
+    li a:hover .titre, li a:focus-visible .titre { color: var(--sable); }
+    li a:focus-visible { outline: 1px solid var(--sable); outline-offset: 2px; }
+    .num { flex: none; width: 2.2em; font-size: 28px; color: var(--sable); text-align: right; }
+    .infos { flex: 1; }
+    .titre { display: block; font-size: 24px; transition: color 0.3s; }
+    small { display: block; margin-top: 4px; color: var(--doux); font-family: system-ui, sans-serif; font-size: 13px; line-height: 1.5; }
+    .etat { flex: none; font-family: system-ui, sans-serif; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: #6b655a; }
+    .etat.fini { color: #8fb38a; }
+    .etat.suivant { color: var(--sable); }
+    .bientot, .bientot .num, .bientot .titre { color: #4f4a43; }
+    footer { margin-top: 30px; color: #5e584f; font-family: system-ui, sans-serif; font-size: 12px; line-height: 1.6; }
+
+    @media (prefers-reduced-motion: reduce) {
+      #titre, #titre *, .apparait { transition: none !important; }
+    }
   </style>
 </head>
 <body>
-  <main>
+  <!-- 1. Le titre -->
+  <section id="titre" aria-label="Titre">
     <h1>Traversées</h1>
-    <p>Quatre chapitres. On ne joue pas un rôle : on marche avec eux.<br>Écouteurs indispensables.</p>
+    <p class="sous">On ne joue pas un rôle.<br>On marche avec eux.</p>
     <p class="inspiration">Inspiré de <em>Carne y Arena</em> (2017)</p>
-    <ul>
-      <li><a href="frontiere-mexique/"><span class="num">Chapitre 1</span>Le sable</a><small>Frontière Mexique – États-Unis · Désert de Sonora · environ 12 minutes</small></li>
-      <li><a href="chapitre-2/"><span class="num">Chapitre 2</span>Partir</a><small>Honduras · Mexique · Guatemala · Salvador · environ 8 minutes</small></li>
-      <li><span class="bientot"><span class="num">Chapitre 3</span>À venir</span></li>
-      <li><span class="bientot"><span class="num">Chapitre 4</span>À venir</span></li>
-    </ul>
+    <p class="passer">Cliquez pour continuer</p>
+  </section>
+
+  <!-- 2. Les chapitres -->
+  <main id="chapitres" aria-live="polite">
+    <h2 class="apparait" style="transition-delay: 0.1s">Traversées</h2>
+    <p class="ordre apparait" style="transition-delay: 0.5s"><strong>Faites les chapitres dans l'ordre.</strong> Chacun prépare le suivant : on comprend mieux ce que vivent les personnages quand on les a déjà rencontrés.</p>
+    <p class="ecouteurs apparait" style="transition-delay: 0.7s">Écouteurs indispensables · environ 20 minutes pour les deux premiers chapitres</p>
+    <ol>
+      <li class="apparait" style="transition-delay: 0.9s" data-chapitre="1">
+        <a href="frontiere-mexique/"><span class="num">1</span><span class="infos"><span class="titre">Le sable</span><small>Frontière Mexique – États-Unis · Désert de Sonora · environ 12 minutes</small></span><span class="etat"></span></a>
+      </li>
+      <li class="apparait" style="transition-delay: 1.15s" data-chapitre="2">
+        <a href="chapitre-2/"><span class="num">2</span><span class="infos"><span class="titre">Partir</span><small>Honduras · Mexique · Guatemala · Salvador · environ 8 minutes</small></span><span class="etat"></span></a>
+      </li>
+      <li class="apparait" style="transition-delay: 1.4s">
+        <span class="bientot"><span class="num">3</span><span class="infos"><span class="titre">À venir</span></span></span>
+      </li>
+      <li class="apparait" style="transition-delay: 1.6s">
+        <span class="bientot"><span class="num">4</span><span class="infos"><span class="titre">À venir</span></span></span>
+      </li>
+    </ol>
+    <footer class="apparait" style="transition-delay: 1.9s">Personnages fictifs, composés à partir de récits de migrants documentés. Un guide pour l'enseignant accompagne chaque chapitre.</footer>
   </main>
+
+  <script>
+    (function () {
+      const titre = document.getElementById("titre");
+      const chapitres = document.getElementById("chapitres");
+
+      // Chapitres terminés (mémorisés par ce navigateur) : coche, et « À faire ensuite ».
+      const lire = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+      let suivantMarque = false;
+      document.querySelectorAll("li[data-chapitre]").forEach((li) => {
+        const etat = li.querySelector(".etat");
+        if (lire("traversees-chapitre-" + li.dataset.chapitre) === "fini") { etat.textContent = "✓ Fait"; etat.classList.add("fini"); }
+        else if (!suivantMarque) { etat.textContent = "À faire"; etat.classList.add("suivant"); suivantMarque = true; }
+      });
+
+      let fait = false;
+      function montrerChapitres() {
+        if (fait) return; fait = true;
+        titre.classList.add("parti");
+        setTimeout(() => { titre.style.display = "none"; chapitres.classList.add("visible"); }, 1600);
+      }
+
+      // En revenant d'un chapitre (« Tous les chapitres »), on va directement à la liste.
+      if (location.hash === "#chapitres") {
+        titre.style.display = "none";
+        chapitres.classList.add("visible");
+        fait = true;
+        return;
+      }
+      requestAnimationFrame(() => requestAnimationFrame(() => titre.classList.add("visible")));
+      setTimeout(montrerChapitres, 6000);
+      titre.addEventListener("click", montrerChapitres);
+      window.addEventListener("keydown", (e) => { if (!fait && (e.key === "Enter" || e.key === " " || e.key === "Escape")) montrerChapitres(); });
+    })();
+  </script>
 </body>
 </html>

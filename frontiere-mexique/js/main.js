@@ -113,6 +113,7 @@
   }
 
   async function fin() {
+    try { localStorage.setItem("traversees-chapitre-1", "fini"); } catch (e) {}
     montrer("fin");
     const zone = $("fin-texte");
     zone.innerHTML = "";
@@ -127,6 +128,7 @@
     document.querySelector(".mention").classList.add("visible");
     await attendre(3000);
     $("btn-recommencer").classList.add("visible");
+    $("lien-suivant").classList.add("visible");
   }
 
   $("btn-recommencer").addEventListener("click", () => { location.href = location.pathname; });
