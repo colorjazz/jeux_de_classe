@@ -629,9 +629,9 @@ window.Chapitre4 = (function () {
     boite(5.6, 0.05, 0.8, 0xb0b4b0, 0, 1.075, -3.1);
     const vitre = new THREE.Mesh(new THREE.PlaneGeometry(5.4, 0.9), new THREE.MeshStandardMaterial({ color: 0xcfe0e8, transparent: true, opacity: 0.12, roughness: 0.05, metalness: 0.2 }));
     vitre.position.set(0, 1.55, -3.3); groupe.add(vitre);
-    boite(0.5, 0.34, 0.04, 0x1a1c1e, 0.9, 1.35, -3.32);
+    boite(0.5, 0.34, 0.04, 0x4a4e52, 0.9, 1.35, -3.32); P.maille(new THREE.CylinderGeometry(0.02, 0.06, 0.24, 8), 0x3a3e42, groupe, 0.9, 1.2, -3.36);
     const ecran = emissif(new THREE.PlaneGeometry(0.44, 0.28), 0x8ab0e8, 1.3, groupe, 0.9, 1.35, -3.298); ecran.rotation.y = Math.PI;
-    boite(0.5, 0.34, 0.04, 0x1a1c1e, -1.9, 1.35, -3.32);
+    boite(0.5, 0.34, 0.04, 0x4a4e52, -1.9, 1.35, -3.32); P.maille(new THREE.CylinderGeometry(0.02, 0.06, 0.24, 8), 0x3a3e42, groupe, -1.9, 1.2, -3.36);
     emissif(new THREE.PlaneGeometry(0.44, 0.28), 0x8ab0e8, 1.1, groupe, -1.9, 1.35, -3.298).rotation.y = Math.PI;
     boite(0.22, 0.08, 0.18, 0x2a2c2e, -0.7, 1.14, -2.95);
     const vertLecteur = emissif(new THREE.PlaneGeometry(0.14, 0.1), 0x40ff80, 1.4, groupe, -0.7, 1.185, -2.95); vertLecteur.rotation.x = -Math.PI / 2;
