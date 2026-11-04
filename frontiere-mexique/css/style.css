@@ -163,4 +163,4 @@ body.tactile #scene3d { touch-action: none; }
 @keyframes apparition-page { from { opacity: 0; } to { opacity: 1; } }
 body { animation: apparition-page 1.4s ease both; transition: opacity 0.9s ease; }
 body.sortie { opacity: 0; }
-@media (prefers-reduced-motion: reduce) { body { animation: none; transition: none; } }
+/* Avec « réduire les animations », les fondus restent : ce ne sont pas des mouvements. */
