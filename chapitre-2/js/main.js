@@ -1,6 +1,6 @@
 // Chapitre 2 : avertissement → sas → tableaux → fin.
 // Paramètres d'URL (enseignant, tests) :
-//   ?ilot=ilot1 | ilot2a | ilot2b | ilot3 | final   commencer à un tableau (saute le sas)
+//   ?ilot=ilot1 | ilot2a | ilot2b | ilot3 | ilot4 | ilot5 | final   commencer à un tableau (saute le sas)
 //   &st=en   sous-titres en anglais      &qualite=legere|haute      &acc=3 (tests : temps accéléré)
 
 (function () {

@@ -19,6 +19,8 @@
 .fiche.visible { opacity: 1; pointer-events: auto; transform: translate(-50%, -50%); cursor: pointer; }
 .fiche .nom { margin: 0 0 10px; font-size: 21px; color: var(--sable); }
 .fiche .texte { margin: 0; line-height: 1.6; font-size: 16px; }
+.fiche .contexte { margin: 14px 0 0; padding: 10px 12px; font-family: system-ui, sans-serif; font-size: 13px; line-height: 1.55; color: #d8cfb8; background: rgba(200, 180, 140, 0.08); border-left: 2px solid var(--sable); }
+.fiche .contexte:empty { display: none; }
 .fiche .fermer { margin: 14px 0 0; font-family: system-ui, sans-serif; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--doux); }
 
 /* Voix au téléphone */

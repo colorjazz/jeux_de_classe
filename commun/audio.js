@@ -469,6 +469,18 @@ window.Audio3D = (function () {
     };
   }
 
+  // Coupure de courant : le transformateur qui lâche (choc sourd + crépitement bref).
+  function coupure() {
+    if (!ctx) return;
+    const o = ctx.createOscillator(); o.frequency.setValueAtTime(70, t()); o.frequency.exponentialRampToValueAtTime(30, t() + 0.6);
+    const g = ctx.createGain(); g.gain.setValueAtTime(0.7, t()); g.gain.exponentialRampToValueAtTime(0.001, t() + 0.9);
+    o.connect(g).connect(master); o.start(); o.stop(t() + 1);
+    const n = ctx.createBufferSource(); n.buffer = bruitBuffer;
+    const f = ctx.createBiquadFilter(); f.type = "bandpass"; f.frequency.value = 1800; f.Q.value = 1.5;
+    const gn = ctx.createGain(); gn.gain.setValueAtTime(0.25, t()); gn.gain.exponentialRampToValueAtTime(0.001, t() + 0.25);
+    n.connect(f).connect(gn).connect(master); n.start(t(), 0, 0.3);
+  }
+
   // Volume général (fondus entre les tableaux)
   function volumeGeneral(v, d) { if (master) rampe(master.gain, v, d || 1); }
   function reinitialiser() { sons.silence = false; if (master) { master.gain.cancelScheduledValues(t()); master.gain.setValueAtTime(0.9, t()); } }
@@ -547,6 +559,11 @@ window.Audio3D = (function () {
     marero:       { genre: "m", rang: 3, pitch: 0.95, rate: 0.9 },
     pere_yesenia: { genre: "m", rang: 4, pitch: 0.8,  rate: 0.85 },
     fille_julio:  { genre: "f", rang: 4, pitch: 1.75, rate: 1.0 },
+    valeria:      { genre: "f", rang: 5, pitch: 1.0,  rate: 0.95 },
+    mere_patient: { genre: "f", rang: 6, pitch: 1.05, rate: 1.1 },
+    mere_valeria: { genre: "f", rang: 7, pitch: 0.85, rate: 0.85 },
+    contremaitre: { genre: "m", rang: 5, pitch: 0.95, rate: 1.15 },
+    joseph:       { genre: "m", rang: 6, pitch: 0.82, rate: 0.92 },
   };
   // Le ton modifie débit, hauteur et volume.
   const TONS = {
@@ -564,6 +581,7 @@ window.Audio3D = (function () {
     froid:    { rate: 0.86, pitch: 0.92, volume: 0.8 },
   };
   let voixParPersonnage = {};
+  let voixFrancaises = { m: null, f: null };
   function chargerVoix() {
     const toutes = speechSynthesis.getVoices();
     const choisir = (filtreLangue) => {
@@ -572,6 +590,8 @@ window.Audio3D = (function () {
       return v.sort((a, b) => (qualite(b) + (/MX|US|419/i.test(b.lang) ? 3 : 0)) - (qualite(a) + (/MX|US|419/i.test(a.lang) ? 3 : 0)));
     };
     const es = choisir(/^es/i), en = choisir(/^en[-_]US/i).concat(choisir(/^en/i));
+    const fr = choisir(/^fr/i);
+    voixFrancaises = { m: fr.find((v) => genre(v) === "m") || fr[0] || null, f: fr.find((v) => genre(v) === "f") || fr[0] || null };
     voixParPersonnage = {};
     for (const qui in PERSONNAGES) {
       const c = PERSONNAGES[qui];
@@ -622,7 +642,9 @@ window.Audio3D = (function () {
     const c = PERSONNAGES[qui] || PERSONNAGES.julio;
     const u = new SpeechSynthesisUtterance(texte);
     u.lang = c.anglais ? "en-US" : "es-MX";
-    const v = voixParPersonnage[qui];
+    let v = voixParPersonnage[qui];
+    // Créole haïtien : aucune voix de navigateur ; une voix française en est plus proche que l'espagnol.
+    if (opts.langue === "ht") { v = voixFrancaises[c.genre] || null; u.lang = "fr-FR"; }
     if (v) { u.voice = v; u.lang = v.lang; }
     u.pitch = Math.min(2, c.pitch * t0.pitch);
     u.rate = c.rate * t0.rate;
@@ -675,7 +697,7 @@ window.Audio3D = (function () {
     setFatigue, setPeur, coeur, helicoptere, positionHelico, moteur, positionMoteur,
     voiture, positionVoiture, voitureFin, coyotes, echelon, gorgees, espoir, espoirCouper,
     tension, setVent, pause, reprise, prechargerVoix, voixUtilisees,
-    comal, rue, moto, ventSec, neon, sonnerie, volumeGeneral, reinitialiser, chargerSon, sonPret, jouerSon,
+    comal, rue, moto, ventSec, neon, sonnerie, volumeGeneral, reinitialiser, chargerSon, sonPret, jouerSon, coupure,
     enregistrementsCharges: () => Object.keys(enregistrements),
     auditeur, parler, silence, nappe, toutCouper,
   };

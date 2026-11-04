@@ -56,7 +56,7 @@ window.Chapitre2 = (function () {
     const r = C.repliques[cle];
     const p = trouverPerso(r.qui);
     const pos = p ? { x: p.x, y: solY(p.x, p.z), z: p.z } : (r.telephone && C._posTelephone) || null;
-    const duree = A.parler(r.qui, r.texte, r.ton, cle, pos, { telephone: r.telephone }) || 2.5;
+    const duree = A.parler(r.qui, r.texte, r.ton, cle, pos, { telephone: r.telephone, langue: r.langue }) || 2.5;
     if (p) { p.parleJusqua = temps + duree; p.regardeJoueur = false; }
     const langue = window.LANGUE_SOUS_TITRES || "fr";
     const nom = (langue === "en" && C.nomsEn[r.qui]) || C.noms[r.qui] || "";
@@ -749,6 +749,291 @@ window.Chapitre2 = (function () {
   }
 
   // =====================================================================
+  //  Tableau 4 : Valeria à Maracaibo (l'hôpital dans le noir, puis la cuisine)
+  // =====================================================================
+  function textureCarrelage(couleur, joint, n, fissures) {
+    const T = 256, cv = document.createElement("canvas"); cv.width = cv.height = T;
+    const c = cv.getContext("2d");
+    c.fillStyle = joint; c.fillRect(0, 0, T, T);
+    const k = T / n;
+    for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) {
+      c.fillStyle = couleur; c.fillRect(i * k + 1.5, j * k + 1.5, k - 3, k - 3);
+      c.fillStyle = "rgba(0,0,0," + (Math.random() * 0.08).toFixed(3) + ")"; c.fillRect(i * k + 1.5, j * k + 1.5, k - 3, k - 3); // usure inégale
+    }
+    c.strokeStyle = "rgba(40,50,45,0.6)"; c.lineWidth = 1.2;
+    for (let f = 0; f < fissures; f++) {
+      let x = Math.random() * T, y = Math.random() * T; c.beginPath(); c.moveTo(x, y);
+      for (let s2 = 0; s2 < 6; s2++) { x += (Math.random() - 0.5) * 40; y += (Math.random() - 0.3) * 30; c.lineTo(x, y); }
+      c.stroke();
+    }
+    const t = new THREE.CanvasTexture(cv); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace; return t;
+  }
+  function textureDiplome() {
+    const cv = document.createElement("canvas"); cv.width = 320; cv.height = 240;
+    const c = cv.getContext("2d");
+    c.fillStyle = "#f3eedc"; c.fillRect(0, 0, 320, 240);
+    c.strokeStyle = "#8a6a2a"; c.lineWidth = 4; c.strokeRect(10, 10, 300, 220);
+    c.fillStyle = "#3a2a1a"; c.textAlign = "center";
+    c.font = "bold 17px Georgia, serif"; c.fillText("UNIVERSIDAD DEL ZULIA", 160, 52);
+    c.font = "13px Georgia, serif"; c.fillText("confiere el título de", 160, 86);
+    c.font = "italic bold 20px Georgia, serif"; c.fillText("Licenciada en Enfermería", 160, 118);
+    c.font = "15px Georgia, serif"; c.fillText("Valeria", 160, 150);
+    c.strokeStyle = "#3a2a1a"; c.lineWidth = 1; c.beginPath(); c.moveTo(60, 196); c.lineTo(140, 196); c.moveTo(180, 196); c.lineTo(260, 196); c.stroke();
+    c.fillStyle = "#b03030"; c.beginPath(); c.arc(160, 196, 14, 0, 7); c.fill();
+    const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; return t;
+  }
+
+  async function tableau4() {
+    viderTableau(); ilotCourant = "ilot4";
+    solY = () => 0;
+    R.renderer.toneMappingExposure = 1.4;
+    scene.background = new THREE.Color(0x050608); scene.fog = null;
+    const nuit = new THREE.HemisphereLight(0x4a5868, 0x1a1a1a, 0.5); groupe.add(nuit);
+
+    // Le couloir : carrelage vert d'eau fissuré, peinture écaillée
+    const sol = new THREE.Mesh(new THREE.PlaneGeometry(6, 5), new THREE.MeshStandardMaterial({ map: textureCarrelage("rgb(150,180,165)", "#5a6a62", 8, 6), roughness: 0.6 }));
+    sol.material.map.repeat.set(3, 2.5); sol.rotation.x = -Math.PI / 2; sol.receiveShadow = R.haute; groupe.add(sol);
+    const faience = textureCarrelage("rgb(120,170,150)", "#4a5a52", 6, 4); faience.repeat.set(4, 1);
+    const murBas = new THREE.MeshStandardMaterial({ map: faience, roughness: 0.5 });
+    [[0, -2.5, 6, 0], [-3, 0, 5, Math.PI / 2], [3, 0, 5, -Math.PI / 2]].forEach(([x, z, l, r]) => {
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(l, 1.4), murBas); m.position.set(x, 0.7, z); m.rotation.y = r; m.receiveShadow = R.haute; groupe.add(m);
+      const h = P.maille(new THREE.PlaneGeometry(l, 1.5), 0xc8ccc0, groupe, x, 2.15, z); h.rotation.y = r;
+    });
+    boite(6, 0.05, 5, 0xb8b8ac, 0, 2.9, 0);
+    // Ventilateur de plafond, immobile
+    P.maille(new THREE.CylinderGeometry(0.08, 0.08, 0.12, 10), 0x5a5a5a, groupe, 0.6, 2.8, 0.2);
+    for (let i = 0; i < 4; i++) { const pale = boite(0.55, 0.01, 0.12, 0x6a6a60, 0.6, 2.74, 0.2); pale.rotation.y = i * Math.PI / 2; pale.position.x += Math.cos(i * Math.PI / 2) * 0.3; pale.position.z -= Math.sin(i * Math.PI / 2) * 0.3; }
+    // Le néon blafard
+    const tube = emissif(new THREE.BoxGeometry(1.2, 0.04, 0.08), 0xeaf4ff, 2.2, groupe, -0.4, 2.85, -0.6);
+    const neonLum = new THREE.SpotLight(0xe0f0ff, 14, 10, 1.1, 0.7, 1.2); neonLum.position.set(-0.4, 2.8, -0.6); neonLum.target.position.set(-0.2, 0, -0.6);
+    if (R.haute) { neonLum.castShadow = true; neonLum.shadow.mapSize.set(1024, 1024); }
+    groupe.add(neonLum, neonLum.target);
+
+    // L'armoire à pharmacie presque vide
+    const ax = -2.2, az = -2.1;
+    [[-0.5, -0.18], [0.5, -0.18], [-0.5, 0.18], [0.5, 0.18]].forEach(([dx, dz]) => P.maille(new THREE.CylinderGeometry(0.015, 0.015, 1.9, 6), 0x8a9090, groupe, ax + dx, 0.95, az + dz));
+    [0.3, 0.75, 1.2, 1.65].forEach((y) => boite(1.04, 0.02, 0.4, 0x9aa0a0, ax, y, az));
+    P.maille(new THREE.CylinderGeometry(0.05, 0.05, 0.1, 10), 0xf0f0ea, groupe, ax - 0.3, 1.26, az).rotation.z = Math.PI / 2;
+    P.maille(new THREE.CylinderGeometry(0.05, 0.05, 0.1, 10), 0xf0f0ea, groupe, ax - 0.15, 1.26, az + 0.05).rotation.z = Math.PI / 2;
+    [[0.2, 0.75], [0.35, 1.65], [-0.2, 0.3]].forEach(([dx, y]) => { boite(0.16, 0.01, 0.12, 0xd8ccb0, ax + dx, y + 0.015, az); boite(0.16, 0.08, 0.01, 0xd8ccb0, ax + dx, y + 0.05, az - 0.06); }); // boîtes vides, ouvertes
+    objet("etagere_pharmacie", null, ax, 1.25, az + 0.2);
+
+    // Le lit pédiatrique et l'enfant fiévreux
+    const lx = 0.9, lz = -1.5;
+    [[-0.75, -0.35], [0.75, -0.35], [-0.75, 0.35], [0.75, 0.35]].forEach(([dx, dz]) => P.maille(new THREE.CylinderGeometry(0.02, 0.02, 0.9, 6), 0xb8c0c0, groupe, lx + dx, 0.45, lz + dz));
+    boite(1.5, 0.12, 0.7, 0xe4e8e0, lx, 0.62, lz);
+    [-0.33, 0.33].forEach((dz) => boite(1.5, 0.02, 0.02, 0xb8c0c0, lx, 0.86, lz + dz)); // barrières
+    const drap = P.maille(new THREE.CapsuleGeometry(0.15, 0.6, 4, 10), 0xdfe8ee, groupe, lx + 0.05, 0.74, lz); drap.rotation.z = Math.PI / 2; drap.scale.set(1, 1, 0.6);
+    boite(0.3, 0.06, 0.4, 0xf4f4f0, lx - 0.58, 0.71, lz);
+    P.maille(new THREE.SphereGeometry(0.085, 12, 10), 0x8a6448, groupe, lx - 0.52, 0.8, lz);
+    P.maille(new THREE.SphereGeometry(0.088, 12, 8, 0, Math.PI * 2, 0, Math.PI * 0.5), 0x111111, groupe, lx - 0.55, 0.81, lz).rotation.z = Math.PI / 2;
+
+    const valeria = personnage("valeria", -1.4, -1.2, Math.PI * 0.75, "debout");
+    const mere = personnage("mere_patient", 0.7, -0.75, Math.PI, "debout");
+    tourner(valeria, mere.x, mere.z); tourner(mere, valeria.x, valeria.z);
+    placerJoueur(0.2, 1.5, 0.12, -0.12, 1.2);
+    A.reinitialiser();
+    const sonNeon = A.neon(-0.4, 2.8, -0.6);
+
+    let courant = true, lampe = null;
+    majTableau = () => {
+      if (courant) {
+        const gres = Math.sin(temps * 31) > 0.9 || Math.sin(temps * 4.3) > 0.97;
+        neonLum.intensity = gres ? 3 : 14; tube.visible = !gres;
+      }
+      if (lampe) { lampe.lum.position.copy(lampe.ecran.getWorldPosition(_m)); }
+      if (valeria.eclaire) { _m.set(lx - 0.4, 0.9, lz); P.pointerBras(valeria, 1, _m, 0.3); }
+    };
+
+    await fondu(false, 2);
+    await carte("ilot4");
+    await dire("valeria1", 0.6);
+    // Coupure de courant brutale (« apagón »)
+    courant = false; A.coupure(); sonNeon.arreter(0.1);
+    neonLum.intensity = 0; tube.visible = false; nuit.intensity = 0.06;
+    await attendre(0.5);
+    await dire("merePatient1", 0.5);
+    // La lampe du téléphone de Valeria
+    const tel = new THREE.Group(); valeria.bras[1].poignet.add(tel);
+    P.maille(new THREE.BoxGeometry(0.07, 0.14, 0.012), 0x111111, tel, 0, -0.06, 0.03);
+    const ecran = emissif(new THREE.SphereGeometry(0.012, 6, 6), 0xffffff, 6, tel, 0, -0.11, 0.04);
+    const lum = new THREE.SpotLight(0xd8e8ff, 6, 6, 0.6, 0.6, 1.4); lum.target.position.set(lx - 0.4, 0.7, lz);
+    groupe.add(lum, lum.target);
+    lampe = { lum, ecran };
+    await allerVers(valeria, lx - 0.9, lz + 0.45, 0.7);
+    tourner(valeria, lx - 0.4, lz); valeria.eclaire = true;
+    await attendre(0.6);
+    await dire("valeria2", 2);
+    await fondu(true, 2.5);
+
+    // --- Plus tard, à la maison ---
+    viderTableau(); ilotCourant = "ilot4b";
+    R.renderer.toneMappingExposure = 1.5;
+    groupe.add(new THREE.HemisphereLight(0x4a5878, 0x1a1410, 0.6));
+    boite(4.5, 0.05, 4, 0x5a5046, 0, -0.025, 0);
+    const murC = 0x8a8c84; // murs gris-vert : la bougie ne doit pas tout teinter d'orange
+    boite(4.5, 2.6, 0.15, murC, 0, 1.3, -2); boite(0.15, 2.6, 4, murC, -2.25, 1.3, 0); boite(0.15, 2.6, 4, murC, 2.25, 1.3, 0);
+    const lune = new THREE.SpotLight(0x8aa4d8, 5, 8, 0.7, 0.8, 1.2); lune.position.set(-1, 1.7, -1.8); lune.target.position.set(0.5, 0.5, 0.6); groupe.add(lune, lune.target); // la nuit par la fenêtre
+    boite(4.7, 0.08, 4.2, 0x8a8078, 0, 2.62, 0);
+    emissif(new THREE.PlaneGeometry(0.7, 0.6), 0x1a2a4a, 1, groupe, -1, 1.6, -1.92);   // fenêtre sur la nuit
+    boite(0.7, 0.85, 0.5, 0xe0e0d8, 1.7, 0.42, -1.65); boite(0.5, 0.03, 0.4, 0x2a2a2a, 1.7, 0.86, -1.65); // cuisinière éteinte
+    boite(1.2, 0.05, 0.8, 0x7a5a3a, 0, 0.75, -0.6);
+    [[-0.55, -0.35], [0.55, -0.35], [-0.55, 0.35], [0.55, 0.35]].forEach(([x, z]) => boite(0.05, 0.75, 0.05, 0x5a4028, x, 0.37, -0.6 + z));
+    [[-0.3, -1.25], [0.75, -0.55]].forEach(([x, z]) => { boite(0.4, 0.04, 0.4, 0x7a5a3a, x, 0.45, z); [[-0.17, -0.17], [0.17, -0.17], [-0.17, 0.17], [0.17, 0.17]].forEach(([a, b]) => boite(0.035, 0.45, 0.035, 0x5a4028, x + a, 0.22, z + b)); });
+    P.maille(new THREE.CylinderGeometry(0.03, 0.03, 0.12, 8), 0xeae0c8, groupe, -0.35, 0.84, -0.55);
+    const flamme = emissif(new THREE.SphereGeometry(0.014, 6, 6), 0xffb060, 5, groupe, -0.35, 0.92, -0.55);
+    const bougie = new THREE.PointLight(0xffa860, 1.3, 4, 1.6); bougie.position.set(-0.35, 1.0, -0.55);
+    if (R.haute) bougie.castShadow = true;
+    groupe.add(bougie);
+    // La liasse de bolivars et le diplôme encadré
+    const liasse = new THREE.Group(); liasse.position.set(0.25, 0.78, -0.45); groupe.add(liasse);
+    for (let i = 0; i < 7; i++) boite(0.16, 0.012, 0.07, 0x9ab09a, 0, i * 0.012, 0, liasse).rotation.y = (Math.random() - 0.5) * 0.15;
+    boite(0.03, 0.09, 0.075, 0xd8c890, 0, 0.042, 0, liasse);
+    const cadre = new THREE.Group(); cadre.position.set(0.45, 0.87, -0.78); cadre.rotation.x = -0.25; groupe.add(cadre);
+    boite(0.36, 0.28, 0.02, 0x3a2a1a, 0, 0, 0, cadre);
+    const dip = new THREE.Mesh(new THREE.PlaneGeometry(0.32, 0.24), new THREE.MeshStandardMaterial({ map: textureDiplome(), roughness: 0.8 })); dip.position.z = 0.011; cadre.add(dip);
+    objet("liasse_bolivars", liasse, 0.33, 0.82, -0.55);
+
+    const mereV = personnage("mere_valeria", -0.3, -1.25, 0, "chaise");
+    const valeria2 = personnage("valeria", 2.0, 1.3, -Math.PI * 0.7, "marche");
+    placerJoueur(0.6, 1.7, 0.2, -0.15, 0.8);
+    majTableau = () => {
+      const f = 0.85 + Math.sin(temps * 11) * 0.08 + Math.sin(temps * 6.7) * 0.07;
+      flamme.scale.setScalar(f); bougie.intensity = 1.3 * f;
+    };
+    await fondu(false, 2);
+    await carte("ilot4b");
+    await allerVers(valeria2, 1.0, -0.5, 0.8); // au bout de la table, de profil : on voit les deux visages
+    tourner(valeria2, mereV.x, mereV.z); tourner(mereV, valeria2.x, valeria2.z);
+    // Ce qu'elle rapporte : une boîte d'œufs, un paquet de farine
+    boite(0.3, 0.07, 0.11, 0xb8a888, -0.05, 0.81, -0.3); boite(0.12, 0.2, 0.08, 0xf0ece0, 0.08, 0.875, -0.7);
+    await attendre(0.8);
+    await dire("mereValeria", 0.8);
+    await dire("valeria3", 1.2);
+    tourner(valeria2, cadre.position.x, cadre.position.z);
+    valeria2.cible = "tete_basse";
+    await attendre(1.5);
+    await dire("valeriaDepart", 2);
+    await fondu(true, 2.5);
+  }
+
+  // =====================================================================
+  //  Tableau 5 : Joseph à Santiago du Chili (la remise du chantier)
+  // =====================================================================
+  function textureCarteRoute() {
+    const cv = document.createElement("canvas"); cv.width = 300; cv.height = 420;
+    const c = cv.getContext("2d");
+    c.fillStyle = "#e8dfc6"; c.fillRect(0, 0, 300, 420);
+    const etapes = ["EE.UU.", "México", "Guatemala", "Honduras", "Nicaragua", "Costa Rica", "Panamá — Darién", "Colombia", "Ecuador", "Perú", "Chile — Santiago"];
+    c.font = "bold 15px Georgia, serif"; c.fillStyle = "#3a2a1a"; c.textAlign = "center"; c.fillText("10 FRONTERAS", 150, 26);
+    c.strokeStyle = "#b02a2a"; c.lineWidth = 3; c.setLineDash([6, 5]); c.beginPath();
+    etapes.forEach((e, i) => { const y = 50 + i * 34, x = 150 + Math.sin(i * 1.3) * 50; i ? c.lineTo(x, y) : c.moveTo(x, y); }); c.stroke(); c.setLineDash([]);
+    etapes.forEach((e, i) => {
+      const y = 50 + i * 34, x = 150 + Math.sin(i * 1.3) * 50;
+      c.fillStyle = i === 6 ? "#b02a2a" : "#2a2a2a"; c.beginPath(); c.arc(x, y, 5, 0, 7); c.fill();
+      c.font = (i === 6 || i === 10 ? "bold " : "") + "12px Georgia, serif"; c.textAlign = x > 150 ? "right" : "left";
+      c.fillText(e, x > 150 ? x - 10 : x + 10, y + 4);
+    });
+    const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; return t;
+  }
+
+  async function tableau5() {
+    viderTableau(); ilotCourant = "ilot5";
+    solY = () => 0;
+    R.renderer.toneMappingExposure = 1.3;
+    scene.background = cielDegrade("#1c2a4e", "#e6a27a");
+    scene.fog = new THREE.Fog(0x7a7e98, 40, 260);
+    groupe.add(new THREE.HemisphereLight(0x8aa0d0, 0x2a2622, 0.9));
+    soleil(0xffb48a, 1.4, [-20, 6, -30], 14);
+
+    boite(240, 0.1, 240, 0x4a4844, 0, -0.05, -60);
+    // La Cordillère des Andes enneigée, au loin
+    for (let i = 0; i < 11; i++) {
+      const x = -260 + i * 52 + (alea() - 0.5) * 20, h = 70 + alea() * 50, r = 45 + alea() * 25;
+      const z = -220 - alea() * 30;
+      P.maille(new THREE.ConeGeometry(r, h, 7), 0x5a6480, groupe, x, h / 2 - 4, z);
+      P.maille(new THREE.ConeGeometry(r * 0.32, h * 0.32, 7), 0xe8ecf4, groupe, x, h * 0.84 - 3.5, z); // neiges
+    }
+    // L'immeuble en construction et la grue
+    for (let n = 0; n < 6; n++) boite(18, 0.3, 10, 0x8a8a86, -6, n * 3.2, -32);
+    for (let i = 0; i < 5; i++) for (let j = 0; j < 3; j++) boite(0.4, 16, 0.4, 0x9a9a94, -14 + i * 4, 8, -36.5 + j * 4.5);
+    boite(0.8, 40, 0.8, 0xd0a020, 8, 20, -30); boite(42, 0.8, 0.8, 0xd0a020, 14, 39, -30); boite(1.6, 1.6, 1.6, 0x606060, -4, 38, -30);
+    emissif(new THREE.SphereGeometry(0.3, 8, 6), 0xff2020, 4, groupe, 35, 39.6, -30);
+    // La remise : parois de tôle, banc, ampoule
+    const tole = 0x5a6a7a;
+    boite(4, 2.6, 0.08, tole, 0, 1.3, -1.5); boite(0.08, 2.6, 3, tole, -2, 1.3, 0); boite(0.08, 2.6, 3, tole, 2, 1.3, 0);
+    boite(4.3, 0.06, 3.3, 0x6a7a8a, 0, 2.63, 0);
+    boite(4, 0.05, 3, 0x5a5650, 0, 0.01, 0);
+    boite(2.2, 0.06, 0.4, 0x8a6a40, -0.6, 0.48, -1.2); [[-1.6, -1.2], [0.4, -1.2]].forEach(([x, z]) => boite(0.06, 0.48, 0.36, 0x6a5030, x, 0.24, z));
+    const ampoule = emissif(new THREE.SphereGeometry(0.05, 8, 6), 0xffd8a0, 4, groupe, 0.2, 2.3, -0.5);
+    const lumA = new THREE.PointLight(0xffc890, 3, 6, 1.4); lumA.position.set(0.2, 2.2, -0.5); groupe.add(lumA);
+    // La carte de sa route, punaisée au mur
+    const carteR = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 0.84), new THREE.MeshStandardMaterial({ map: textureCarteRoute(), roughness: 0.9 }));
+    carteR.position.set(1.0, 1.55, -1.45); groupe.add(carteR);
+    // Le dossier de l'immigration, sur le banc
+    const dossier = boite(0.32, 0.03, 0.24, 0xc8a870, -1.05, 0.525, -1.15);
+    objet("dossier_extranjeria", dossier, -1.05, 0.54, -1.15);
+    // Sacs de ciment, brouette
+    for (let i = 0; i < 9; i++) boite(0.55, 0.14, 0.36, 0x9a9890, 2.8 + (i % 3) * 0.58, 0.07 + Math.floor(i / 3) * 0.14, -0.4);
+    const br = new THREE.Group(); br.position.set(-3.2, 0, 0.8); br.rotation.y = 0.6; groupe.add(br);
+    boite(0.6, 0.25, 0.8, 0x7a8a7a, 0, 0.55, 0, br); P.maille(new THREE.TorusGeometry(0.17, 0.04, 6, 12), 0x111111, br, 0, 0.2, 0.5).rotation.y = Math.PI / 2;
+    // Le casque, qui sera posé sur le banc
+    const casqueBanc = new THREE.Group(); casqueBanc.position.set(0.15, 0.6, -1.2); casqueBanc.visible = false; groupe.add(casqueBanc);
+    P.maille(new THREE.SphereGeometry(0.118, 14, 8, 0, Math.PI * 2, 0, Math.PI * 0.5), 0xf2f0e8, casqueBanc);
+    P.maille(new THREE.CylinderGeometry(0.14, 0.14, 0.012, 16), 0xf2f0e8, casqueBanc, 0, 0.005, 0.015);
+    const giletBanc = boite(0.4, 0.04, 0.3, 0xd97706, -0.35, 0.53, -1.2); giletBanc.visible = false;
+
+    const joseph = personnage("joseph", 0.1, 0.4, Math.PI * 0.25, "debout");
+    const chef = personnage("contremaitre", 1.4, 1.3, -Math.PI * 0.75, "debout");
+    tourner(joseph, chef.x, chef.z); tourner(chef, joseph.x, joseph.z);
+    placerJoueur(2.9, 3.4, 0.55, -0.1, 1.5);
+    A.reinitialiser();
+    const sonVent = A.ventSec(); sonVent.g.gain.value = 0.02;
+    let chantier = true;
+    const bruitsChantier = () => { if (!chantier) return; A.echelon(); setTimeout(bruitsChantier, 2500 + Math.random() * 5000); };
+    setTimeout(bruitsChantier, 1500);
+    majTableau = () => {
+      if (joseph.telephone) { joseph.tete.getWorldPosition(_m); _m.y -= 0.12; _m.x += Math.sin(joseph.cap) * 0.12; _m.z += Math.cos(joseph.cap) * 0.12; P.pointerBras(joseph, 1, _m, 1.9); }
+    };
+
+    await fondu(false, 2);
+    await carte("ilot5");
+    await dire("contremaitre1", 0.8);
+    await dire("joseph1", 0.8);
+    await dire("contremaitre2", 1);
+    // Il rend le casque et le gilet.
+    await allerVers(joseph, 0.0, -0.75, 0.7);
+    tourner(joseph, 0, -3);
+    await attendre(0.8);
+    if (joseph.coiffe) joseph.coiffe.visible = false; casqueBanc.visible = true;
+    await attendre(0.6);
+    if (joseph.gilet) joseph.gilet.visible = false; giletBanc.visible = true;
+    objet("casque_bottes", casqueBanc, 0.15, 0.62, -1.2);
+    allerVers(chef, 8, 6, 1.1).then(() => { chef.racine.visible = false; });
+    await attendre(2);
+    chantier = false;
+    // Assis sur le banc, il enregistre un message pour sa sœur.
+    tourner(joseph, 0, 3);
+    joseph.cible = "chaise"; joseph.yExtra = 0.02;
+    await attendre(1.2);
+    const tel = new THREE.Group(); joseph.bras[1].poignet.add(tel);
+    P.maille(new THREE.BoxGeometry(0.07, 0.14, 0.012), 0x111111, tel, 0, -0.06, 0.03);
+    emissif(new THREE.PlaneGeometry(0.06, 0.12), 0xbfd8ff, 1.5, tel, 0, -0.06, 0.037);
+    joseph.telephone = true;
+    await attendre(0.6);
+    await dire("josephCreole1", 1.5);
+    joseph.telephone = false; tel.visible = false;
+    joseph.cible = "debout";
+    await attendre(1.2);
+    await allerVers(joseph, 1.0, -0.85, 0.6);
+    tourner(joseph, 1.0, -3);
+    await attendre(1.5);
+    await dire("joseph2", 2.5);
+    sonVent.arreter(2);
+    await fondu(true, 3);
+  }
+
+  // =====================================================================
   //  Final : l'appel au guide
   // =====================================================================
   async function appelFinal() {
@@ -800,9 +1085,10 @@ window.Chapitre2 = (function () {
   function action() {
     if (ficheOuverte) return fermerFiche();
     if (!objetVise) return;
-    ficheOuverte = objetVise; objetVise.vu = true; ficheFin = temps + 14;
+    ficheOuverte = objetVise; objetVise.vu = true; ficheFin = temps + (objetVise.def.contexte ? 22 : 14);
     fiche.querySelector(".nom").textContent = objetVise.def.nom;
     fiche.querySelector(".texte").textContent = objetVise.def.texte;
+    fiche.querySelector(".contexte").textContent = objetVise.def.contexte || "";
     fiche.classList.add("visible");
   }
   function fermerFiche() { ficheOuverte = null; fiche.classList.remove("visible"); }
@@ -857,7 +1143,7 @@ window.Chapitre2 = (function () {
     A.chargerSon("moto-arrivee", "sons/moto-arrivee.mp3");
     A.chargerSon("moto-depart", "sons/moto-depart.mp3");
 
-    const ordre = [["ilot1", tableau1], ["ilot2a", tableau2a], ["ilot2b", tableau2b], ["ilot3", tableau3], ["final", appelFinal]];
+    const ordre = [["ilot1", tableau1], ["ilot2a", tableau2a], ["ilot2b", tableau2b], ["ilot3", tableau3], ["ilot4", tableau4], ["ilot5", tableau5], ["final", appelFinal]];
     const depart = Math.max(0, ordre.findIndex(([n]) => n === options.ilot));
     for (const [, f] of ordre.slice(depart)) await f();
 

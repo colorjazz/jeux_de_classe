@@ -59,10 +59,18 @@ window.Personnages = function (env) {
     ventre.scale.set(1.05, 1, 0.78);
     const torse = maille(new THREE.CapsuleGeometry(0.16, 0.16, 4, 10), o.haut, haut, 0, 0.38, 0);
     torse.scale.set(1.18, 1, 0.74);
-    if (o.gilet) {
+    let gilet = null;
+    if (o.gilet && !o.giletChantier) {
       maille(new THREE.BoxGeometry(0.38, 0.32, 0.28), o.gilet, haut, 0, 0.36, 0);
       maille(new THREE.BoxGeometry(0.4, 0.06, 0.3), 0x15140f, haut, 0, 0.04, 0);          // ceinture
       maille(new THREE.BoxGeometry(0.07, 0.16, 0.1), 0x15140f, haut, 0.2, -0.02, 0.02);  // étui
+    }
+    if (o.giletChantier) {
+      // Gilet de chantier (amovible) : deux pans et des bandes réfléchissantes.
+      gilet = pivot(haut);
+      [-1, 1].forEach((c) => maille(new THREE.BoxGeometry(0.17, 0.36, 0.27), o.giletChantier, gilet, 0.1 * c, 0.33, 0));
+      maille(new THREE.BoxGeometry(0.39, 0.035, 0.28), 0xd8d8c8, gilet, 0, 0.26, 0);
+      maille(new THREE.BoxGeometry(0.39, 0.035, 0.28), 0xd8d8c8, gilet, 0, 0.4, 0);
     }
     if (o.tablier) {
       const t = maille(new THREE.BoxGeometry(0.3, 0.42, 0.02), o.tablier, haut, 0, 0.16, 0.13);
@@ -89,6 +97,10 @@ window.Personnages = function (env) {
       const l = maille(new THREE.SphereGeometry(0.1, 10, 10), coulCheveux, tete, 0, -0.07, -0.06);
       l.scale.set(1.05, 1.5, 0.55);
     }
+    if (o.cheveux === "attaches") {
+      // Chignon serré
+      maille(new THREE.SphereGeometry(0.045, 10, 8), coulCheveux, tete, 0, 0.03, -0.1);
+    }
     if (o.cheveux === "tresse") {
       for (let i = 0; i < 6; i++) maille(new THREE.SphereGeometry(0.028 - i * 0.002, 8, 6), coulCheveux, haut, 0, 0.66 - i * 0.055, -0.13 - (i < 2 ? i * 0.02 : 0.03));
     }
@@ -97,6 +109,14 @@ window.Personnages = function (env) {
       c.scale.set(0.98, 0.9, 1.05);
       const v = maille(new THREE.BoxGeometry(0.17, 0.012, 0.09), o.couleurCoiffe || 0x22201c, tete, 0, 0.035, 0.12);
       v.rotation.x = 0.12;
+    }
+    let coiffe = null;
+    if (o.coiffe === "casque") {
+      // Casque de chantier
+      coiffe = pivot(tete);
+      const c = maille(new THREE.SphereGeometry(0.118, 14, 8, 0, Math.PI * 2, 0, Math.PI * 0.5), o.couleurCoiffe || 0xf2f0e8, coiffe, 0, 0.025, 0);
+      c.scale.set(1, 0.95, 1.08);
+      maille(new THREE.CylinderGeometry(0.14, 0.14, 0.012, 16), o.couleurCoiffe || 0xf2f0e8, coiffe, 0, 0.03, 0.015);
     }
     if (o.coiffe === "sombrero") {
       maille(new THREE.CylinderGeometry(0.2, 0.21, 0.012, 20), 0x6d5a3e, tete, 0, 0.07, 0);
@@ -139,6 +159,11 @@ window.Personnages = function (env) {
     if (o.objet === "baton") baton = maille(new THREE.CylinderGeometry(0.014, 0.018, 1.05, 6), 0x5a4630, mainD, 0, -0.4, 0.02);
     let sacMain = null;
     if (o.objet === "sac") sacMain = maille(new THREE.BoxGeometry(0.2, 0.22, 0.08), 0x3a3128, mainD, 0, -0.14, 0);
+    if (o.objet === "trousse") {
+      maille(new THREE.BoxGeometry(0.18, 0.12, 0.07), 0xe8e4da, mainD, 0, -0.1, 0);
+      maille(new THREE.BoxGeometry(0.06, 0.018, 0.072), 0xc0282a, mainD, 0, -0.1, 0); // croix rouge
+      maille(new THREE.BoxGeometry(0.018, 0.06, 0.072), 0xc0282a, mainD, 0, -0.1, 0);
+    }
     if (o.objet === "lampe") {
       const l = maille(new THREE.CylinderGeometry(0.025, 0.03, 0.22, 8), 0x111111, mainD, 0, -0.06, 0.06);
       l.rotation.x = Math.PI / 2;
@@ -146,7 +171,7 @@ window.Personnages = function (env) {
 
     env.scene.add(racine);
     return {
-      racine, corps, bassin, haut, tete, bras, jambes, s, baton, bidon, sacMain,
+      racine, corps, bassin, haut, tete, bras, jambes, s, baton, bidon, sacMain, gilet, coiffe,
       pose: Object.assign({}, POSES.marche),
       cible: "marche", cycle: env.alea() * 6, vitesse: 0, distPas: 0, yExtra: 0,
       x: 0, z: 0, cap: 0,
