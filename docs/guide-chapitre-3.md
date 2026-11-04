@@ -13,9 +13,11 @@ Public : 16-17 ans. Durée : environ 10 minutes. À faire après les chapitres 1
 | 2. La halte | Sous une bâche, Valeria soigne les pieds de Don Aurelio avec son dernier bandage de Maracaibo. |
 | 3. La rivière | Crue soudaine du Río Turquesa. Le groupe fait une chaîne le long d'une corde. Mishel est emportée, Joseph la rattrape. |
 | 4. Le péage | Des hommes armés (fusils en bandoulière, jamais braqués) exigent cent dollars par personne, enfants compris, et prennent la montre de Don Aurelio. |
-| 5. La dernière crête | Dans un brouillard qui devient blanc, la pluie s'arrête net. On entend la voix de Mateo : « Maman… c'est là qu'habite ma tante ? ». Le brouillard s'ouvre sur le désert de Sonora, où tout le groupe est réuni, au moment où l'hélicoptère arrive. |
+| 5. La dernière crête | Dans un brouillard qui devient blanc, la pluie s'arrête net. |
+| La route vers le nord | Six flashs rapides : la pirogue à Bajo Chiquito (Panama), le car de nuit (Costa Rica, Nicaragua, Honduras), le radeau sur le Río Suchiate (Guatemala – Mexique), la marche au bord de la route au Chiapas, le toit du train où Rosa, Mateo, Yesenia, Julio et Don Ernesto apparaissent avec Valeria et Joseph, puis le mur. |
+| Le désert | La nuit du désert de Sonora : le groupe réuni face aux lumières de la ville. Mateo : « Maman… c'est là qu'habite ma tante ? ». L'hélicoptère surgit : c'est l'arrestation du chapitre 1. La fin annonce le chapitre 4. |
 
-**Les personnages :** Valeria (Venezuela) et Joseph (Haïti, puis le Chili) traversent le Darién avec d'autres migrants venus du sud : Carolina et son fils Ángel (Venezuela), Mishel (Équateur), Wilmer (Colombie) et Don Aurelio (Venezuela). Rosa, Mateo, Yesenia, Julio et Don Ernesto ne passent pas par le Darién : ils rejoignent la route plus au nord. On ne les retrouve qu'à la fin, dans le désert.
+**Les personnages :** Valeria (Venezuela) et Joseph (Haïti, puis le Chili) traversent le Darién avec d'autres migrants venus du sud : Carolina et son fils Ángel (Venezuela), Mishel (Équateur), Wilmer (Colombie) et Don Aurelio (Venezuela). Rosa, Mateo, Yesenia, Julio et Don Ernesto ne passent pas par le Darién : ils rejoignent la route plus au nord. On les retrouve sur le toit du train, au Mexique, puis dans le désert.
 
 **Objets à regarder (touche E) :** le sac bleu, la chaussure d'enfant, la trousse de Valeria, le bracelet de péage. Chacun a un encadré de contexte pour le cours.
 

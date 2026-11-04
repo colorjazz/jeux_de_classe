@@ -79,6 +79,14 @@ window.CONTENU_CH3 = {
     seq3: { lieu: "Río Turquesa", moment: "Jour 3 · La crue" },
     seq4: { lieu: "Sortie de la jungle", moment: "Jour 4 · Le péage" },
     seq5: { lieu: "Le Darién", moment: "Jour 5 · La dernière crête" },
+    // Le montage : la route vers le nord, en flashs
+    f1: { lieu: "Bajo Chiquito, Panama", moment: "Jour 6 · La sortie de la jungle" },
+    f2: { lieu: "Costa Rica · Nicaragua · Honduras", moment: "Semaine 2 · De nuit, en car" },
+    f3: { lieu: "Río Suchiate", moment: "Semaine 4 · Du Guatemala au Mexique" },
+    f4: { lieu: "Chiapas, Mexique", moment: "Semaine 5 · À pied, au bord de la route" },
+    f5: { lieu: "Sur le toit du train", moment: "Semaine 8 · Les routes se rejoignent" },
+    f6: { lieu: "Le mur", moment: "Sonora – Arizona · Mois 4" },
+    desert: { lieu: "Désert de Sonora", moment: "Arizona · La nuit" },
   },
   corps: {
     valeria: { taille: 1.63, haut: 0x2b5b6c, bas: 0x1f2937, peau: 0x9c7254, cheveux: "attaches", couleurCheveux: 0x1a1412, chaussures: 0x6a5a4a, sac: "petit", couleurSac: 0x374151 },
@@ -102,6 +110,6 @@ window.CONTENU_CH3 = {
 
   fin: [
     "Des mois plus tard, à l'autre bout du continent, leurs routes se sont rejointes.",
-    "La suite, vous l'avez vécue : c'est la nuit du chapitre 1.",
+    "Ce qui leur arrive après cette nuit : chapitre 4.",
   ],
 };

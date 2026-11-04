@@ -6,6 +6,9 @@
   opacity: 0; transition: opacity 1.2s ease;
 }
 #carte-lieu.visible { opacity: 1; }
+/* Cartes rapides du montage (chapitre 3) : plus bas, plus brèves */
+#carte-lieu.flash { top: auto; bottom: 18vh; transition: opacity 0.5s ease; }
+#carte-lieu.flash .lieu { font-size: clamp(22px, 3.4vw, 34px); }
 #carte-lieu .lieu { margin: 0; font-size: clamp(26px, 4.4vw, 44px); color: var(--texte); letter-spacing: 0.04em; text-shadow: 0 2px 18px #000; }
 #carte-lieu .moment { margin: 8px 0 0; font-family: system-ui, sans-serif; font-size: 13px; letter-spacing: 0.24em; text-transform: uppercase; color: var(--sable); text-shadow: 0 1px 10px #000; }
 

@@ -291,16 +291,28 @@ window.Chapitre3 = (function () {
     porteur.haut.add(enfant.racine);
     enfant.cible = "chaise";
   }
+  const _g = new THREE.Vector3(), _d2 = new THREE.Vector3();
   function majPorte(enfant) {
     if (!enfant.porte) return;
     const p = enfant.porte;
-    enfant.racine.position.set(0, 0.42, -0.1);
+    // Les hanches de l'enfant posées sur les épaules (repère du buste de Joseph).
+    // (on remplace la position calculée par l'animation : le bassin est à 0,92 × taille au-dessus de la racine)
+    const hanches = 0.92 * enfant.s;
+    enfant.racine.position.set(0, 0.62 - hanches, -0.07);
     enfant.racine.rotation.set(0, 0, 0);
-    p.tete.getWorldPosition(_tete); _tete.y += 0.1;
-    P.pointerBras(enfant, 0, _tete, 0.6); P.pointerBras(enfant, 1, _tete, 0.6);
-    // Il retient les jambes du petit.
-    enfant.racine.getWorldPosition(_m); _m.y += 0.25;
-    P.pointerBras(p, 0, _m, 0.4); P.pointerBras(p, 1, _m, 0.4);
+    // Jambes écartées de part et d'autre du cou, tibias qui pendent sur la poitrine.
+    enfant.jambes.forEach((j, i) => {
+      j.hanche.rotation.set(-1.35, 0, (i ? -1 : 1) * 0.55);
+      j.genou.rotation.set(1.5, 0, 0);
+    });
+    // Ses mains sur la tête de Joseph.
+    p.tete.getWorldPosition(_tete); _tete.y += 0.06;
+    P.pointerBras(enfant, 0, _tete, 0.9); P.pointerBras(enfant, 1, _tete, 0.9);
+    // Joseph lui tient les tibias, devant sa poitrine.
+    enfant.racine.updateMatrixWorld(true);
+    enfant.jambes[1].genou.getWorldPosition(_g); _g.y -= 0.12;
+    enfant.jambes[0].genou.getWorldPosition(_d2); _d2.y -= 0.12;
+    P.pointerBras(p, 0, _g, 1.2); P.pointerBras(p, 1, _d2, 1.2);
   }
 
   // Le groupe du Darién
@@ -571,6 +583,158 @@ window.Chapitre3 = (function () {
   }
 
   // =====================================================================
+  //  Le montage : la route vers le nord, en flashs rapides
+  // =====================================================================
+  async function flashCarte(cle) {
+    const l = C.lieux[cle];
+    carteLieu.querySelector(".lieu").textContent = l.lieu;
+    carteLieu.querySelector(".moment").textContent = l.moment;
+    carteLieu.classList.add("visible", "flash");
+    await attendre(2.4);
+    carteLieu.classList.remove("visible");
+  }
+  // Coupe franche : un éclair blanc entre deux flashs.
+  async function coupe() {
+    voile.style.transition = "opacity 0.15s ease"; voile.style.background = "#fff"; voile.style.opacity = "0.85";
+    await attendre(0.18);
+    voile.style.transition = "opacity 0.5s ease"; voile.style.opacity = "0";
+  }
+  function regard(x, z, lx, lz, h, t) { placerJoueur(x, z, Math.atan2(-(lx - x), -(lz - z)), t || 0, 0.01); joueur.yeux = h || 1.62; }
+  // Des marcheurs anonymes, pour la foule
+  const TEINTES = [0x8a3a3a, 0x3a5a8a, 0x5a7a3a, 0x8a7a3a, 0x4a4a5a, 0x7a4a6a, 0x3a6a6a, 0x9a6a3a];
+  function anonyme(x, z, cap, cible) {
+    const p = P.creer({ taille: 1.55 + alea() * 0.3, haut: TEINTES[Math.floor(alea() * 8)], bas: 0x2a2c34, peau: [0x8a6448, 0x6b4a36, 0x9c7254, 0x3b2618][Math.floor(alea() * 4)],
+      cheveux: alea() < 0.4 ? "longs" : undefined, coiffe: alea() < 0.3 ? "casquette" : undefined, sac: alea() < 0.7 ? "grand" : "petit" });
+    p.qui = "anonyme"; p.x = x; p.z = z; p.cap = cap; p.cible = cible || "debout"; p.pose = Object.assign({}, P.POSES[p.cible]);
+    persos.push(p); return p;
+  }
+
+  async function montage() {
+    const sons = [];
+    const finFlash = () => { sons.forEach((x) => x && x.arreter && x.arreter(0.4)); sons.length = 0; };
+
+    // 1. Bajo Chiquito : la pirogue sur la rivière
+    viderTableau(); ilotCourant = "montage"; solY = (x, z) => (Math.abs(z) < 4 ? -0.5 : 0.2);
+    scene.background = new THREE.Color(0x8aa08a); scene.fog = new THREE.Fog(0x8aa08a, 15, 70); R.renderer.toneMappingExposure = 1.2;
+    groupe.add(new THREE.HemisphereLight(0xd8e0d0, 0x3a3020, 1.4)); soleil(0xfff0d8, 1.5, [10, 30, 10], 14);
+    const eau = new THREE.Mesh(new THREE.PlaneGeometry(120, 8), new THREE.MeshStandardMaterial({ map: textureEau(), color: 0x8a9a6a, roughness: 0.2 })); eau.rotation.x = -Math.PI / 2; eau.position.y = -0.3; groupe.add(eau);
+    boite(120, 0.6, 30, 0x3a5a2a, 0, 0, -19); boite(120, 0.6, 30, 0x3a5a2a, 0, 0, 19);
+    for (let i = 0; i < 30; i++) P.maille(new THREE.ConeGeometry(2 + alea() * 2, 8 + alea() * 6, 7), 0x2a4a22, groupe, -60 + i * 4 + alea() * 2, 5, (i % 2 ? -1 : 1) * (6 + alea() * 6));
+    const pirogue = new THREE.Group(); groupe.add(pirogue);
+    boite(7, 0.45, 1.1, 0x6a4a2a, 0, -0.1, 0, pirogue);
+    const passagers = ["valeria", "joseph", "carolina", "angel", "mishel", "wilmer", "aurelio"].map((q, i) => { const p = personnage(q, 0, 0, Math.PI / 2, "chaise"); p.rang = i; return p; });
+    const piroguier = anonyme(0, 0, Math.PI / 2, "debout");
+    regard(-2.5, 6, -3.5, 0, 1.4, -0.05);
+    sons.push(A.riviere(0, 0));
+    let px = -7;
+    majTableau = (dt) => {
+      px += dt * 2.2; pirogue.position.set(px, 0, 0);
+      passagers.forEach((p) => { p.x = px + 2.5 - p.rang * 0.75; p.z = 0; p.yExtra = -0.35; });
+      piroguier.x = px - 3.2; piroguier.z = 0; piroguier.yExtra = -0.1;
+    };
+    await coupe(); flashCarte("f1"); await attendre(4.2); finFlash();
+
+    // 2. Le car de nuit
+    viderTableau(); solY = () => 0;
+    scene.background = new THREE.Color(0x05060a); scene.fog = null; R.renderer.toneMappingExposure = 1.5;
+    groupe.add(new THREE.HemisphereLight(0x303848, 0x101010, 0.5));
+    boite(2.6, 0.05, 10, 0x2a2a2a, 0, 0, -3); boite(2.6, 0.05, 10, 0x3a3a40, 0, 2.3, -3);
+    [-1.3, 1.3].forEach((x) => { boite(0.05, 0.8, 10, 0x4a4a50, x, 0.4, -3); boite(0.05, 0.4, 10, 0x4a4a50, x, 2.1, -3);
+      for (let k = 0; k < 6; k++) emissif(new THREE.PlaneGeometry(1.4, 0.9), 0x101828, 1, groupe, x * 0.99, 1.35, -7 + k * 1.6).rotation.y = x < 0 ? Math.PI / 2 : -Math.PI / 2; });
+    for (let r = 0; r < 6; r++) [-0.75, 0.75].forEach((x) => { boite(0.8, 0.45, 0.5, 0x5a3a3a, x, 0.45, -7 + r * 1.6); boite(0.8, 0.7, 0.1, 0x5a3a3a, x, 0.95, -6.75 + r * 1.6); });
+    const voyageurs = [["valeria", -0.75, -2.2], ["joseph", 0.75, -2.2], ["carolina", -0.75, -3.8], ["angel", -0.55, -3.8], ["mishel", 0.75, -3.8], ["wilmer", 0.75, -5.4], ["aurelio", -0.75, -5.4]]
+      .map(([q, x, z]) => personnage(q, x, z, 0, q === "angel" ? "dort" : "chaise"));
+    const passage = new THREE.PointLight(0xffc880, 6, 6, 1.5); groupe.add(passage);
+    regard(0.05, 1.2, 0, -5, 1.5, -0.05);
+    A.voiture(0, -1); sons.push({ arreter: () => A.voitureFin() }); // le moteur du car
+    majTableau = (dt) => {
+      passage.position.set(Math.sin(temps) > 0 ? 2 : -2, 1.5, 4 - ((temps * 9) % 14));    // les lampadaires qui défilent
+      voyageurs.forEach((p, i) => { p.tete.rotation.z = Math.sin(temps * 3 + i) * 0.06; });
+    };
+    await coupe(); flashCarte("f2"); await attendre(4.2); finFlash();
+
+    // 3. Río Suchiate : le radeau de chambres à air
+    viderTableau(); solY = (x, z) => (Math.abs(x) < 9 ? -0.4 : 0.2);
+    scene.background = new THREE.Color(0xc8c0a8); scene.fog = new THREE.Fog(0xc8c0a8, 20, 90); R.renderer.toneMappingExposure = 1.15;
+    groupe.add(new THREE.HemisphereLight(0xfff0d8, 0x5a4a30, 1.4)); soleil(0xfff0d0, 2.2, [-10, 30, 5], 14);
+    const eau3 = new THREE.Mesh(new THREE.PlaneGeometry(18, 120), new THREE.MeshStandardMaterial({ map: textureEau(), color: 0x9a8a6a, roughness: 0.25 })); eau3.rotation.x = -Math.PI / 2; eau3.position.y = -0.3; groupe.add(eau3);
+    boite(40, 0.6, 120, 0x7a6a4a, -29, 0, 0); boite(40, 0.6, 120, 0x7a6a4a, 29, 0, 0);
+    const radeau = new THREE.Group(); groupe.add(radeau);
+    [[-0.7, -0.7], [0.7, -0.7], [-0.7, 0.7], [0.7, 0.7]].forEach(([x, z]) => P.maille(new THREE.TorusGeometry(0.45, 0.18, 8, 16), 0x151515, radeau, x, 0, z).rotation.x = Math.PI / 2);
+    boite(2.4, 0.06, 2.4, 0x8a6a40, 0, 0.18, 0, radeau);
+    const surRadeau = [personnage("valeria", 0, 0, -Math.PI / 2, "debout"), personnage("joseph", 0, 0, -Math.PI / 2, "debout"), anonyme(0, 0, -Math.PI / 2, "debout")];
+    regard(-11, 4, 0, 0, 1.6);
+    sons.push(A.riviere(0, 0));
+    let rx = 7;
+    majTableau = (dt) => {
+      rx -= dt * 1.2; radeau.position.set(rx, -0.15, 0);
+      surRadeau.forEach((p, i) => { p.x = rx - 0.5 + i * 0.5; p.z = (i - 1) * 0.6; p.yExtra = 0.25; });
+      surRadeau[2].bras[1].epaule.rotation.x = -1.2 + Math.sin(temps * 2) * 0.4;               // le passeur pousse sa perche
+    };
+    await coupe(); flashCarte("f3"); await attendre(4.2); finFlash();
+
+    // 4. Chiapas : à pied, au bord de la route, parmi d'autres
+    viderTableau(); solY = () => 0;
+    scene.background = new THREE.Color(0xe8dcc0); scene.fog = new THREE.Fog(0xe8dcc0, 25, 120); R.renderer.toneMappingExposure = 1.1;
+    groupe.add(new THREE.HemisphereLight(0xfff4e0, 0x6a5a40, 1.4)); soleil(0xfff0d0, 2.6, [5, 40, 10], 16);
+    boite(8, 0.05, 200, 0x3a3a3a, 3, 0, -60); boite(30, 0.04, 200, 0x9a8a5a, -16, -0.01, -60);
+    for (let k = 0; k < 40; k++) boite(0.15, 0.02, 2, 0xe8e0c8, 3, 0.03, 20 - k * 5);
+    const marcheurs = ["valeria", "joseph", "carolina", "mishel", "wilmer", "aurelio"].map((q, i) => personnage(q, -1 - (i % 2), 1 - i * 1.6, Math.PI, "marche"));
+    for (let i = 0; i < 14; i++) marcheurs.push(anonyme(-0.5 - alea() * 3, -4 - i * 2.2 - alea(), Math.PI, "marche"));
+    const camion = new THREE.Group(); groupe.add(camion);
+    boite(2.4, 2.6, 7, 0xd8d8d0, 0, 1.6, 0, camion); boite(2.4, 1.8, 2, 0xb02a2a, 0, 1.2, -4.4, camion);
+    regard(-4.5, 4, -1.5, -6, 1.6);
+    sons.push(A.moto(4, 20));
+    majTableau = (dt) => {
+      marcheurs.forEach((p) => { p.z -= dt * 1.1; p.vitesse = 1.1; p.cap = Math.PI; });
+      camion.position.set(4.6, 0, 30 - ((temps * 22) % 160));
+      if (sons[0]) { sons[0].position(4.6, camion.position.z); sons[0].regime(1); }
+    };
+    await coupe(); flashCarte("f4"); await attendre(4.2); finFlash();
+
+    // 5. Sur le toit du train : les routes se rejoignent
+    viderTableau(); solY = () => 0;
+    scene.background = new THREE.Color(0x070a14); scene.fog = new THREE.FogExp2(0x070a14, 0.03); R.renderer.toneMappingExposure = 1.7;
+    groupe.add(new THREE.HemisphereLight(0x2c3b5e, 0x15110d, 1.4));
+    const lune = new THREE.DirectionalLight(0x9db0e0, 1.4); lune.position.set(30, 40, -20); groupe.add(lune);
+    const sol5 = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), new THREE.MeshStandardMaterial({ color: 0x4a4436, roughness: 1 })); sol5.rotation.x = -Math.PI / 2; groupe.add(sol5);
+    for (let k = 0; k < 5; k++) { boite(3, 3.2, 14, 0x5a3a2a, 0, 1.6 + 0.9, -k * 15); boite(3.1, 0.1, 14.1, 0x4a3022, 0, 4.15, -k * 15); }
+    const passants = [];
+    for (let i = 0; i < 18; i++) { const x = (alea() - 0.5) * 60; const z = (alea() - 0.5) * 60; passants.push(P.maille(new THREE.CylinderGeometry(0.25, 0.3, 6 + alea() * 4, 7), 0x26302a, groupe, x < 0 ? x - 4 : x + 4, 3, z)); }
+    const toit = 4.2;
+    const surToit = [["rosa", -0.6, 1.0], ["mateo", -0.6, 0.4], ["yesenia", 0.7, -0.8], ["julio", -0.7, -1.8], ["ernesto", 0.6, -2.6], ["valeria", 0.6, 1.8], ["joseph", -0.6, 2.8]]
+      .map(([q, x, z]) => { const p = personnage(q, x, z, Math.PI, "assis"); p.yExtra = toit; return p; });
+    surToit[1].cible = "dort";
+    regard(0.2, 5.2, 0, -2, toit + 1.2, -0.1);
+    const roulement = () => { if (ilotCourant !== "montage-train") return; A.pas(0.6); setTimeout(() => A.pas(0.5), 140); setTimeout(roulement, 900); };
+    ilotCourant = "montage-train"; roulement();
+    sons.push(A.ventSec());
+    majTableau = (dt) => {
+      // Le paysage défile : arbres qui passent vers l'arrière
+      passants.forEach((m) => { m.position.z += dt * 14; if (m.position.z > 30) m.position.z -= 60; });
+      surToit.forEach((p, i) => { p.racine.position.y += Math.sin(temps * 8 + i) * 0.01; });
+    };
+    await coupe(); flashCarte("f5"); await attendre(5.2); finFlash(); ilotCourant = "montage";
+
+    // 6. Le mur : un éclair de l'échelle, comme au chapitre 1
+    viderTableau(); solY = () => 0;
+    scene.background = new THREE.Color(0x070a14); scene.fog = new THREE.FogExp2(0x070a14, 0.03); R.renderer.toneMappingExposure = 1.8;
+    groupe.add(new THREE.HemisphereLight(0x2c3b5e, 0x15110d, 1.5));
+    const l6 = new THREE.DirectionalLight(0x9db0e0, 1.5); l6.position.set(-20, 30, -30); groupe.add(l6);
+    boite(80, 0.05, 40, 0x8c8272, 0, -0.02, 0);
+    const barreaux = new THREE.InstancedMesh(new THREE.BoxGeometry(0.14, 5.6, 0.14), P.mat(0x3d3631), 160);
+    const o = new THREE.Object3D();
+    for (let i = 0; i < 160; i++) { o.position.set(-28 + i * 0.36, 2.8, -3); o.updateMatrix(); barreaux.setMatrixAt(i, o.matrix); }
+    groupe.add(barreaux);
+    [-0.22, 0.22].forEach((x) => boite(0.05, 5.6, 0.05, 0x5c5850, x, 2.8, -2.4));
+    for (let y = 0.3; y < 5.4; y += 0.32) boite(0.44, 0.03, 0.03, 0x5c5850, 0, y, -2.4);
+    const grimpeur = personnage("joseph", 0, -2.1, Math.PI, "grimpe");
+    regard(1.6, 1.8, 0, -2.4, 1.6, 0.35);
+    majTableau = (dt) => { grimpeur.yExtra = Math.min(4.6, grimpeur.yExtra + dt * 1.1); grimpeur.barreau = grimpeur.yExtra / 0.32; };
+    await coupe(); flashCarte("f6"); await attendre(3.4); finFlash();
+  }
+
+  // =====================================================================
   //  Séquence 5 : la dernière crête → le désert (raccord avec le chapitre 1)
   // =====================================================================
   function textureSableNuit() {
@@ -635,10 +799,11 @@ window.Chapitre3 = (function () {
     // La pluie s'arrête net. Dans le blanc, la voix d'un enfant.
     sonPluie.couper();
     suivre = false;
+    await attendre(0.8);
+    // Puis la route vers le nord, en flashs.
+    await montage();
     viderTableau(); ilotCourant = "seq5-desert";
-    scene.background = new THREE.Color(0xe8ece8); scene.fog = new THREE.FogExp2(0xe8ece8, 0.5);
-    await attendre(1.2);
-    await dire("mateoTransition", 0.4);
+    scene.background = new THREE.Color(0x070a14); scene.fog = new THREE.FogExp2(0x070a14, 0.2);
 
     // Le brouillard s'ouvre sur la nuit du désert de Sonora.
     solY = (x, z) => 0.4 * Math.sin(x * 0.05) * Math.cos(z * 0.04);
@@ -667,14 +832,16 @@ window.Chapitre3 = (function () {
     });
     Object.values(d).forEach((p) => { p.cible = "debout"; p.capVise = Math.PI; p.cap = Math.PI; });
     placerJoueur(0.2, 1.6, 0.0, 0.0, 1.0);
-    // Le brouillard se dissipe.
+    // La nuit se découvre : le groupe face aux lumières de la ville.
     const t1 = temps; const dissiper = () => {
       const u = Math.min(1, (temps - t1) / 3);
-      scene.fog.density = 0.5 * (1 - u) + 0.018 * u; scene.fog.color.lerpColors(new THREE.Color(0xe8ece8), new THREE.Color(0x070a14), u); scene.background.copy(scene.fog.color);
+      scene.fog.density = 0.2 * (1 - u) + 0.018 * u;
       if (u < 1) attendre(0.05).then(dissiper);
     };
     dissiper();
-    await attendre(3.5);
+    await coupe(); flashCarte("desert");
+    await attendre(3.2);
+    await dire("mateoTransition", 1.2);
     // Le projecteur de l'hélicoptère s'allume en plein visage.
     A.helicoptere(); A.coeur(true); A.setPeur(1);
     const heli = new THREE.Group(); heli.position.set(6, 24, -14); groupe.add(heli);
@@ -689,7 +856,7 @@ window.Chapitre3 = (function () {
     const bleu = emissif(new THREE.BoxGeometry(0.6, 0.15, 0.3), 0x1030ff, 5, pick, 0.4, 2.33, 0.6);
     pick.rotation.y = -Math.PI / 2;
     majTableau = (dt) => {
-      heli.position.x = 6 - Math.min(1, (temps - t1 - 3.5) / 8) * 5 + Math.sin(temps * 0.5) * 1.5;
+      heli.position.x = 6 - Math.min(1, (temps - t1 - 8) / 8) * 5 + Math.sin(temps * 0.5) * 1.5;
       feu.visible = Math.floor(temps * 1.5) % 2 === 0;
       spot.position.copy(heli.position); spot.position.y -= 1.2;
       spot.target.position.set(Math.sin(temps * 0.7) * 1.5, 0, -3.2 + Math.cos(temps * 0.5)); // sur le groupe couché, juste devant
