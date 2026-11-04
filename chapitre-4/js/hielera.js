@@ -501,7 +501,8 @@ window.Chapitre4 = (function () {
   function affiche(lignes, x, y, z, ry, opts) {
     opts = opts || {};
     const w = opts.w || 1.2, h = opts.h || 0.6;
-    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: texte2D(lignes, Object.assign({ l: 1024, h: Math.round(1024 * h / w), couleur: "#1a2a3a", fond: "#efede4", police: "bold 46px system-ui, sans-serif" }, opts)) }));
+    const t = Object.assign({ couleur: "#1a2a3a", fond: "#efede4", police: "bold 46px system-ui, sans-serif" }, opts, { l: 1024, h: Math.round(1024 * h / w) }); // l, h : taille de l'image, en pixels
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: texte2D(lignes, t) }));
     m.position.set(x, y, z); m.rotation.y = ry || 0; groupe.add(m);
     return m;
   }
