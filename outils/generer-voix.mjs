@@ -12,6 +12,7 @@
 //   GEMINI_API_KEY=votre_cle node outils/generer-voix.mjs --forcer        (tout régénérer)
 //   GEMINI_API_KEY=votre_cle node outils/generer-voix.mjs --modele gemini-2.5-pro-preview-tts
 //   node outils/generer-voix.mjs --volume                 (seulement réajuster le volume des fichiers existants)
+//   GEMINI_API_KEY=votre_cle node outils/generer-voix.mjs --chapitre chapitre-2   (autre chapitre ; défaut : frontiere-mexique)
 //
 // Chaque réplique est jouée selon son « direction » (indication d'acteur) et
 // le timbre de son personnage (voixGemini), définis dans frontiere-mexique/js/contenu.js.
@@ -23,9 +24,10 @@ import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 const racine = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const dossierVoix = path.join(racine, "frontiere-mexique", "voix");
 const args = process.argv.slice(2);
 const option = (nom) => { const i = args.indexOf(nom); return i >= 0 ? args[i + 1] : null; };
+const chapitre = option("--chapitre") || "frontiere-mexique";
+const dossierVoix = path.join(racine, chapitre, "voix");
 const forcer = args.includes("--forcer");
 const seulement = option("--seulement") ? option("--seulement").split(",").map((x) => x.trim()) : null;
 const modele = option("--modele") || "gemini-2.5-flash-preview-tts";
@@ -39,8 +41,10 @@ if (!cle && !volumeSeulement) {
 
 // Charger contenu.js (écrit pour le navigateur) dans un faux « window ».
 const bac = { window: {} };
-vm.runInNewContext(fs.readFileSync(path.join(racine, "frontiere-mexique", "js", "contenu.js"), "utf8"), bac);
-const { repliques, voixGemini } = bac.window.CONTENU;
+vm.runInNewContext(fs.readFileSync(path.join(racine, chapitre, "js", "contenu.js"), "utf8"), bac);
+const contenu = bac.window.CONTENU || Object.values(bac.window).find((v) => v && v.repliques);
+const { repliques, voixGemini } = contenu;
+console.log("Chapitre : " + chapitre);
 
 const ffmpeg = spawnSync("ffmpeg", ["-version"]).status === 0;
 if (!ffmpeg) console.warn("ffmpeg introuvable : les fichiers seront en WAV (plus lourds).");

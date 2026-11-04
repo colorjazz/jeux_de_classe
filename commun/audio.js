@@ -339,6 +339,110 @@ window.Audio3D = (function () {
   // --- Vent : intensité réglable (il forcit et refroidit en deuxième partie) ---
   function setVent(v) { if (sons.vent) rampe(sons.vent.g.gain, v, 8); }
 
+  // =====================================================================
+  //  Ambiances du chapitre 2 (chaque fonction renvoie { arreter(duree) })
+  // =====================================================================
+  function arreteur(noeuds, g) {
+    return { g, arreter(d) { rampe(g.gain, 0, d || 2); setTimeout(() => noeuds.forEach((n) => { try { n.stop(); } catch (e) {} }), (d || 2) * 1000 + 300); } };
+  }
+  // Le comal qui grésille (spatialisé)
+  function comal(x, y, z) {
+    const n = sourceBruit("blanc");
+    const f = ctx.createBiquadFilter(); f.type = "highpass"; f.frequency.value = 2500;
+    const f2 = ctx.createBiquadFilter(); f2.type = "lowpass"; f2.frequency.value = 6000;
+    const g = ctx.createGain(); g.gain.value = 0;
+    const crep = ctx.createGain(); crep.gain.value = 0.5;
+    const lfo = ctx.createOscillator(); lfo.type = "square"; lfo.frequency.value = 7.3;
+    const lfoG = ctx.createGain(); lfoG.gain.value = 0.25; lfo.connect(lfoG).connect(crep.gain);
+    const p = panner(x, y, z); p.refDistance = 1.5;
+    n.connect(f).connect(f2).connect(crep).connect(g).connect(p).connect(master);
+    n.start(); lfo.start();
+    rampe(g.gain, 0.05, 2);
+    return arreteur([n, lfo], g);
+  }
+  // Rue animée : rumeur de circulation lointaine, voix indistinctes, chiens au loin.
+  function rue() {
+    const n = sourceBruit("brun");
+    const f = ctx.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 380;
+    const g = ctx.createGain(); g.gain.value = 0;
+    n.connect(f).connect(g).connect(master); n.start();
+    rampe(g.gain, 0.16, 3);
+    const murmures = ctx.createGain(); murmures.gain.value = 1; murmures.connect(g);
+    let actif = true;
+    const voix = () => {
+      if (!actif) return;
+      // Une voix lointaine : bruit filtré à la hauteur d'une voix, modulé comme une syllabe.
+      const s = ctx.createBufferSource(); s.buffer = bruitBuffer;
+      const bp = ctx.createBiquadFilter(); bp.type = "bandpass"; bp.frequency.value = 500 + Math.random() * 500; bp.Q.value = 3;
+      const vg = ctx.createGain(); const t0 = t();
+      vg.gain.setValueAtTime(0, t0);
+      for (let i = 0; i < 4 + Math.random() * 6; i++) { vg.gain.linearRampToValueAtTime(0.06 + Math.random() * 0.05, t0 + i * 0.18 + 0.06); vg.gain.linearRampToValueAtTime(0.01, t0 + i * 0.18 + 0.16); }
+      vg.gain.linearRampToValueAtTime(0, t0 + 2);
+      s.connect(bp).connect(vg).connect(murmures); s.start(t0, Math.random() * 3, 2.1);
+      setTimeout(voix, 900 + Math.random() * 2600);
+    };
+    voix();
+    const r = arreteur([n], g);
+    const arreter = r.arreter;
+    r.arreter = (d) => { actif = false; arreter(d); };
+    return r;
+  }
+  // Moto (deux-temps) : bourdonnement nasal, spatialisé et mobile.
+  function moto(x, z) {
+    const p = panner(x, 1, z); p.refDistance = 6;
+    const o = ctx.createOscillator(); o.type = "sawtooth"; o.frequency.value = 95;
+    const o2 = ctx.createOscillator(); o2.type = "square"; o2.frequency.value = 47.5;
+    const f = ctx.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 900; f.Q.value = 2;
+    const g = ctx.createGain(); g.gain.value = 0;
+    const g2 = ctx.createGain(); g2.gain.value = 0.4;
+    o.connect(f); o2.connect(g2).connect(f); f.connect(g).connect(p).connect(master);
+    o.start(); o2.start();
+    rampe(g.gain, 0.22, 2);
+    const r = arreteur([o, o2], g);
+    r.position = (nx, nz) => { p.positionX.value = nx; p.positionZ.value = nz; };
+    r.regime = (v) => { o.frequency.setTargetAtTime(70 + v * 60, t(), 0.3); o2.frequency.setTargetAtTime(35 + v * 30, t(), 0.3); };
+    return r;
+  }
+  // Vent sec dans les feuilles de maïs : souffle + froissements.
+  function ventSec() {
+    const n = sourceBruit("blanc");
+    const f = ctx.createBiquadFilter(); f.type = "bandpass"; f.frequency.value = 2200; f.Q.value = 0.7;
+    const g = ctx.createGain(); g.gain.value = 0;
+    const lfo = ctx.createOscillator(); lfo.frequency.value = 0.3;
+    const lg = ctx.createGain(); lg.gain.value = 0.02; lfo.connect(lg).connect(g.gain);
+    n.connect(f).connect(g).connect(master); n.start(); lfo.start();
+    rampe(g.gain, 0.035, 3);
+    const v = sourceBruit("brun");
+    const fv = ctx.createBiquadFilter(); fv.type = "lowpass"; fv.frequency.value = 500;
+    const gv = ctx.createGain(); gv.gain.value = 0.18; v.connect(fv).connect(gv).connect(g); v.start();
+    return arreteur([n, lfo, v], g);
+  }
+  // Néon défectueux : bourdonnement grave et grésillements irréguliers.
+  function neon(x, y, z) {
+    const p = panner(x, y, z); p.refDistance = 2;
+    const o = ctx.createOscillator(); o.type = "sawtooth"; o.frequency.value = 120;
+    const f = ctx.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 400;
+    const g = ctx.createGain(); g.gain.value = 0;
+    o.connect(f).connect(g).connect(p).connect(master); o.start();
+    rampe(g.gain, 0.03, 1.5);
+    return arreteur([o], g);
+  }
+  // Sonnerie de téléphone (deux tons doux), quelques fois.
+  function sonnerie(fois) {
+    for (let i = 0; i < (fois || 2); i++) {
+      const d0 = t() + i * 3;
+      [440, 480].forEach((fr) => {
+        const o = ctx.createOscillator(); o.frequency.value = fr;
+        const g = ctx.createGain(); g.gain.setValueAtTime(0, d0);
+        g.gain.linearRampToValueAtTime(0.05, d0 + 0.05); g.gain.setValueAtTime(0.05, d0 + 1.9); g.gain.linearRampToValueAtTime(0, d0 + 2);
+        o.connect(g).connect(master); o.start(d0); o.stop(d0 + 2.05);
+      });
+    }
+  }
+  // Volume général (fondus entre les tableaux)
+  function volumeGeneral(v, d) { if (master) rampe(master.gain, v, d || 1); }
+  function reinitialiser() { sons.silence = false; if (master) { master.gain.cancelScheduledValues(t()); master.gain.setValueAtTime(0.9, t()); } }
+
   // --- Pause ---
   function pause() {
     if (window.speechSynthesis) speechSynthesis.cancel();
@@ -409,6 +513,10 @@ window.Audio3D = (function () {
     yesenia: { genre: "f", rang: 1, pitch: 1.15, rate: 0.95 },
     mateo:   { genre: "f", rang: 3, pitch: 1.6,  rate: 1.08 }, // une voix aiguë pour l'enfant
     agent:   { genre: "m", rang: 0, pitch: 0.9,  rate: 1.15, anglais: true },
+    // Chapitre 2
+    marero:       { genre: "m", rang: 3, pitch: 0.95, rate: 0.9 },
+    pere_yesenia: { genre: "m", rang: 4, pitch: 0.8,  rate: 0.85 },
+    fille_julio:  { genre: "f", rang: 4, pitch: 1.75, rate: 1.0 },
   };
   // Le ton modifie débit, hauteur et volume.
   const TONS = {
@@ -423,6 +531,7 @@ window.Audio3D = (function () {
     triste:   { rate: 0.84, pitch: 0.94, volume: 0.55 },
     joie:     { rate: 1.06, pitch: 1.1,  volume: 0.85 },
     berceuse: { rate: 0.7,  pitch: 1.08, volume: 0.45 },
+    froid:    { rate: 0.86, pitch: 0.92, volume: 0.8 },
   };
   let voixParPersonnage = {};
   function chargerVoix() {
@@ -454,14 +563,26 @@ window.Audio3D = (function () {
 
   // Joue une réplique. pos = position du personnage (pour l'enregistrement spatialisé).
   // Renvoie la durée estimée en secondes (pour l'animation de la parole).
-  function parler(qui, texte, ton, cle, pos) {
+  function parler(qui, texte, ton, cle, pos, opts) {
+    opts = opts || {};
     if (sons.silence) return 0;
     const t0 = TONS[ton] || TONS.normal;
     if (cle && enregistrements[cle] && ctx) {
       const src = ctx.createBufferSource(); src.buffer = enregistrements[cle];
       const g = ctx.createGain(); g.gain.value = qui === "agent" ? 1.2 : 1;
-      if (pos) { const p = panner(pos.x, pos.y + 1.5, pos.z); p.refDistance = 3; src.connect(g).connect(p).connect(master); }
-      else src.connect(g).connect(master);
+      let entree = src;
+      if (opts.telephone) {
+        // Son de combiné : bande étroite, légère saturation.
+        const hp = ctx.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = 420;
+        const lp = ctx.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 3000;
+        const sat = ctx.createWaveShaper(); const k = new Float32Array(256);
+        for (let i = 0; i < 256; i++) { const x = i / 128 - 1; k[i] = Math.tanh(x * 2.2) / Math.tanh(2.2); }
+        sat.curve = k;
+        src.connect(hp).connect(lp).connect(sat); entree = sat;
+        g.gain.value = 0.8;
+      }
+      if (pos) { const p = panner(pos.x, pos.y + 1.5, pos.z); p.refDistance = 3; entree.connect(g).connect(p).connect(master); }
+      else entree.connect(g).connect(master);
       src.start();
       (sons.voixActives = sons.voixActives || []).push(src);
       src.onended = () => { sons.voixActives = sons.voixActives.filter((x) => x !== src); };
@@ -524,6 +645,7 @@ window.Audio3D = (function () {
     setFatigue, setPeur, coeur, helicoptere, positionHelico, moteur, positionMoteur,
     voiture, positionVoiture, voitureFin, coyotes, echelon, gorgees, espoir, espoirCouper,
     tension, setVent, pause, reprise, prechargerVoix, voixUtilisees,
+    comal, rue, moto, ventSec, neon, sonnerie, volumeGeneral, reinitialiser,
     enregistrementsCharges: () => Object.keys(enregistrements),
     auditeur, parler, silence, nappe, toutCouper,
   };

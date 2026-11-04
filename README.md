@@ -7,7 +7,7 @@ Elles sont conçues pour une classe d'élèves de 16 à 17 ans.
 | Chapitre | Titre | Dossier | État |
 |---|---|---|---|
 | 1 | Le sable (frontière Mexique – États-Unis, désert de Sonora) | `frontiere-mexique/` | jouable |
-| 2 | à venir | | à concevoir |
+| 2 | Partir (Honduras, Mexique, Guatemala, Salvador : le jour du départ) | `chapitre-2/` | jouable, voix à générer |
 | 3 | à venir | | à concevoir |
 | 4 | à venir | | à concevoir |
 
@@ -20,11 +20,16 @@ Le guide pour l'enseignant (déroulé, précautions, questions de débrief) se t
 ## Organisation
 
 ```
+commun/             briques partagées par les chapitres
+  audio.js          sons procéduraux spatialisés et voix (enregistrées ou synthèse)
+  personnages.js    personnages articulés, poses, animation
+  rendu.js          moteur 3D, qualité automatique, halos
+  controles.js      clavier, souris, tactile
+chapitre-2/         chapitre 2 (contenu.js, ilots.js : les quatre tableaux, main.js)
 frontiere-mexique/
   index.html        écrans : avertissement, sas, témoignages, fin
   css/style.css
   js/contenu.js     textes, répliques, personnages et témoignages (à modifier ici)
-  js/audio.js       sons procéduraux spatialisés (vent, pas, respiration, hélicoptère…)
   js/desert.js      scène 3D : marche, arrestation, rupture onirique
   js/main.js        enchaînement des séquences, pause
   voix/             enregistrements des répliques (facultatif, voir liste.json)
