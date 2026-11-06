@@ -42,7 +42,7 @@ window.Chapitre3 = (function () {
     const l = C.lieux[cle];
     carteLieu.querySelector(".lieu").textContent = l.lieu;
     carteLieu.querySelector(".moment").textContent = l.moment;
-    carteLieu.classList.add("visible");
+    carteLieu.classList.remove("flash"); carteLieu.classList.add("visible");
     await attendre(3.6);
     carteLieu.classList.remove("visible");
   }
@@ -583,21 +583,25 @@ window.Chapitre3 = (function () {
   }
 
   // =====================================================================
-  //  Le montage : la route vers le nord, en flashs rapides
+  //  Le montage : la route vers le nord, en plans de cinéma
+  //  (écran large, grain, contre-jours ; la caméra glisse lentement)
   // =====================================================================
   async function flashCarte(cle) {
     const l = C.lieux[cle];
     carteLieu.querySelector(".lieu").textContent = l.lieu;
     carteLieu.querySelector(".moment").textContent = l.moment;
     carteLieu.classList.add("visible", "flash");
-    await attendre(2.4);
+    await attendre(3.4);
     carteLieu.classList.remove("visible");
   }
-  // Coupe franche : un éclair blanc entre deux flashs.
+  // Coupe : un bref passage au noir entre deux plans.
   async function coupe() {
-    voile.style.transition = "opacity 0.15s ease"; voile.style.background = "#fff"; voile.style.opacity = "0.85";
-    await attendre(0.18);
-    voile.style.transition = "opacity 0.5s ease"; voile.style.opacity = "0";
+    voile.style.transition = "opacity 0.35s ease"; voile.style.background = "#000"; voile.style.opacity = "1";
+    await attendre(0.4);
+  }
+  async function ouvrirPlan() {
+    voile.style.transition = "opacity 0.9s ease"; voile.style.opacity = "0";
+    await attendre(0.2);
   }
   function regard(x, z, lx, lz, h, t) { placerJoueur(x, z, Math.atan2(-(lx - x), -(lz - z)), t || 0, 0.01); joueur.yeux = h || 1.62; }
   // Des marcheurs anonymes, pour la foule
@@ -609,129 +613,313 @@ window.Chapitre3 = (function () {
     persos.push(p); return p;
   }
 
+  // ---------- Outils de mise en image ----------
+  // Ciel en dégradé (du zénith à l'horizon, puis sous l'horizon), sur une grande sphère.
+  function ciel(arrets) {
+    const cv = document.createElement("canvas"); cv.width = 4; cv.height = 512;
+    const c = cv.getContext("2d"); const g = c.createLinearGradient(0, 0, 0, 512);
+    arrets.forEach(([p, col]) => g.addColorStop(p, col)); c.fillStyle = g; c.fillRect(0, 0, 4, 512);
+    const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace;
+    const m = new THREE.Mesh(new THREE.SphereGeometry(600, 32, 24), new THREE.MeshBasicMaterial({ map: t, side: THREE.BackSide, fog: false, depthWrite: false }));
+    m.renderOrder = -10; groupe.add(m); scene.background = null;
+    return m;
+  }
+  function texteRadiale(interieur, exterieur) {
+    const cv = document.createElement("canvas"); cv.width = cv.height = 128;
+    const c = cv.getContext("2d"); const g = c.createRadialGradient(64, 64, 0, 64, 64, 64);
+    g.addColorStop(0, interieur); g.addColorStop(1, exterieur); c.fillStyle = g; c.fillRect(0, 0, 128, 128);
+    const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; return t;
+  }
+  // Un astre (soleil ou lune) et son halo.
+  function astre(x, y, z, couleur, rayon, halo) {
+    emissif(new THREE.SphereGeometry(rayon, 24, 16), couleur, 2.6, groupe, x, y, z).material.fog = false;
+    const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: texteRadiale("rgba(255,255,255,0.9)", "rgba(255,255,255,0)"), color: couleur, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: false, opacity: 0.55 }));
+    s.position.set(x, y, z); s.scale.setScalar(rayon * (halo || 14)); groupe.add(s);
+    return s;
+  }
+  // Une lisière en silhouette (arbres, palmiers, montagnes) découpée dans une image.
+  function textureLisiere(genre, graine) {
+    const cv = document.createElement("canvas"); cv.width = 2048; cv.height = 256;
+    const c = cv.getContext("2d"); c.fillStyle = "#fff";
+    let s = graine || 1; const r = () => { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646; };
+    c.beginPath(); c.moveTo(0, 256);
+    if (genre === "montagne") {
+      const ph = r() * 6;
+      for (let x = 0; x <= 2048; x += 8) c.lineTo(x, 130 + Math.sin(x * 0.0035 + ph) * 55 + Math.sin(x * 0.011 + ph * 2) * 18);
+      c.lineTo(2048, 256); c.fill();
+    } else {
+      for (let x = 0; x <= 2048; x += 8) c.lineTo(x, 170 + Math.sin(x * 0.01) * 10 + r() * 8);
+      c.lineTo(2048, 256); c.fill();
+      // Houppiers ronds, et quelques palmiers ou arbres morts qui dépassent
+      for (let i = 0; i < 160; i++) { const x = r() * 2048, rr = 14 + r() * 34; c.beginPath(); c.arc(x, 170 - r() * 40, rr, 0, 7); c.fill(); }
+      const n = genre === "palmiers" ? 22 : 8;
+      for (let i = 0; i < n; i++) {
+        const x = r() * 2048, h = 60 + r() * 90;
+        c.fillRect(x - 2, 160 - h, 4, h);
+        for (let k = 0; k < 7; k++) { c.save(); c.translate(x, 160 - h); c.rotate(-Math.PI + k * 0.45 + r() * 0.2); c.beginPath(); c.ellipse(26, 0, 30, 5, 0, 0, 7); c.fill(); c.restore(); }
+      }
+    }
+    const t = new THREE.CanvasTexture(cv); t.wrapS = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace; return t;
+  }
+  function lisiere(genre, z, largeur, hauteur, couleur, graine, x, y) {
+    const t = textureLisiere(genre, graine); t.repeat.x = genre === "montagne" ? 1 : largeur / 120;
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(largeur, hauteur), new THREE.MeshBasicMaterial({ map: t, alphaMap: t, color: couleur, transparent: true, depthWrite: false }));
+    m.position.set(x || 0, (y || 0) + hauteur / 2 - 0.5, z); groupe.add(m);
+    return m;
+  }
+  // Nappe de brume : un voile transparent qui s'estompe sur les bords.
+  function brume(x, y, z, l, h, couleur, opacite, ry) {
+    const cv = document.createElement("canvas"); cv.width = 256; cv.height = 64;
+    const c = cv.getContext("2d"); const g = c.createLinearGradient(0, 0, 0, 64);
+    g.addColorStop(0, "rgba(255,255,255,0)"); g.addColorStop(0.55, "rgba(255,255,255,1)"); g.addColorStop(1, "rgba(255,255,255,0)");
+    c.fillStyle = g; c.fillRect(0, 0, 256, 64);
+    const gx = c.createLinearGradient(0, 0, 256, 0); gx.addColorStop(0, "rgba(0,0,0,1)"); gx.addColorStop(0.2, "rgba(0,0,0,0)"); gx.addColorStop(0.8, "rgba(0,0,0,0)"); gx.addColorStop(1, "rgba(0,0,0,1)");
+    c.globalCompositeOperation = "destination-out"; c.fillStyle = gx; c.fillRect(0, 0, 256, 64);
+    const t = new THREE.CanvasTexture(cv);
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(l, h), new THREE.MeshBasicMaterial({ map: t, color: couleur, transparent: true, opacity: opacite, depthWrite: false, fog: false }));
+    m.position.set(x, y, z); m.rotation.y = ry || 0; groupe.add(m); return m;
+  }
+  // Une eau calme qui reflète le ciel (sombre, lisse) et le chemin de lumière de l'astre.
+  function eauCalme(couleur, largeur, profondeur, y) {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(largeur, profondeur, 1, 1), new THREE.MeshStandardMaterial({ color: couleur, roughness: 0.42, metalness: 0.1, map: textureEau() }));
+    m.material.map.repeat.set(largeur / 10, profondeur / 10);
+    m.rotation.x = -Math.PI / 2; m.position.y = y || 0; groupe.add(m); return m;
+  }
+  function refletAstre(x, z, couleur, longueur, largeur) {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(largeur, longueur), new THREE.MeshBasicMaterial({ map: texteRadiale("rgba(255,255,255,0.85)", "rgba(255,255,255,0)"), color: couleur, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }));
+    m.rotation.x = -Math.PI / 2; m.position.set(x, 0.02, z); groupe.add(m); return m;
+  }
+  // Poussière ou étoiles : des points.
+  function points(n, f, couleur, taille, attenue) {
+    const p = new Float32Array(n * 3); for (let i = 0; i < n; i++) p.set(f(i), i * 3);
+    const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.BufferAttribute(p, 3));
+    const m = new THREE.Points(g, new THREE.PointsMaterial({ color: couleur, size: taille, sizeAttenuation: !!attenue, transparent: true, opacity: 0.9, depthWrite: false, fog: false, map: texteRadiale("rgba(255,255,255,1)", "rgba(255,255,255,0)"), blending: THREE.AdditiveBlending }));
+    groupe.add(m); return m;
+  }
+  // Travelling : la caméra glisse de A vers B en regardant de L1 vers L2.
+  const _cA = new THREE.Vector3(), _cL = new THREE.Vector3();
+  function travelling(a, b, l1, l2, duree, t0) {
+    return () => {
+      let u = Math.min(1, (temps - t0) / duree); u = u * u * (3 - 2 * u);
+      _cA.set(a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u, a[2] + (b[2] - a[2]) * u);
+      _cL.set(l1[0] + (l2[0] - l1[0]) * u, l1[1] + (l2[1] - l1[1]) * u, l1[2] + (l2[2] - l1[2]) * u);
+      camera.position.copy(_cA); camera.lookAt(_cL);
+    };
+  }
+  function cinema(oui) { document.body.classList.toggle("cinema", oui); }
+
   async function montage() {
     const sons = [];
     const finFlash = () => { sons.forEach((x) => x && x.arreter && x.arreter(0.4)); sons.length = 0; };
+    cinema(true);
+    const DUREE = 4.8;
 
-    // 1. Bajo Chiquito : la pirogue sur la rivière
-    viderTableau(); ilotCourant = "montage"; solY = (x, z) => (Math.abs(z) < 4 ? -0.5 : 0.2);
-    scene.background = new THREE.Color(0x8aa08a); scene.fog = new THREE.Fog(0x8aa08a, 15, 70); R.renderer.toneMappingExposure = 1.2;
-    groupe.add(new THREE.HemisphereLight(0xd8e0d0, 0x3a3020, 1.4)); soleil(0xfff0d8, 1.5, [10, 30, 10], 14);
-    const eau = new THREE.Mesh(new THREE.PlaneGeometry(120, 8), new THREE.MeshStandardMaterial({ map: textureEau(), color: 0x8a9a6a, roughness: 0.2 })); eau.rotation.x = -Math.PI / 2; eau.position.y = -0.3; groupe.add(eau);
-    boite(120, 0.6, 30, 0x3a5a2a, 0, 0, -19); boite(120, 0.6, 30, 0x3a5a2a, 0, 0, 19);
-    for (let i = 0; i < 30; i++) P.maille(new THREE.ConeGeometry(2 + alea() * 2, 8 + alea() * 6, 7), 0x2a4a22, groupe, -60 + i * 4 + alea() * 2, 5, (i % 2 ? -1 : 1) * (6 + alea() * 6));
+    // 1. Bajo Chiquito, à l'aube : la pirogue glisse dans la brume
+    await coupe(); viderTableau(); ilotCourant = "montage"; solY = () => -0.4;
+    ciel([[0, "#1e2a36"], [0.38, "#6f7f86"], [0.49, "#e9c9a0"], [0.5, "#f2d6ae"], [1, "#2a3230"]]);
+    scene.fog = new THREE.Fog(0xb9b4a2, 6, 140); R.renderer.toneMappingExposure = 1.15;
+    groupe.add(new THREE.HemisphereLight(0xd8d4c4, 0x2a2a20, 0.9));
+    const d1 = new THREE.DirectionalLight(0xffd8a8, 0.9); d1.position.set(-40, 10, -100); groupe.add(d1);
+    astre(-70, 9, -260, 0xffd29a, 5.5, 16);
+    eauCalme(0x2c3634, 400, 400, -0.05);
+    refletAstre(-22, -150, 0xffc890, 220, 5).material.opacity = 0.45;
+    lisiere("jungle", -26, 300, 16, 0x111a14, 3, 0, -0.4);
+    lisiere("palmiers", -55, 400, 22, 0x2a3430, 7, 0, -0.4);
+    lisiere("jungle", -110, 600, 30, 0x4a5450, 11, 0, -0.4);
+    for (let k = 0; k < 5; k++) brume(-20 + k * 9, 0.8 + (k % 3) * 0.6, -14 - k * 9, 90, 3 + k, 0xeadcc4, 0.22);
     const pirogue = new THREE.Group(); groupe.add(pirogue);
-    boite(7, 0.45, 1.1, 0x6a4a2a, 0, -0.1, 0, pirogue);
+    boite(7.2, 0.4, 0.95, 0x1a1410, 0, 0.05, 0, pirogue);
+    [-1, 1].forEach((c) => { const b = P.maille(new THREE.ConeGeometry(0.48, 1.1, 4), 0x1a1410, pirogue, c * 4.15, 0.08, 0); b.rotation.set(Math.PI / 4, 0, -c * Math.PI / 2); });
     const passagers = ["valeria", "joseph", "carolina", "angel", "mishel", "wilmer", "aurelio"].map((q, i) => { const p = personnage(q, 0, 0, Math.PI / 2, "chaise"); p.rang = i; return p; });
     const piroguier = anonyme(0, 0, Math.PI / 2, "debout");
-    regard(-2.5, 6, -3.5, 0, 1.4, -0.05);
+    const perche = P.maille(new THREE.CylinderGeometry(0.02, 0.02, 4.2, 5), 0x1a1410, groupe, 0, 1.5, 0);
     sons.push(A.riviere(0, 0));
-    let px = -7;
+    let px = -9;
+    const t1 = temps;
+    const cam1 = travelling([1.6, 0.5, 5.6], [-1.0, 0.55, 5.0], [-3, 0.9, 0], [0.5, 0.95, 0], DUREE + 0.6, t1);
     majTableau = (dt) => {
-      px += dt * 2.2; pirogue.position.set(px, 0, 0);
-      passagers.forEach((p) => { p.x = px + 2.5 - p.rang * 0.75; p.z = 0; p.yExtra = -0.35; });
-      piroguier.x = px - 3.2; piroguier.z = 0; piroguier.yExtra = -0.1;
+      px += dt * 1.6; pirogue.position.set(px, -0.05 + Math.sin(temps * 1.3) * 0.02, 0);
+      passagers.forEach((p) => { p.x = px + 2.6 - p.rang * 0.8; p.z = 0; p.yExtra = 0.05; });
+      piroguier.x = px - 3.3; piroguier.z = 0; piroguier.yExtra = 0.2;
+      perche.position.set(px - 3.0, 1.4, 0.3); perche.rotation.set(0.35, 0, -0.5 + Math.sin(temps * 1.2) * 0.15);
+      cam1();
     };
-    await coupe(); flashCarte("f1"); await attendre(4.2); finFlash();
+    cam1(); await ouvrirPlan(); flashCarte("f1"); await attendre(DUREE); finFlash();
 
-    // 2. Le car de nuit
-    viderTableau(); solY = () => 0;
-    scene.background = new THREE.Color(0x05060a); scene.fog = null; R.renderer.toneMappingExposure = 1.5;
-    groupe.add(new THREE.HemisphereLight(0x303848, 0x101010, 0.5));
-    boite(2.6, 0.05, 10, 0x2a2a2a, 0, 0, -3); boite(2.6, 0.05, 10, 0x3a3a40, 0, 2.3, -3);
-    [-1.3, 1.3].forEach((x) => { boite(0.05, 0.8, 10, 0x4a4a50, x, 0.4, -3); boite(0.05, 0.4, 10, 0x4a4a50, x, 2.1, -3);
-      for (let k = 0; k < 6; k++) emissif(new THREE.PlaneGeometry(1.4, 0.9), 0x101828, 1, groupe, x * 0.99, 1.35, -7 + k * 1.6).rotation.y = x < 0 ? Math.PI / 2 : -Math.PI / 2; });
-    for (let r = 0; r < 6; r++) [-0.75, 0.75].forEach((x) => { boite(0.8, 0.45, 0.5, 0x5a3a3a, x, 0.45, -7 + r * 1.6); boite(0.8, 0.7, 0.1, 0x5a3a3a, x, 0.95, -6.75 + r * 1.6); });
-    const voyageurs = [["valeria", -0.75, -2.2], ["joseph", 0.75, -2.2], ["carolina", -0.75, -3.8], ["angel", -0.55, -3.8], ["mishel", 0.75, -3.8], ["wilmer", 0.75, -5.4], ["aurelio", -0.75, -5.4]]
-      .map(([q, x, z]) => personnage(q, x, z, 0, q === "angel" ? "dort" : "chaise"));
-    const passage = new THREE.PointLight(0xffc880, 6, 6, 1.5); groupe.add(passage);
-    regard(0.05, 1.2, 0, -5, 1.5, -0.05);
-    A.voiture(0, -1); sons.push({ arreter: () => A.voitureFin() }); // le moteur du car
+    // 2. Le car de nuit : les lumières de la route passent sur les visages endormis
+    await coupe(); viderTableau(); solY = () => 0;
+    scene.background = new THREE.Color(0x020306); scene.fog = null; R.renderer.toneMappingExposure = 1.4;
+    groupe.add(new THREE.HemisphereLight(0x2c3a58, 0x08080a, 0.6));
+    boite(2.6, 0.05, 12, 0x14151a, 0, 0, -3); boite(2.6, 0.05, 12, 0x1a1c22, 0, 2.3, -3);
+    [-1.3, 1.3].forEach((x) => { boite(0.05, 0.85, 12, 0x22242a, x, 0.42, -3); boite(0.05, 0.45, 12, 0x22242a, x, 2.08, -3);
+      for (let k = 0; k < 7; k++) boite(0.07, 1.0, 0.12, 0x2a2c32, x, 1.35, -8.4 + k * 1.6); });
+    const vitre = new THREE.Mesh(new THREE.PlaneGeometry(12, 1.0), new THREE.MeshStandardMaterial({ color: 0x0a1220, transparent: true, opacity: 0.35, roughness: 0.05, metalness: 0.6 }));
+    vitre.position.set(-1.29, 1.35, -3); vitre.rotation.y = Math.PI / 2; groupe.add(vitre);
+    const vitre2 = vitre.clone(); vitre2.position.x = 1.29; vitre2.rotation.y = -Math.PI / 2; groupe.add(vitre2);
+    for (let r = 0; r < 6; r++) [-0.75, 0.75].forEach((x) => { boite(0.8, 0.45, 0.5, 0x2a1e22, x, 0.45, -7 + r * 1.6); boite(0.8, 0.42, 0.12, 0x2a1e22, x, 0.86, -6.72 + r * 1.6); });
+    const voyageurs = [["valeria", -0.75, -2.2, "chaise"], ["joseph", -0.75, -3.8, "dort"], ["carolina", 0.75, -3.8, "dort"], ["angel", 0.55, -3.8, "dort"], ["mishel", 0.75, -2.2, "dort"], ["wilmer", 0.75, -5.4, "chaise"], ["aurelio", -0.75, -5.4, "dort"]]
+      .map(([q, x, z, pose]) => personnage(q, x, z, Math.PI, pose));
+    voyageurs[0].capVise = Math.PI - 0.9; // Valeria regarde par la fenêtre
+    const lueur = new THREE.DirectionalLight(0x5a78b0, 0.7); lueur.position.set(-6, 3, -2); groupe.add(lueur); // la nuit, par la vitre
+    // Les veilleuses bleues du plafond, et leur petite ligne lumineuse
+    [-1.5, -4.5, -7.5].forEach((z) => { const v = new THREE.PointLight(0x7a94d0, 2.2, 4.5, 1.6); v.position.set(0, 2.1, z); groupe.add(v); emissif(new THREE.BoxGeometry(0.5, 0.02, 0.05), 0x8aa4e0, 2, groupe, 0, 2.27, z); });
+    // Les lumières de la route, floues, derrière la vitre
+    const bokeh = points(110, () => [(Math.random() < 0.5 ? -1 : 1) * (4 + Math.random() * 30), 0.5 + Math.random() * 3, -40 + Math.random() * 60], 0xffb060, 30, false);
+    const sodium = new THREE.PointLight(0xff9a40, 0, 7, 1.4); groupe.add(sodium);
+    A.voiture(0, -1); sons.push({ arreter: () => A.voitureFin() });
+    const t2 = temps;
+    const cam2 = travelling([0.1, 1.62, 0.3], [0.05, 1.6, -0.5], [-0.25, 1.0, -8], [-0.1, 1.0, -8], DUREE + 0.6, t2);
     majTableau = (dt) => {
-      passage.position.set(Math.sin(temps) > 0 ? 2 : -2, 1.5, 4 - ((temps * 9) % 14));    // les lampadaires qui défilent
-      voyageurs.forEach((p, i) => { p.tete.rotation.z = Math.sin(temps * 3 + i) * 0.06; });
+      const a = bokeh.geometry.attributes.position.array;
+      for (let i = 0; i < 110; i++) { a[i * 3 + 2] += dt * 26; if (a[i * 3 + 2] > 20) a[i * 3 + 2] -= 60; }
+      bokeh.geometry.attributes.position.needsUpdate = true;
+      const cyc = (temps * 0.9) % 1;                           // un lampadaire toutes les ~1,1 s
+      sodium.position.set(cyc < 0.5 ? -2.2 : 2.2, 2.4, 3 - cyc * 12); sodium.intensity = 14 * Math.pow(Math.sin(cyc * Math.PI), 2);
+      voyageurs.forEach((p, i) => { p.tete.rotation.z = Math.sin(temps * 2.6 + i) * 0.04; });
+      cam2();
     };
-    await coupe(); flashCarte("f2"); await attendre(4.2); finFlash();
+    cam2(); await ouvrirPlan(); flashCarte("f2"); await attendre(DUREE); finFlash();
 
-    // 3. Río Suchiate : le radeau de chambres à air
-    viderTableau(); solY = (x, z) => (Math.abs(x) < 9 ? -0.4 : 0.2);
-    scene.background = new THREE.Color(0xc8c0a8); scene.fog = new THREE.Fog(0xc8c0a8, 20, 90); R.renderer.toneMappingExposure = 1.15;
-    groupe.add(new THREE.HemisphereLight(0xfff0d8, 0x5a4a30, 1.4)); soleil(0xfff0d0, 2.2, [-10, 30, 5], 14);
-    const eau3 = new THREE.Mesh(new THREE.PlaneGeometry(18, 120), new THREE.MeshStandardMaterial({ map: textureEau(), color: 0x9a8a6a, roughness: 0.25 })); eau3.rotation.x = -Math.PI / 2; eau3.position.y = -0.3; groupe.add(eau3);
-    boite(40, 0.6, 120, 0x7a6a4a, -29, 0, 0); boite(40, 0.6, 120, 0x7a6a4a, 29, 0, 0);
+    // 3. Río Suchiate : le radeau de chambres à air, sous le pont, dans la chaleur
+    await coupe(); viderTableau(); solY = () => -0.3;
+    ciel([[0, "#8a8f8a"], [0.42, "#d9cba8"], [0.5, "#f1e4c4"], [1, "#6a5a40"]]);
+    scene.fog = new THREE.Fog(0xd8c9a6, 10, 170); R.renderer.toneMappingExposure = 1.1;
+    groupe.add(new THREE.HemisphereLight(0xfff0d8, 0x5a4a30, 1.2)); soleil(0xfff0d0, 2.0, [-20, 40, -30], 14);
+    astre(40, 60, -300, 0xfff2d6, 9, 18);
+    eauCalme(0x6a5838, 400, 400, -0.1);
+    refletAstre(14, -170, 0xfff0d0, 240, 7).material.opacity = 0.4;
+    lisiere("palmiers", -38, 300, 14, 0x3a3a28, 5, 0, -0.3);
+    lisiere("montagne", -160, 700, 60, 0x9a9a8a, 9, 0, -0.3);
+    // Le pont frontalier, au loin, avec ses piles
+    boite(140, 1.2, 6, 0x6a665c, 0, 8, -60); boite(140, 1.4, 0.3, 0x6a665c, 0, 9.2, -57.2);
+    for (let k = -3; k <= 3; k++) boite(2.4, 9, 3, 0x5e5a50, k * 20, 3.5, -60);
+    for (let k = 0; k < 14; k++) emissif(new THREE.SphereGeometry(0.15, 6, 6), 0xffe0a0, 2, groupe, -65 + k * 10, 10.4, -57.2);
+    for (let k = 0; k < 4; k++) brume(-30 + k * 20, 1.5, -20 - k * 8, 90, 5, 0xf0e0c0, 0.35);
     const radeau = new THREE.Group(); groupe.add(radeau);
-    [[-0.7, -0.7], [0.7, -0.7], [-0.7, 0.7], [0.7, 0.7]].forEach(([x, z]) => P.maille(new THREE.TorusGeometry(0.45, 0.18, 8, 16), 0x151515, radeau, x, 0, z).rotation.x = Math.PI / 2);
-    boite(2.4, 0.06, 2.4, 0x8a6a40, 0, 0.18, 0, radeau);
+    [[-0.7, -0.7], [0.7, -0.7], [-0.7, 0.7], [0.7, 0.7]].forEach(([x, z]) => P.maille(new THREE.TorusGeometry(0.45, 0.18, 10, 20), 0x141414, radeau, x, 0, z).rotation.x = Math.PI / 2);
+    boite(2.4, 0.06, 2.4, 0x7a5a36, 0, 0.18, 0, radeau);
     const surRadeau = [personnage("valeria", 0, 0, -Math.PI / 2, "debout"), personnage("joseph", 0, 0, -Math.PI / 2, "debout"), anonyme(0, 0, -Math.PI / 2, "debout")];
-    regard(-11, 4, 0, 0, 1.6);
+    const perche3 = P.maille(new THREE.CylinderGeometry(0.02, 0.02, 3.6, 5), 0x2a2018, groupe, 0, 1.4, 0);
+    // Un second radeau, chargé de marchandises, plus loin
+    const radeau2 = new THREE.Group(); groupe.add(radeau2);
+    [[-0.6, 0], [0.6, 0]].forEach(([x, z]) => P.maille(new THREE.TorusGeometry(0.4, 0.16, 8, 16), 0x141414, radeau2, x, 0, z).rotation.x = Math.PI / 2);
+    for (let k = 0; k < 5; k++) boite(0.4, 0.3, 0.4, [0xc8b890, 0x8a6a4a, 0xd8d0c0][k % 3], -0.6 + k * 0.3, 0.35 + (k % 2) * 0.3, 0, radeau2);
+    radeau2.position.set(-18, -0.15, -22);
     sons.push(A.riviere(0, 0));
-    let rx = 7;
+    let rx = 6;
+    const t3 = temps;
+    const cam3 = travelling([-6.5, 0.6, 5.5], [-5.5, 0.7, 4.8], [2, 1.4, 0], [-0.5, 1.6, -4], DUREE + 0.6, t3);
     majTableau = (dt) => {
-      rx -= dt * 1.2; radeau.position.set(rx, -0.15, 0);
-      surRadeau.forEach((p, i) => { p.x = rx - 0.5 + i * 0.5; p.z = (i - 1) * 0.6; p.yExtra = 0.25; });
-      surRadeau[2].bras[1].epaule.rotation.x = -1.2 + Math.sin(temps * 2) * 0.4;               // le passeur pousse sa perche
+      rx -= dt * 1.1; radeau.position.set(rx, -0.12 + Math.sin(temps * 1.6) * 0.03, 0); radeau.rotation.y = Math.sin(temps * 0.4) * 0.08;
+      surRadeau.forEach((p, i) => { p.x = rx - 0.5 + i * 0.5; p.z = (i - 1) * 0.6; p.yExtra = 0.5; });
+      perche3.position.set(rx + 0.6, 1.3, 0.7); perche3.rotation.set(0.2, 0, 0.45 + Math.sin(temps * 1.5) * 0.18);
+      radeau2.position.x += dt * 0.5;
+      cam3();
     };
-    await coupe(); flashCarte("f3"); await attendre(4.2); finFlash();
+    cam3(); await ouvrirPlan(); flashCarte("f3"); await attendre(DUREE); finFlash();
 
-    // 4. Chiapas : à pied, au bord de la route, parmi d'autres
-    viderTableau(); solY = () => 0;
-    scene.background = new THREE.Color(0xe8dcc0); scene.fog = new THREE.Fog(0xe8dcc0, 25, 120); R.renderer.toneMappingExposure = 1.1;
-    groupe.add(new THREE.HemisphereLight(0xfff4e0, 0x6a5a40, 1.4)); soleil(0xfff0d0, 2.6, [5, 40, 10], 16);
-    boite(8, 0.05, 200, 0x3a3a3a, 3, 0, -60); boite(30, 0.04, 200, 0x9a8a5a, -16, -0.01, -60);
-    for (let k = 0; k < 40; k++) boite(0.15, 0.02, 2, 0xe8e0c8, 3, 0.03, 20 - k * 5);
-    const marcheurs = ["valeria", "joseph", "carolina", "mishel", "wilmer", "aurelio"].map((q, i) => personnage(q, -1 - (i % 2), 1 - i * 1.6, Math.PI, "marche"));
-    for (let i = 0; i < 14; i++) marcheurs.push(anonyme(-0.5 - alea() * 3, -4 - i * 2.2 - alea(), Math.PI, "marche"));
+    // 4. Chiapas, au couchant : la caravane marche vers le soleil
+    await coupe(); viderTableau(); solY = () => 0;
+    ciel([[0, "#34506e"], [0.3, "#c98f6a"], [0.46, "#f6b878"], [0.5, "#ffd9a0"], [0.52, "#8a5a3a"], [1, "#3a2a1e"]]);
+    scene.fog = new THREE.Fog(0xe8a878, 20, 260); R.renderer.toneMappingExposure = 1.15;
+    groupe.add(new THREE.HemisphereLight(0xffc89a, 0x3a2a20, 0.8));
+    const d4 = new THREE.DirectionalLight(0xffb070, 2.4); d4.position.set(4, 8, -60);
+    if (R.haute) { d4.castShadow = true; d4.shadow.mapSize.set(2048, 2048); const o4 = d4.shadow.camera; o4.left = o4.bottom = -20; o4.right = o4.top = 20; o4.near = 1; o4.far = 120; }
+    groupe.add(d4, d4.target); d4.target.position.set(0, 0, 0);
+    astre(2, 7, -330, 0xffc07a, 10, 20);
+    boite(9, 0.05, 400, 0x2a2624, 3, 0, -150); boite(60, 0.04, 400, 0x7a6040, -30, -0.01, -150); boite(60, 0.04, 400, 0x7a6040, 37.5, -0.01, -150);
+    for (let k = 0; k < 70; k++) boite(0.14, 0.02, 2, 0xd8c8a0, 3, 0.03, 20 - k * 6);
+    lisiere("montagne", -200, 800, 70, 0x6a4a4a, 4, 0, 0);
+    lisiere("montagne", -280, 900, 110, 0xa07070, 8, 0, 0);
+    lisiere("palmiers", -90, 400, 12, 0x2a1a14, 13, 0, 0);
+    // Poteaux et fils, le long de la route
+    for (let k = 0; k < 18; k++) { const z = 10 - k * 14; P.maille(new THREE.CylinderGeometry(0.08, 0.1, 7, 6), 0x1a1210, groupe, 8.5, 3.5, z); boite(1.6, 0.08, 0.08, 0x1a1210, 8.5, 6.6, z); }
+    for (const dx of [-0.7, 0.7]) { const g = new THREE.BufferGeometry().setFromPoints(Array.from({ length: 19 }, (_, k) => new THREE.Vector3(8.5 + dx, 6.55 - 0.12 * Math.sin(k * 3.1), 10 - k * 14))); groupe.add(new THREE.Line(g, new THREE.LineBasicMaterial({ color: 0x1a1210 }))); }
+    const marcheurs = ["valeria", "joseph", "carolina", "mishel", "wilmer", "aurelio"].map((q, i) => personnage(q, -0.8 - (i % 2) * 0.9, -1 - i * 1.5, Math.PI, "marche"));
+    for (let i = 0; i < 26; i++) marcheurs.push(anonyme(-0.3 - alea() * 3.4, -9 - i * 2.4 - alea() * 1.5, Math.PI, "marche"));
+    const poussiere = points(220, () => [-6 + Math.random() * 14, Math.random() * 3, -30 + Math.random() * 40], 0xffd0a0, 0.06, true);
     const camion = new THREE.Group(); groupe.add(camion);
-    boite(2.4, 2.6, 7, 0xd8d8d0, 0, 1.6, 0, camion); boite(2.4, 1.8, 2, 0xb02a2a, 0, 1.2, -4.4, camion);
-    regard(-4.5, 4, -1.5, -6, 1.6);
-    sons.push(A.moto(4, 20));
+    boite(2.4, 2.6, 7, 0xb8b0a0, 0, 1.6, 0, camion); boite(2.4, 1.8, 2, 0x8a2a2a, 0, 1.2, 4.4, camion);
+    [-0.8, 0.8].forEach((x) => { emissif(new THREE.SphereGeometry(0.14, 8, 8), 0xfff0d0, 4, camion, x, 0.9, 5.42); });
+    const phare = new THREE.SpotLight(0xfff0d0, 0, 60, 0.35, 0.5, 1); camion.add(phare); phare.position.set(0, 1, 5.5); phare.target.position.set(0, 0, 30); camion.add(phare.target);
+    sons.push(A.moto(4, -60));
+    const t4 = temps;
+    const cam4 = travelling([1.6, 0.9, 6], [1.0, 1.1, 2.5], [-1.5, 1.6, -20], [-1.2, 1.8, -30], DUREE + 0.6, t4);
     majTableau = (dt) => {
-      marcheurs.forEach((p) => { p.z -= dt * 1.1; p.vitesse = 1.1; p.cap = Math.PI; });
-      camion.position.set(4.6, 0, 30 - ((temps * 22) % 160));
-      if (sons[0]) { sons[0].position(4.6, camion.position.z); sons[0].regime(1); }
+      marcheurs.forEach((p) => { p.z -= dt * 1.05; p.vitesse = 1.05; p.cap = Math.PI; });
+      const a = poussiere.geometry.attributes.position.array;
+      for (let i = 0; i < 220; i++) { a[i * 3] += dt * 0.15; a[i * 3 + 1] += Math.sin(temps + i) * dt * 0.05; }
+      poussiere.geometry.attributes.position.needsUpdate = true;
+      camion.position.set(5.2, 0, -120 + ((temps - t4) * 18) % 160); phare.intensity = 30;
+      if (sons[0]) { sons[0].position(5.2, camion.position.z); sons[0].regime(0.8); }
+      cam4();
     };
-    await coupe(); flashCarte("f4"); await attendre(4.2); finFlash();
+    cam4(); await ouvrirPlan(); flashCarte("f4"); await attendre(DUREE); finFlash();
 
-    // 5. Sur le toit du train : les routes se rejoignent
-    viderTableau(); solY = () => 0;
-    scene.background = new THREE.Color(0x070a14); scene.fog = new THREE.FogExp2(0x070a14, 0.03); R.renderer.toneMappingExposure = 1.7;
-    groupe.add(new THREE.HemisphereLight(0x2c3b5e, 0x15110d, 1.4));
-    const lune = new THREE.DirectionalLight(0x9db0e0, 1.4); lune.position.set(30, 40, -20); groupe.add(lune);
-    const sol5 = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), new THREE.MeshStandardMaterial({ color: 0x4a4436, roughness: 1 })); sol5.rotation.x = -Math.PI / 2; groupe.add(sol5);
-    for (let k = 0; k < 5; k++) { boite(3, 3.2, 14, 0x5a3a2a, 0, 1.6 + 0.9, -k * 15); boite(3.1, 0.1, 14.1, 0x4a3022, 0, 4.15, -k * 15); }
-    const passants = [];
-    for (let i = 0; i < 18; i++) { const x = (alea() - 0.5) * 60; const z = (alea() - 0.5) * 60; passants.push(P.maille(new THREE.CylinderGeometry(0.25, 0.3, 6 + alea() * 4, 7), 0x26302a, groupe, x < 0 ? x - 4 : x + 4, 3, z)); }
+    // 5. Sur le toit du train, sous la lune : les routes se rejoignent
+    await coupe(); viderTableau(); solY = () => 0;
+    ciel([[0, "#03050c"], [0.35, "#0b1428"], [0.49, "#2a3a5a"], [0.5, "#3a4a66"], [1, "#05060a"]]);
+    scene.fog = new THREE.FogExp2(0x0e1628, 0.012); R.renderer.toneMappingExposure = 1.6;
+    groupe.add(new THREE.HemisphereLight(0x3c4d78, 0x0a0a0c, 1.2));
+    const lune5 = new THREE.DirectionalLight(0xa8bce8, 1.6); lune5.position.set(-30, 25, 40); groupe.add(lune5);
+    astre(-120, 90, 260, 0xe8ecff, 7, 12);
+    points(1600, () => { const a = Math.random() * 6.28, v = Math.acos(Math.random() * 0.9); return [Math.sin(v) * Math.cos(a) * 500, 30 + Math.cos(v) * 500, Math.sin(v) * Math.sin(a) * 500]; }, 0xd8e0ff, 2.2, false);
+    const sol5 = new THREE.Mesh(new THREE.PlaneGeometry(600, 600), new THREE.MeshStandardMaterial({ color: 0x2a2a26, roughness: 1 })); sol5.rotation.x = -Math.PI / 2; groupe.add(sol5);
+    // Les wagons : caisses, nervures, passerelle sur le toit
+    for (let k = 0; k < 6; k++) {
+      const z = -k * 15;
+      boite(3, 3.2, 14, 0x3a2420, 0, 2.5, z); boite(3.1, 0.12, 14.1, 0x2a1a16, 0, 4.16, z);
+      for (let n = 0; n < 10; n++) { boite(0.06, 3.2, 0.1, 0x2a1a16, 1.53, 2.5, z - 6.5 + n * 1.45); boite(0.06, 3.2, 0.1, 0x2a1a16, -1.53, 2.5, z - 6.5 + n * 1.45); }
+      boite(0.6, 0.05, 14, 0x4a4038, 0, 4.25, z);
+    }
     const toit = 4.2;
-    const surToit = [["rosa", -0.6, 1.0], ["mateo", -0.6, 0.4], ["yesenia", 0.7, -0.8], ["julio", -0.7, -1.8], ["ernesto", 0.6, -2.6], ["valeria", 0.6, 1.8], ["joseph", -0.6, 2.8]]
+    const surToit = [["rosa", -0.7, -1.0], ["mateo", -0.7, -1.6], ["yesenia", 0.7, -2.8], ["julio", -0.7, -3.8], ["ernesto", 0.7, -4.6], ["valeria", 0.7, -0.2], ["joseph", -0.65, 0.8]]
       .map(([q, x, z]) => { const p = personnage(q, x, z, Math.PI, "assis"); p.yExtra = toit; return p; });
     surToit[1].cible = "dort";
-    regard(0.2, 5.2, 0, -2, toit + 1.2, -0.1);
+    for (let i = 0; i < 6; i++) { const p = anonyme((i % 2 ? 0.7 : -0.7), -8 - i * 2.2, Math.PI, i % 3 ? "assis" : "dort"); p.yExtra = toit; }
+    // Le paysage défile : arbres en silhouette, poteaux
+    const defile = [];
+    for (let i = 0; i < 26; i++) { const cote = i % 2 ? 1 : -1; const h = 5 + alea() * 7; const m = P.maille(new THREE.ConeGeometry(1.6 + alea() * 1.6, h, 7), 0x0a0e0c, groupe, cote * (9 + alea() * 30), h / 2, -80 + i * 6); defile.push(m); }
+    for (let i = 0; i < 8; i++) defile.push(P.maille(new THREE.CylinderGeometry(0.08, 0.1, 7, 5), 0x0a0a0a, groupe, 6, 3.5, -80 + i * 20));
     const roulement = () => { if (ilotCourant !== "montage-train") return; A.pas(0.6); setTimeout(() => A.pas(0.5), 140); setTimeout(roulement, 900); };
     ilotCourant = "montage-train"; roulement();
     sons.push(A.ventSec());
+    const t5 = temps;
+    const cam5 = travelling([0.05, toit + 1.35, 3.2], [0.1, toit + 1.25, 2.2], [0, toit + 0.5, -6], [0, toit + 0.6, -8], DUREE + 1.6, t5);
     majTableau = (dt) => {
-      // Le paysage défile : arbres qui passent vers l'arrière
-      passants.forEach((m) => { m.position.z += dt * 14; if (m.position.z > 30) m.position.z -= 60; });
-      surToit.forEach((p, i) => { p.racine.position.y += Math.sin(temps * 8 + i) * 0.01; });
+      defile.forEach((m) => { m.position.z += dt * 16; if (m.position.z > 40) m.position.z -= 120; });
+      surToit.forEach((p, i) => { p.racine.position.y += Math.sin(temps * 8 + i) * 0.008; });
+      cam5(); camera.position.y += Math.sin(temps * 9) * 0.01;
     };
-    await coupe(); flashCarte("f5"); await attendre(5.2); finFlash(); ilotCourant = "montage";
+    cam5(); await ouvrirPlan(); flashCarte("f5"); await attendre(DUREE + 1); finFlash(); ilotCourant = "montage";
 
-    // 6. Le mur : un éclair de l'échelle, comme au chapitre 1
-    viderTableau(); solY = () => 0;
-    scene.background = new THREE.Color(0x070a14); scene.fog = new THREE.FogExp2(0x070a14, 0.03); R.renderer.toneMappingExposure = 1.8;
-    groupe.add(new THREE.HemisphereLight(0x2c3b5e, 0x15110d, 1.5));
-    const l6 = new THREE.DirectionalLight(0x9db0e0, 1.5); l6.position.set(-20, 30, -30); groupe.add(l6);
-    boite(80, 0.05, 40, 0x8c8272, 0, -0.02, 0);
-    const barreaux = new THREE.InstancedMesh(new THREE.BoxGeometry(0.14, 5.6, 0.14), P.mat(0x3d3631), 160);
+    // 6. Le mur, dans la lumière crue des projecteurs américains : Joseph monte à l'échelle
+    await coupe(); viderTableau(); solY = () => 0;
+    ciel([[0, "#02030a"], [0.45, "#0e1426"], [0.5, "#2a3048"], [1, "#05060a"]]);
+    scene.fog = new THREE.FogExp2(0x1a2030, 0.03); R.renderer.toneMappingExposure = 1.6;
+    groupe.add(new THREE.HemisphereLight(0x2c3b5e, 0x15110d, 0.9));
+    boite(120, 0.05, 60, 0x6c6458, 0, -0.02, 0);
+    const barreaux = new THREE.InstancedMesh(new THREE.BoxGeometry(0.14, 5.6, 0.14), P.mat(0x1a1816), 220);
     const o = new THREE.Object3D();
-    for (let i = 0; i < 160; i++) { o.position.set(-28 + i * 0.36, 2.8, -3); o.updateMatrix(); barreaux.setMatrixAt(i, o.matrix); }
+    for (let i = 0; i < 220; i++) { o.position.set(-40 + i * 0.36, 2.8, -3); o.updateMatrix(); barreaux.setMatrixAt(i, o.matrix); }
     groupe.add(barreaux);
-    [-0.22, 0.22].forEach((x) => boite(0.05, 5.6, 0.05, 0x5c5850, x, 2.8, -2.4));
-    for (let y = 0.3; y < 5.4; y += 0.32) boite(0.44, 0.03, 0.03, 0x5c5850, 0, y, -2.4);
+    // Les projecteurs de l'autre côté : halos, et la poussière dans leurs faisceaux
+    [-14, 0, 16].forEach((x) => {
+      P.maille(new THREE.CylinderGeometry(0.1, 0.12, 9, 6), 0x0a0a0a, groupe, x, 4.5, -9);
+      emissif(new THREE.BoxGeometry(0.8, 0.4, 0.2), 0xffffff, 6, groupe, x, 9, -8.9);
+      const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: texteRadiale("rgba(255,255,255,0.9)", "rgba(255,255,255,0)"), color: 0xdfe8ff, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }));
+      s.position.set(x, 9, -8.8); s.scale.setScalar(9); groupe.add(s);
+      const l = new THREE.PointLight(0xdfe8ff, 40, 30, 1.6); l.position.set(x, 8.5, -8); groupe.add(l);
+    });
+    points(300, () => [-12 + Math.random() * 24, Math.random() * 8, -8 + Math.random() * 4], 0xdfe8ff, 0.05, true);
+    [-0.22, 0.22].forEach((x) => boite(0.05, 5.6, 0.05, 0x1a1816, x, 2.8, -2.4));
+    for (let y = 0.3; y < 5.4; y += 0.32) boite(0.44, 0.03, 0.03, 0x1a1816, 0, y, -2.4);
     const grimpeur = personnage("joseph", 0, -2.1, Math.PI, "grimpe");
-    regard(1.6, 1.8, 0, -2.4, 1.6, 0.35);
-    majTableau = (dt) => { grimpeur.yExtra = Math.min(4.6, grimpeur.yExtra + dt * 1.1); grimpeur.barreau = grimpeur.yExtra / 0.32; };
-    await coupe(); flashCarte("f6"); await attendre(3.4); finFlash();
+    const t6 = temps;
+    const cam6 = travelling([2.4, 1.2, 2.8], [1.6, 1.5, 2.2], [0, 2.2, -2.4], [0, 3.4, -2.4], DUREE, t6);
+    majTableau = (dt) => { grimpeur.yExtra = Math.min(4.6, grimpeur.yExtra + dt * 1.0); grimpeur.barreau = grimpeur.yExtra / 0.32; cam6(); };
+    cam6(); await ouvrirPlan(); flashCarte("f6"); await attendre(DUREE - 0.8); finFlash();
+    cinema(false);
   }
 
   // =====================================================================
@@ -802,7 +990,7 @@ window.Chapitre3 = (function () {
     await attendre(0.8);
     // Puis la route vers le nord, en flashs.
     await montage();
-    viderTableau(); ilotCourant = "seq5-desert";
+    await coupe(); viderTableau(); ilotCourant = "seq5-desert";
     scene.background = new THREE.Color(0x070a14); scene.fog = new THREE.FogExp2(0x070a14, 0.2);
 
     // Le brouillard s'ouvre sur la nuit du désert de Sonora.
@@ -839,7 +1027,7 @@ window.Chapitre3 = (function () {
       if (u < 1) attendre(0.05).then(dissiper);
     };
     dissiper();
-    await coupe(); flashCarte("desert");
+    await ouvrirPlan(); flashCarte("desert");
     await attendre(3.2);
     await dire("mateoTransition", 1.2);
     // Le projecteur de l'hélicoptère s'allume en plein visage.
@@ -987,7 +1175,7 @@ window.Chapitre3 = (function () {
 
   return {
     lancer,
-    _etat: () => ({ ilot: ilotCourant, temps, t: temps - debutIlot, brume: scene && scene.fog ? [scene.fog.density, scene.fog.color.getHexString(), scene.background.getHexString ? scene.background.getHexString() : "tex"] : null, joueur: { x: joueur.x, z: joueur.z }, objets: objets.map((o) => o.id), persos: persos.map((p) => [p.qui, Math.round(p.x * 10) / 10, Math.round(p.z * 10) / 10, p.cible]), qualite: R && R.etat() }),
+    _etat: () => ({ ilot: ilotCourant, temps, t: temps - debutIlot, brume: scene && scene.fog ? [scene.fog.density, scene.fog.color.getHexString(), scene.background && scene.background.getHexString ? scene.background.getHexString() : "ciel"] : null, joueur: { x: joueur.x, z: joueur.z }, objets: objets.map((o) => o.id), persos: persos.map((p) => [p.qui, Math.round(p.x * 10) / 10, Math.round(p.z * 10) / 10, p.cible]), qualite: R && R.etat() }),
     _placer: (x, z, l, t) => { joueur.x = x; joueur.z = z; K.etat.lacet = l; K.etat.tangage = t || 0; limite.r = 99; },
     _action: action,
   };
